@@ -29,6 +29,7 @@ public enum ActionPolicy {
     var results: [String] = []
     let patterns = [
       "[\"“]([^\"”]+)[\"”]",
+      "(?<!\\w)['‘](.+?)['’](?!\\w)",
       "(?i)\\b(?:type|write|dictate|enter|saying)\\s+(.+)",
       "(?i)https?://[^\\s\"<>]+",
       "\\b[0-9]+\\s*[+*/×÷-]\\s*[0-9]+(?:\\s*[+*/×÷-]\\s*[0-9]+)*",

@@ -116,10 +116,15 @@ final class DesktopAccess {
         .post(tap: .cghidEventTap)
     case .type:
       let app = AXUIElementCreateApplication(targetPID)
-      if let focused = element(app, kAXFocusedUIElementAttribute),
-        string(focused, kAXSubroleAttribute) == "AXSecureTextField"
-      {
-        throw TalkieError("Talkie does not type into password fields.")
+      if let focused = element(app, kAXFocusedUIElementAttribute) {
+        guard string(focused, kAXSubroleAttribute) != "AXSecureTextField" else {
+          throw TalkieError("Talkie does not type into password fields.")
+        }
+        if AXUIElementSetAttributeValue(
+          focused, kAXSelectedTextAttribute as CFString, action.value as CFString
+        ) == .success {
+          return
+        }
       }
       for character in action.value {
         try Task.checkCancellation()

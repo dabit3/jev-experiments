@@ -29,9 +29,11 @@ public struct AssistantClient: Sendable {
       var instructions: String
       var input: [Input]
       var tools: [Tool]
+      var toolChoice: String
       enum CodingKeys: String, CodingKey {
         case model, store, instructions, input, tools
         case maxOutputTokens = "max_output_tokens"
+        case toolChoice = "tool_choice"
       }
     }
     struct Response: Decodable {
@@ -72,7 +74,8 @@ public struct AssistantClient: Sendable {
         Say when screen context is missing or insufficient. Use web search for research, cite sources,
         and distinguish findings from assumptions. Do not invent account access.
         """,
-      input: input, tools: research ? [Tool(type: "web_search_preview")] : []
+      input: input, tools: research ? [Tool(type: "web_search")] : [],
+      toolChoice: research ? "required" : "auto"
     )
     var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
     request.httpMethod = "POST"
@@ -102,6 +105,10 @@ public struct AssistantClient: Sendable {
       {
         sources.append(WebSource(title: annotation.title ?? url, url: url))
       }
+    }
+    guard !research || !sources.isEmpty else {
+      throw TalkieError(
+        "The research service returned no cited sources. Try a more specific question.")
     }
     return AssistantReply(text: text, sources: sources)
   }

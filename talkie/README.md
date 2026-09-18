@@ -55,7 +55,7 @@ speech / typed request
 
 Jev uses the TypeSafe `/v1/systemone` API with `jev-latest`. It never generates shell commands or executable scripts. Actions include opening installed apps and URLs, pressing/focusing accessible controls, typing candidate text, scrolling, and named keyboard shortcuts. OpenAI supplies optional prose; Jev owns the route and action decisions.
 
-The loop stops on cancellation, a changed foreground app, an unavailable control, repeated non-progress, low decision probability, or 24 steps. Destructive controls, sending/submitting, Terminal input, and selected shortcuts require approval. Password fields are excluded. A stop prevents future actions; it does not undo actions already completed.
+A low-probability choice requires an independent Jev judgment before execution; every completion is independently checked against the visible result. The loop stops on cancellation, a changed foreground app, an unavailable control, repeated non-progress, unresolved uncertainty, or 24 steps. Destructive controls, sending/submitting, Terminal input, and selected shortcuts require approval. Password fields are excluded. A stop prevents future actions; it does not undo actions already completed.
 
 ## Privacy and limitations
 

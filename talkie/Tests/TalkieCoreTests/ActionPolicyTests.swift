@@ -74,6 +74,16 @@ final class ActionPolicyTests: XCTestCase {
     XCTAssertTrue(ActionPolicy.textCandidates("Write hello into this document").contains("hello"))
   }
 
+  func testSingleQuotedTextPreservesInternalApostrophes() {
+    XCTAssertTrue(
+      ActionPolicy.textCandidates("Type 'Hello from Talkie' in this document").contains(
+        "Hello from Talkie"))
+    XCTAssertTrue(
+      ActionPolicy.textCandidates("Type ‘Don't change my words’ in TextEdit").contains(
+        "Don't change my words"))
+    XCTAssertFalse(ActionPolicy.textCandidates("Type don't worry").contains("t worry"))
+  }
+
   func testExplicitDictationPrefixIsRemoved() {
     XCTAssertEqual(
       ActionPolicy.dictationText("Dictate the following words exactly: see you soon"),

@@ -336,18 +336,14 @@ final class TalkieModel: ObservableObject {
         screen: screen, apps: apps,
         texts: texts.filter { !typed.contains($0) })
       status = "Working in \(screen.app)…"
-      let result = try await client.ask(
+      let result = try await client.chooseAction(
         StepState(goal: goal, screen: screen, history: history),
-        questions: JevClient.actionQuestions(candidates))
+        candidates: candidates)
       try requireCurrent(token)
       guard let answer = result.answers["next"], let choice = answer.choice,
         let action = candidates.first(where: { $0.id == choice })
       else {
         throw TalkieError("Jev returned an unavailable action. I stopped without acting.")
-      }
-      let probability = answer.probabilities?[choice] ?? 0
-      guard probability >= 0.35 else {
-        throw TalkieError("I’m not sure which control to use. Try a more specific request.")
       }
       if action.kind == .done {
         guard step > 0 || !goal.lowercased().contains("create") else {

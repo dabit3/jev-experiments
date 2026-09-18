@@ -81,6 +81,34 @@ final class LiveServiceTests: XCTestCase {
     XCTAssertTrue(reply.text.contains("576"))
   }
 
+  func testLiveArithmeticContinuesAfterFirstOperand() async throws {
+    let client = try jev()
+    struct State: Encodable, Sendable {
+      var goal: String
+      var screen: ScreenState
+      var history: [String]
+    }
+    let labels = [
+      "Delete", "Clear", "Percent", "Divide", "7", "8", "9", "Multiply",
+      "4", "5", "6", "Subtract", "1", "2", "3", "Add", "Change Sign", "0", "Point", "Equals",
+    ]
+    let screen = ScreenState(
+      app: "Calculator", bundleID: "com.apple.calculator",
+      elements: [ScreenElement(id: "display", role: "AXStaticText", label: "", value: "48")]
+        + labels.enumerated().map {
+          ScreenElement(id: "e\($0.offset)", role: "AXButton", label: $0.element, actionable: true)
+        })
+    let actions = ActionPolicy.candidates(screen: screen, apps: [:], texts: [])
+    for _ in 0..<3 {
+      let result = try await client.chooseAction(
+        State(
+          goal: "calculate 48 times 12 in calculator", screen: screen,
+          history: ["1. Button: 4 [executed]", "2. Button: 8 [executed]"]),
+        candidates: actions)
+      XCTAssertEqual(result.answers["next"]?.choice, "e7")
+    }
+  }
+
   func testLiveDraftJudgment() async throws {
     let client = try jev()
     for (request, expected) in [
