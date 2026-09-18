@@ -81,6 +81,38 @@ final class LiveServiceTests: XCTestCase {
     XCTAssertTrue(reply.text.contains("576"))
   }
 
+  func testLiveTextCompletionAndSelectedReplacement() async throws {
+    let client = try jev()
+    struct State: Encodable, Sendable {
+      var goal: String
+      var screen: ScreenState
+      var history: [String]
+    }
+    let screen = ScreenState(
+      app: "TextEdit", bundleID: "com.apple.TextEdit", window: "Untitled",
+      elements: [
+        ScreenElement(
+          id: "e0", role: "AXTextArea", label: "", value: "hello world",
+          focused: true, actionable: true)
+      ])
+    let goal = "Type hello world in TextEdit"
+    let result = try await client.chooseAction(
+      State(goal: goal, screen: screen, history: ["1. Type: hello world [executed]"]),
+      candidates: ActionPolicy.candidates(
+        screen: screen, apps: [:],
+        texts: ActionPolicy.textCandidates(goal).filter { $0 != "hello world" }))
+    XCTAssertEqual(result.answers["next"]?.choice, "done")
+
+    let replacement = "Type 'don't change case' in this document"
+    let actions = ActionPolicy.candidates(
+      screen: screen, apps: [:],
+      texts: ActionPolicy.textCandidates(replacement))
+    let next = try await client.chooseAction(
+      State(goal: replacement, screen: screen, history: []), candidates: actions)
+    XCTAssertEqual(
+      actions.first { $0.id == next.answers["next"]?.choice }?.value, "don't change case")
+  }
+
   func testLiveArithmeticContinuesAfterFirstOperand() async throws {
     let client = try jev()
     struct State: Encodable, Sendable {

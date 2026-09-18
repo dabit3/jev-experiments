@@ -84,6 +84,15 @@ final class ActionPolicyTests: XCTestCase {
     XCTAssertFalse(ActionPolicy.textCandidates("Type don't worry").contains("t worry"))
   }
 
+  func testQuotedLiteralsDoNotIncludeInstructionOrDestinationAlternatives() {
+    XCTAssertEqual(
+      ActionPolicy.textCandidates("Type 'don't change case' in this document"),
+      ["don't change case"])
+    XCTAssertEqual(
+      ActionPolicy.textCandidates("Type \"Meet me in TextEdit\" in this document"),
+      ["Meet me in TextEdit"])
+  }
+
   func testExplicitDictationPrefixIsRemoved() {
     XCTAssertEqual(
       ActionPolicy.dictationText("Dictate the following words exactly: see you soon"),
@@ -113,6 +122,18 @@ final class ActionPolicyTests: XCTestCase {
     ])
     XCTAssertEqual(
       ActionPolicy.candidates(screen: screen, apps: [:], texts: []).first?.kind, .focus)
+  }
+
+  func testAlreadyFocusedFieldDoesNotOfferAnotherFocusAction() {
+    let screen = ScreenState(elements: [
+      ScreenElement(
+        id: "editor", role: "AXTextArea", label: "Editor", focused: true, actionable: true),
+      ScreenElement(id: "button", role: "AXButton", label: "New", actionable: true),
+    ])
+    let actions = ActionPolicy.candidates(screen: screen, apps: [:], texts: ["hello"])
+    XCTAssertFalse(actions.contains { $0.id == "editor" })
+    XCTAssertTrue(actions.contains { $0.id == "button" })
+    XCTAssertTrue(actions.contains { $0.kind == .type })
   }
 
   func testConversationRoundTripRetainsEvidence() throws {

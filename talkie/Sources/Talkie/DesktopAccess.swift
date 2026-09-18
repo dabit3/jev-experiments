@@ -21,6 +21,7 @@ final class DesktopAccess {
     let root = AXUIElementCreateApplication(targetPID)
     AXUIElementSetMessagingTimeout(root, 0.25)
     let focusedWindow = element(root, kAXFocusedWindowAttribute)
+    let focusedControl = element(root, kAXFocusedUIElementAttribute)
     var state = ScreenState(
       app: app.localizedName ?? "App", bundleID: app.bundleIdentifier ?? "",
       window: focusedWindow.map { string($0, kAXTitleAttribute) } ?? "")
@@ -45,13 +46,17 @@ final class DesktopAccess {
       let actions = actionNames as? [String] ?? []
       let interactive =
         enabled
-        && (!actions.isEmpty
+        && (actions.contains(where: {
+          [kAXPressAction, kAXPickAction, kAXConfirmAction, kAXShowMenuAction].contains($0)
+        })
           || ["AXTextField", "AXTextArea", "AXComboBox", "AXRow", "AXCell"].contains(role))
       if !label.isEmpty || !value.isEmpty || interactive {
         let id = "e\(state.elements.count)"
         let entry = ScreenElement(
           id: id, role: role, label: label, value: value,
-          frame: frame(node), focused: bool(node, kAXFocusedAttribute) ?? false,
+          frame: frame(node),
+          focused: focusedControl.map { CFEqual($0, node) } == true
+            || bool(node, kAXFocusedAttribute) == true,
           actionable: interactive)
         state.elements.append(entry)
         elements[id] = node

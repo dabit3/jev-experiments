@@ -27,27 +27,34 @@ public enum ActionPolicy {
 
   public static func textCandidates(_ goal: String) -> [String] {
     var results: [String] = []
-    let patterns = [
+    let quotePatterns = [
       "[\"“]([^\"”]+)[\"”]",
       "(?<!\\w)['‘](.+?)['’](?!\\w)",
-      "(?i)\\b(?:type|write|dictate|enter|saying)\\s+(.+)",
-      "(?i)https?://[^\\s\"<>]+",
-      "\\b[0-9]+\\s*[+*/×÷-]\\s*[0-9]+(?:\\s*[+*/×÷-]\\s*[0-9]+)*",
     ]
-    for pattern in patterns {
+    let hasQuotedText = quotePatterns.contains {
+      goal.range(of: $0, options: .regularExpression) != nil
+    }
+    var patterns = quotePatterns.map { ($0, false) }
+    if !hasQuotedText {
+      patterns.append(("(?i)\\b(?:type|write|dictate|enter|saying)\\s+(.+)", true))
+    }
+    patterns += [
+      ("(?i)https?://[^\\s\"<>]+", false),
+      ("\\b[0-9]+\\s*[+*/×÷-]\\s*[0-9]+(?:\\s*[+*/×÷-]\\s*[0-9]+)*", false),
+    ]
+    for (pattern, stripDestination) in patterns {
       guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
       for match in regex.matches(in: goal, range: NSRange(goal.startIndex..., in: goal)) {
         let range = match.numberOfRanges > 1 ? match.range(at: 1) : match.range
         if let swiftRange = Range(range, in: goal) {
-          let value = String(goal[swiftRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-          if !value.isEmpty, !results.contains(value) { results.append(value) }
-          let withoutDestination = value.replacingOccurrences(
-            of:
-              "(?i)\\s+(?:in|into)\\s+(?:(?:the|this|my)\\s+)?(?:[\\w ]*?)(?:app|document|field|editor|textedit|notes|pages|mail|safari|chrome)\\.?$",
-            with: "", options: .regularExpression)
-          if !withoutDestination.isEmpty, !results.contains(withoutDestination) {
-            results.append(withoutDestination)
+          var value = String(goal[swiftRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+          if stripDestination {
+            value = value.replacingOccurrences(
+              of:
+                "(?i)\\s+(?:in|into)\\s+(?:(?:the|this|my)\\s+)?(?:[\\w ]*?)(?:app|document|field|editor|textedit|notes|pages|mail|safari|chrome)\\.?$",
+              with: "", options: .regularExpression)
           }
+          if !value.isEmpty, !results.contains(value) { results.append(value) }
         }
       }
     }
@@ -64,7 +71,9 @@ public enum ActionPolicy {
     screen: ScreenState, apps: [String: String],
     texts: [String]
   ) -> [MacAction] {
-    var actions = screen.elements.filter(\.actionable).map {
+    var actions = screen.elements.filter {
+      $0.actionable && !($0.focused && $0.role.contains("Text"))
+    }.map {
       MacAction(
         id: $0.id, kind: $0.role.contains("Text") ? .focus : .press,
         label: $0.summary, value: $0.id, needsConfirmation: isSensitive($0.label))
