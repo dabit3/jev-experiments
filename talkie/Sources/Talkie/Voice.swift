@@ -21,6 +21,10 @@ final class VoiceInput: ObservableObject {
 
   func start() async {
     cancel()
+    guard AVCaptureDevice.default(for: .audio) != nil else {
+      fail("No microphone is connected. Connect one, type a request, or import an audio file.")
+      return
+    }
     let token = UUID()
     generation = token
     transcript = ""

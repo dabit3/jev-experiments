@@ -108,12 +108,13 @@ struct RootView: View {
       Button {
         model.newConversation()
       } label: {
-        HStack(spacing: 9) {
+        HStack(spacing: 6) {
           Image(systemName: "plus")
-          Text("New conversation").fontWeight(.medium)
-          Spacer()
-          Text("⌘N").font(.system(size: 10)).foregroundStyle(Palette.secondary)
-        }.padding(.vertical, 11).padding(.horizontal, 12)
+          Text("New conversation").font(.system(size: 12, weight: .medium)).lineLimit(1)
+            .layoutPriority(1)
+          Spacer(minLength: 0)
+          Text("⌘N").font(.system(size: 10)).foregroundStyle(Palette.secondary).fixedSize()
+        }.padding(.vertical, 11).padding(.horizontal, 10)
           .background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 10))
           .overlay(RoundedRectangle(cornerRadius: 10).stroke(Palette.line))
       }.buttonStyle(.plain).keyboardShortcut("n", modifiers: .command)
@@ -173,7 +174,7 @@ struct RootView: View {
         }.padding(.vertical, 18)
       }.buttonStyle(.plain).keyboardShortcut(",", modifiers: .command)
     }
-    .padding(.horizontal, 20).frame(width: 210).background(Palette.sidebar)
+    .padding(.horizontal, 20).frame(width: 230).background(Palette.sidebar)
   }
 
   private var header: some View {
@@ -201,42 +202,52 @@ struct RootView: View {
   }
 
   private var welcome: some View {
-    VStack(spacing: 0) {
-      Spacer(minLength: 5)
-      ZStack {
-        Circle().fill(Palette.orange.opacity(0.035)).frame(width: 148, height: 148)
-        Circle().stroke(Palette.orange.opacity(0.08), lineWidth: 1).frame(width: 124, height: 124)
-        TalkieMark(size: 76, active: model.listening)
-          .rotationEffect(.degrees(-7))
-          .shadow(color: Palette.orange.opacity(0.17), radius: 20, x: 0, y: 12)
-      }.padding(.bottom, 16)
-      Text("A little voice.\nA lot less clicking.")
-        .font(.system(size: 37, weight: .regular, design: .serif))
-        .tracking(-1.3).lineSpacing(-1).multilineTextAlignment(.center)
-      Text("Ask a question. Find your way. Get things done.\nJust say the word.")
-        .font(.system(size: 13)).foregroundStyle(Palette.secondary)
-        .lineSpacing(6).multilineTextAlignment(.center).padding(.top, 15)
-      HStack(spacing: 9) {
-        suggestion(
-          "Explain my screen", icon: "viewfinder", mode: .talk,
-          prompt: "Explain what’s on my screen")
-        suggestion("Do something", icon: "cursorarrow", mode: .act, prompt: "Open Calculator")
-        suggestion("Look it up", icon: "globe", mode: .research, prompt: "Research ")
-      }.padding(.top, 28)
-      if !model.connected || !model.accessGranted {
-        Button {
-          model.showingSettings = true
-        } label: {
-          HStack(spacing: 6) {
-            Image(systemName: "sparkle")
-            Text(
-              model.connected ? "One last thing: connect your Mac" : "Let’s get Talkie connected")
-            Image(systemName: "arrow.right")
-          }.font(.system(size: 11)).foregroundStyle(Palette.orange)
-        }.buttonStyle(.plain).padding(.top, 24)
-      }
-      Spacer(minLength: 20)
-    }.frame(maxWidth: .infinity)
+    GeometryReader { geometry in
+      let compact = geometry.size.height < 440
+      ScrollView {
+        VStack(spacing: 0) {
+          Spacer(minLength: 14)
+          ZStack {
+            Circle().fill(Palette.orange.opacity(0.035)).frame(
+              width: compact ? 88 : 148, height: compact ? 88 : 148)
+            Circle().stroke(Palette.orange.opacity(0.08), lineWidth: 1).frame(
+              width: compact ? 78 : 124, height: compact ? 78 : 124)
+            TalkieMark(size: compact ? 52 : 76, active: model.listening)
+              .rotationEffect(.degrees(-7))
+              .shadow(color: Palette.orange.opacity(0.17), radius: 20, x: 0, y: 12)
+          }.padding(.bottom, compact ? 10 : 16)
+          Text("A little voice.\nA lot less clicking.")
+            .font(.system(size: compact ? 30 : 37, weight: .regular, design: .serif))
+            .tracking(-1.3).lineSpacing(-1).multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+          Text("Ask a question. Find your way. Get things done.\nJust say the word.")
+            .font(.system(size: 13)).foregroundStyle(Palette.secondary)
+            .lineSpacing(6).multilineTextAlignment(.center).padding(.top, compact ? 8 : 15)
+            .fixedSize(horizontal: false, vertical: true)
+          HStack(spacing: 9) {
+            suggestion(
+              "Explain my screen", icon: "viewfinder", mode: .talk,
+              prompt: "Explain what’s on my screen")
+            suggestion("Do something", icon: "cursorarrow", mode: .act, prompt: "Open Calculator")
+            suggestion("Look it up", icon: "globe", mode: .research, prompt: "Research ")
+          }.padding(.top, compact ? 18 : 28)
+          if !model.connected || !model.accessGranted {
+            Button {
+              model.showingSettings = true
+            } label: {
+              HStack(spacing: 6) {
+                Image(systemName: "sparkle")
+                Text(
+                  model.connected
+                    ? "One last thing: connect your Mac" : "Let’s get Talkie connected")
+                Image(systemName: "arrow.right")
+              }.font(.system(size: 11)).foregroundStyle(Palette.orange)
+            }.buttonStyle(.plain).padding(.top, 24)
+          }
+          Spacer(minLength: 14)
+        }.frame(maxWidth: .infinity, minHeight: geometry.size.height)
+      }.scrollIndicators(.hidden)
+    }
   }
 
   private func suggestion(_ label: String, icon: String, mode: Mode, prompt: String) -> some View {
