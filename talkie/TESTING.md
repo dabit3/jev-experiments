@@ -39,10 +39,13 @@ Microphone hardware, Apple speech-model availability, and macOS privacy permissi
 
 ## Current evidence
 
-The first verification pass used macOS ARM64 with Xcode 26.6 / Swift 6.3.3:
+Verification used macOS ARM64 with Xcode 26.6 / Swift 6.3.3:
 
 - Release bundle built and ad-hoc signed.
-- 14 deterministic unit tests passed.
-- All five opt-in live service tests passed, including all six route cases.
-- Warm Jev decisions measured approximately 83–176 ms in the route fixture; app selection's first request took 872 ms. These are observed samples, not a latency guarantee.
-- Native UI acceptance is performed separately and recorded in the PR evidence.
+- 19 deterministic unit tests and 8 opt-in live service tests passed, including all six route cases, arithmetic continuation, literal replacement and completion.
+- Native UI acceptance verified exact lowercase and single/curly-quoted TextEdit selection replacement; repeated clean Calculator runs reached 576 for 48 × 12.
+- Verified visible-control highlighting, screen explanation, real cited research/source navigation, imported-audio review and explicit execution, cancellation without late actions, rejected Delete preserving text, and opt-in history restoration/deletion.
+- Welcome layout is readable at minimum and maximized size. A final companion-overlap adjustment hides it when it would cover the main window.
+- Jev route fixture samples were approximately 73–173 ms in recent runs; these are observed samples, not a latency guarantee.
+- Live microphone capture, spoken dictation and audible output remain **unverified**: the test VM exposes no audio devices. Missing-device handling was verified.
+- Recordings and screenshots are linked in the PR evidence. Earlier runs exposed and drove fixes for repeated focus, quote delimiters, autocapitalization, and completion checks.

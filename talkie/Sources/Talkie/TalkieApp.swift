@@ -45,7 +45,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     companion.contentView = NSHostingView(rootView: CompanionView(model: model))
     positionCompanion()
     model.showWindow = { [weak self] in self?.showMain() }
-    model.hideWindow = { [weak self] in self?.window.orderOut(nil) }
+    model.hideWindow = { [weak self] in
+      self?.window.orderOut(nil)
+      self?.updateCompanion()
+    }
     model.highlight = { [weak self] rect, label in self?.showHighlight(rect, label: label) }
     model.hideHighlight = { [weak self] in self?.highlightPanel?.orderOut(nil) }
     model.updateCompanion = { [weak self] in self?.updateCompanion() }
@@ -99,9 +102,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     window.makeKeyAndOrderFront(nil)
     NSApplication.shared.activate(ignoringOtherApps: true)
     model.refreshPermissions()
+    updateCompanion()
   }
 
   private func updateCompanion() {
+    guard let window, let companion, let model else { return }
+    if window.isVisible, !window.isMiniaturized, window.frame.intersects(companion.frame) {
+      companion.orderOut(nil)
+      return
+    }
     if model.preferences.companion || model.listening || model.busy {
       companion.orderFrontRegardless()
     } else {
@@ -154,6 +163,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     showMain()
     return true
   }
+  func windowShouldClose(_ sender: NSWindow) -> Bool {
+    sender.orderOut(nil)
+    updateCompanion()
+    return false
+  }
+  func windowDidResize(_ notification: Notification) { updateCompanion() }
+  func windowDidMove(_ notification: Notification) { updateCompanion() }
+  func windowDidMiniaturize(_ notification: Notification) { updateCompanion() }
+  func windowDidDeminiaturize(_ notification: Notification) { updateCompanion() }
   func applicationWillTerminate(_ notification: Notification) { model.stop() }
 }
 
