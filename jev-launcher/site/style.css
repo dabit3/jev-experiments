@@ -304,6 +304,10 @@ kbd {
 /* Footer */
 
 footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
   margin-top: clamp(96px, 14vh, 160px);
   text-align: center;
   font-size: 16px;
@@ -317,6 +321,23 @@ footer a {
 }
 
 footer a:hover { color: var(--ink); }
+
+.built {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  border: 0;
+  color: var(--ink-3);
+}
+
+.built:hover { color: var(--ink); }
+
+.devin {
+  display: block;
+  height: 1em;
+  width: auto;
+  transform: translateY(0.04em);
+}
 
 @media (max-width: 600px) {
   main { padding-top: 80px; }
