@@ -3,3 +3,4 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .DS_Store
+*.dmg
