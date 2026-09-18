@@ -1,0 +1,17 @@
+{
+  "name": "aperture-film",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Devin launch video, direction 7: The Aperture Film (macOS in Devin Cloud)",
+  "scripts": {
+    "frames:take": "mkdir -p frames/take && ffmpeg -y -loglevel error -i assets/raw/silverroom-take.mp4 -ss 12.0 -t 15.45 -vf fps=30,scale=-2:1600 -fps_mode cfr frames/take/f%04d.png",
+    "render": "node render.mjs --out frames/out",
+    "encode": "mkdir -p out && ffmpeg -y -loglevel error -framerate 30 -i frames/out/f%05d.png -c:v libx264 -pix_fmt yuv420p -crf 16 -r 30 -movflags +faststart out/aperture-film.mp4",
+    "sheet": "ffmpeg -y -loglevel error -i out/aperture-film.mp4 -vf fps=1,scale=320:180,tile=6x5,pad=1920:1080:0:90:color=#F4F3EF -frames:v 1 -update 1 out/contact-sheet.png",
+    "build": "npm run frames:take && npm run render && npm run encode && npm run sheet"
+  },
+  "dependencies": {
+    "puppeteer": "^24.22.0"
+  }
+}

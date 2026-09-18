@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Aperture Film</title>
+<link rel="stylesheet" href="style.css" />
+<script src="config.js"></script>
+</head>
+<body>
+<div id="stage">
+  <!-- Headline on the paper matte -->
+  <div id="headline">
+    <img id="headline-logo" src="../assets/logo/devin-lockup-black.png" alt="" />
+    <div id="headline-text"></div>
+  </div>
+
+  <!-- Everything behind the matte is revealed through this single aperture -->
+  <div id="aperture">
+    <div id="world">
+
+      <!-- Scene 1: reconstructed Devin composer -->
+      <section id="composer" class="scene">
+        <div class="page">
+          <div class="composer-head">
+            <img class="wordmark" src="../assets/logo/devin-lockup-black.png" alt="" />
+            <div class="seg"><span class="on">Agent</span><span>Ask</span></div>
+          </div>
+          <div class="composer-box">
+            <div class="composer-text"><span id="prompt-text"></span><span id="caret"></span><span id="placeholder"></span></div>
+            <div class="composer-row">
+              <div class="icon-plus"></div>
+              <div id="env-chip" class="chip">
+                <span class="chip-icon">
+                  <span id="ico-ubuntu" class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2" fill="none" stroke="#E95420" stroke-width="2.2"/><circle cx="12" cy="3.4" r="2.5" fill="#E95420"/><circle cx="4.6" cy="16.4" r="2.5" fill="#E95420"/><circle cx="19.4" cy="16.4" r="2.5" fill="#E95420"/></svg></span>
+                  <span id="ico-mac" class="ico"><svg viewBox="0 0 24 24"><path fill="#141414" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></span>
+                </span>
+                <span class="chip-labels"><span id="lbl-ubuntu">Ubuntu</span><span id="lbl-mac">macOS</span></span>
+                <span class="chev"></span>
+              </div>
+              <div class="row-spacer"></div>
+              <div class="icon-mic"></div>
+              <div id="submit" class="submit"></div>
+            </div>
+          </div>
+
+          <!-- Environment menu and its hosted panel -->
+          <div id="menu" class="menu">
+            <div class="menu-row sel"><span>Machine</span><span class="val">Ubuntu <i class="chev-r"></i></span></div>
+            <div class="menu-row"><span>Repository</span><span class="val">macos-experiments <i class="chev-r"></i></span></div>
+            <div class="menu-row"><span>Branch</span><span class="val">main <i class="chev-r"></i></span></div>
+          </div>
+          <div id="hosted" class="menu hosted">
+            <div class="menu-title">Hosted</div>
+            <div class="menu-row" id="h-ubuntu"><span class="with-ico"><i class="ico-ub"></i>Ubuntu</span><span class="check"></span></div>
+            <div class="menu-row" id="h-mac"><span class="with-ico"><i class="ico-ap"></i>macOS</span><span class="check"></span></div>
+            <div class="menu-row" id="h-win"><span class="with-ico"><i class="ico-win"></i>Windows</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 2: Devin writing Swift -->
+      <section id="code" class="scene">
+        <div class="editor">
+          <div class="editor-tabs"><span class="tab on"><i class="swift-dot"></i>ImageEngine.swift</span><span class="tab">Models.swift</span><span class="tab">LibraryStore.swift</span></div>
+          <div class="editor-body"><pre id="code-lines"></pre></div>
+        </div>
+      </section>
+
+      <!-- Scene 3: Devin session with the iOS Simulator pane -->
+      <section id="session" class="scene">
+        <div class="s-window">
+        <div class="s-top">
+          <div class="s-top-left"><i class="ico-sidebar"></i><span class="s-title"></span><span class="s-env"><i class="ico-ap-blue"></i>macOS</span></div>
+          <div class="s-top-right">
+            <span class="s-tab">Progress</span><span class="s-tab">Changes</span><span class="s-tab on">Computer</span>
+          </div>
+        </div>
+        <div class="s-left">
+          <div class="bubble user" id="s-user"></div>
+          <div class="devin-msg" id="s-reply"></div>
+          <div class="steps" id="s-steps"></div>
+          <div class="s-composer">
+            <div class="s-composer-ph"></div>
+            <div class="s-composer-row"><div class="icon-plus small"></div><div class="row-spacer"></div><div class="icon-mic small"></div><div class="submit small idle"></div></div>
+          </div>
+        </div>
+        <div class="s-right">
+          <div class="s-subtabs"><span>Mac desktop</span><span class="on">iOS Simulator</span></div>
+          <div class="sim-pane">
+            <div id="phone" class="phone">
+              <div class="phone-screen"><img id="take" alt="" /></div>
+            </div>
+            <div class="s-bottom"><span class="live"><i></i>Live</span></div>
+          </div>
+        </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Outro on the dark brand field -->
+  <div id="dark">
+    <img id="outro-logo" src="../assets/logo/devin-lockup-white.png" alt="" />
+    <div id="url"></div>
+  </div>
+</div>
+<script src="film.js"></script>
+</body>
+</html>
