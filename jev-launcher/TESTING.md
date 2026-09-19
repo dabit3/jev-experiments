@@ -1,162 +1,102 @@
 # Testing Jev Launcher
 
-## Clean install
+## Setup
+
+Use macOS 14+, Xcode 16+ and the `jev-experiments/jev-launcher` directory. The Xcode project is committed. After adding or removing Swift files, regenerate it with XcodeGen:
 
 ```sh
-git clone https://github.com/dabit3/private-experiments.git
-cd private-experiments/jev-launcher
-xcodebuild -version                      # Xcode 16+ (verified with 26.6 on macOS 26.5, ARM64)
-brew install xcodegen                    # 2.46.0; only needed if you edit project.yml
-xcodegen generate                        # regenerates JevLauncher.xcodeproj from project.yml
+brew install xcodegen
+xcodegen generate
 ```
-
-The generated `JevLauncher.xcodeproj` is committed, so `xcodegen` is optional for a plain build.
 
 ## Automated checks
 
-All three must pass. The default run does not touch the network: `LiveJevTests` skip unless the two variables in the next section are set.
-
 ```sh
+xcrun swift-format lint --strict --recursive Sources Tests
+
 xcodebuild -project JevLauncher.xcodeproj -scheme JevLauncher -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 
 xcodebuild -project JevLauncher.xcodeproj -scheme JevLauncher -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO test
-# expected: Executed 58 tests, with 0 failures (5 skipped without JEV_LIVE)
-
-xcrun swift-format lint --strict --recursive Sources Tests
-# expected: no output, exit 0
 ```
 
-`xcodebuild test` prints a few `com.apple.linkd.autoShortcut` service warnings while launching the host app on macOS 26; they are harmless.
+The default suite is offline. Both live test classes skip unless `JEV_LIVE=1` and a TypeSafe API key reach the test runner. Xcode type-checks the application and tests as part of the build. The test host can emit `com.apple.linkd.autoShortcut` warnings on the VM.
 
-### What the unit tests cover
+### Coverage
 
-| File | Covers |
+| File | Coverage |
 |---|---|
-| `Tests/CalculatorTests.swift` | precedence, parentheses, `^`, unary minus, `sqrt`, `x` as multiply, `15% of 240` / `percent of` / `200 * 10%`, `calc` and `=` prefixes, original expression preserved for display, plain words and lone numbers rejected, number formatting |
-| `Tests/RankingTests.swift` | fuzzy scoring (exact > prefix > subsequence, stopwords, word initials, subsequence contiguity); `Ranker.prefilter` adds the calculation and web-search candidates, respects the 13-candidate cap and returns nothing for an empty query; `Ranker.rank` is pure fuzzy without a judgment and follows Jev's target probability with one |
-| `Tests/JevQuestionsTests.swift` | one request carries exactly the `target`, `action`, `ready`, `scope` and `match_cN` questions; candidate ids are `c0…cN` plus `none`; `state` encodes the query, note, context and candidate summaries; the 15-candidate cap; response parsing maps short ids back to real candidate ids, tolerates missing `action`/`ready`, returns nil without `target`; `timeOfDay` buckets |
-| `Tests/SetsAndHistoryTests.swift` | Chrome epoch round-trip; history candidates (title, host, `visited N h ago`, keywords, untitled falls back to host); reading a copied `History` SQLite file with the window and `hidden` filters, missing file returns nothing; `TimeWindow.parse` for relative, named and bounded phrases (`yesterday` has both ends), remainder text; windowed prefilter drops dated items outside the window but keeps toggles, window-only queries (`everything from the past hour`); set ranking: group row first on `all` intent with members checked and web search last, group under the single hit when Jev is torn, no group (and no checkmarks) when P(all) is low or only one row fits or there is no judgment; mixed-kind group titles; request carries `scope` and `match_cN` for real candidates only and `time_window`; parsing set and match probabilities, tolerant of responses without them |
-| `Tests/LiveJevTests.swift` | opt-in probes against the real API on the real index (see below) |
-| `Tests/StatsAndIndexTests.swift` | latency stats empty state, p50/p95 (nearest-rank), token totals and cost at $0.042/M input tokens, failure and stale counters, decisions/sec window, 500-sample cap; `LocalIndex.recency` phrasing; file candidates built from a temp directory (title, kind, subtitle, keywords); the nine system toggles are present; `Executor.wifiDevice` parses `networksetup -listallhardwareports` output |
+| `CalculatorTests.swift` | Arithmetic, precedence, percentages, invalid inputs and formatting |
+| `RankingTests.swift` | Fuzzy matching, bounded prefilter, local fallback and Jev ranking |
+| `JevQuestionsTests.swift` | Typed question schema, bounded state, ID mapping and tolerant response parsing |
+| `SetsAndHistoryTests.swift` | Copied Chrome SQLite data, visit timestamps, local time windows, group membership and placement |
+| `StatsAndIndexTests.swift` | Token/cost statistics, file candidates, recency wording and Wi-Fi device parsing |
+| `LauncherExperienceTests.swift` | Opened/added/modified evidence, scopes, bounded personal boosts, Spotlight path filtering, execution validation, copy formatting, persistent pins/workspaces, group editing, stale replies, manual selection, local-only mode, cooldowns and Empty Trash confirmation |
+| `LiveExperienceTests.swift` | Live Jev judgments over fixed candidate fixtures for last-opened PDFs, named workspaces and recently used file groups |
+| `LiveJevTests.swift` | Live API against the machine's real local index and browsing fixtures |
 
-## Live probes
+Model tests inject a request function and use isolated `UserDefaults` suites. Executor unit tests validate routing inputs without running system commands. The confirmation test checks only the first Enter; it never empties Trash.
 
-`Tests/LiveJevTests.swift` runs the set and single queries from the README against the real API using the machine's real index, prints every candidate with its target and match probability, and asserts the expected shape (group row on top for the Ambassador and last-hour-files queries, no group for `the pdf I just downloaded`, `dark`, `wifi off`). It needs the fixtures below and the two variables forwarded into the test runner:
+## Live Jev checks
+
+The fixed-candidate probes require no disk or browser seeding and open nothing. Keep the key in the environment rather than source or command output:
 
 ```sh
 TEST_RUNNER_JEV_LIVE=1 TEST_RUNNER_TYPESAFE_API_KEY="$TYPESAFE_API_KEY" \
   xcodebuild -project JevLauncher.xcodeproj -scheme JevLauncher -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
-  -only-testing:JevLauncherTests/LiveJevTests test
+  -only-testing:JevLauncherTests/LiveExperienceTests test
 ```
 
-## Manual verification (live Jev)
+These probes print the query, selected result, round-trip latency and input-token count. They validate live typed judgments but not retrieval or OS action execution.
 
-Requires `TYPESAFE_API_KEY` in the shell. Everything below was run on the VM; screenshots of each step are in `docs/`.
+`LiveJevTests` additionally depends on a real index containing three recent Ambassador history entries, a TypeSafe docs visit, unrelated pages, PDFs of different ages and at least two recently added files. Use a disposable macOS account and fresh valid documents. Do not overwrite personal Chrome history. Visit pages normally or seed a dedicated test profile. Results depending on a "last hour" window expire, so recreate their fixtures before running that class.
 
-### 1. Fixtures
+## Desktop acceptance checklist
 
-The PDF query needs several files of different ages to disambiguate. Create them once:
+This is a checklist for a UI pass, not a claim that every interaction has been exercised on the current revision. Run `./run.sh --show` with the key exported, or enable local-only mode in Settings.
 
-```sh
-printf 'placeholder\n' > ~/Downloads/Q3-Roadmap-Review.pdf
-printf 'placeholder\n' > ~/Downloads/invoice-2026-08.pdf   && touch -t 202608011200 ~/Downloads/invoice-2026-08.pdf
-printf 'x' > ~/Downloads/xcode-installer.dmg               && touch -t 202609101200 ~/Downloads/xcode-installer.dmg
-printf 'x' > ~/Downloads/screenshot-2026-09-17.png
-printf 'placeholder\n' > ~/Desktop/Lease-Agreement.pdf     && touch -t 202607011200 ~/Desktop/Lease-Agreement.pdf
-```
+### Search and recency
 
-For the set queries, two more files modified within the last hour and some Chrome history. The VM had no browsing history, so it was seeded (Chrome must be quit; this **replaces** the `urls`/`visits` tables of the Default profile, so only do it on a throwaway machine):
+1. Verify ⌥Space opens a compact HUD and Escape dismisses it. The footer contains only latency and price.
+2. Search `dark`, `wifi off`, `15% of 240` and `the pdf I just downloaded`. Local rows should appear before any Jev response.
+3. Put a valid PDF several folders deep in a non-hidden home directory. Wait for Spotlight to index it, then find it by part of its filename and by file type.
+4. Use `mdls -name kMDItemLastUsedDate -name kMDItemDateAdded -name kMDItemFSContentChangeDate <file>` to inspect actual evidence. Test a recently opened but old-modified PDF against a recently edited but old-opened PDF. The opened query should prefer the first.
+5. A file with no last-used metadata and no launcher history should not appear as an opened-file match. Successful launcher opens should establish local evidence for subsequent queries.
+6. Cycle All, Files, Apps, Links and Workspaces with Tab and Shift-Tab. Results should stay inside the chosen scope. Only All has a calculator fallback; All and Links can offer web search.
 
-```sh
-touch ~/Downloads/Design-Review-Notes.pdf ~/Downloads/Hiring-Plan-Q4.pdf
-python3 - <<'EOF'
-import os, sqlite3, time
-H = os.path.expanduser("~/Library/Application Support/Google/Chrome/Default/History")
-EPOCH, now = 11644473600, time.time()
-ct = lambda h: int((now - h * 3600 + EPOCH) * 1_000_000)
-rows = [
-  ("https://cognition.ai/blog/devin-ambassador-program", "Introducing the Devin Ambassador Program", 2),
-  ("https://docs.devin.ai/ambassadors/getting-started", "Devin Ambassadors: Getting Started", 5),
-  ("https://community.devin.ai/t/ambassador-kickoff-call", "Ambassador kickoff call notes - Devin Community", 20),
-  ("https://cognition.ai/blog/devin-ambassador-program?ref=tw", "Introducing the Devin Ambassador Program", 70),
-  ("https://www.youtube.com/watch?v=lofi", "lofi hip hop radio - beats to relax/study to", 1),
-  ("https://github.com/dabit3/jev-experiments", "dabit3/jev-experiments", 3),
-  ("https://news.ycombinator.com/", "Hacker News", 4),
-  ("https://docs.typesafe.ai/concepts/system-one", "System One - TypeSafe Docs", 6),
-  ("https://en.wikipedia.org/wiki/Transformer_(deep_learning)", "Transformer (deep learning) - Wikipedia", 30),
-]
-db = sqlite3.connect(H)
-db.execute("DELETE FROM visits"); db.execute("DELETE FROM urls")
-for i, (u, t, h) in enumerate(rows, 1):
-  db.execute("INSERT INTO urls(id,url,title,visit_count,typed_count,last_visit_time,hidden) VALUES(?,?,?,?,?,?,0)", (i, u, t, 1, 0, ct(h)))
-  db.execute("INSERT INTO visits(url,visit_time,transition) VALUES(?,?,?)", (i, ct(h), 805306368))
-db.commit()
-EOF
-```
+### Personal library and actions
 
-### 2. Launch
+1. Pin an app or file with ⌘P. Clear the query and confirm it appears on the home screen; restart and verify persistence.
+2. Launch a file, reopen the panel, and confirm it appears among recent items.
+3. Open ⌘K, navigate with arrows, and press Enter on an action. The selected candidate must remain stable if Jev replies while the menu is open.
+4. Use ⌘Y on a valid PDF or image. Confirm the Quick Look window displays it. Use ⌘R and confirm Finder reveals the selected file.
+5. Use ⇧⌘C and inspect the clipboard: a file path, URL, calculation result, or one value per line for a group.
+6. Settings → Clear launch history must remove usage and aliases while preserving pins and saved workspaces.
 
-```sh
-./run.sh --show
-```
+### Groups and workspaces
 
-Expected: a translucent 680 pt-wide panel appears centred, slightly above the middle of the screen, with the placeholder `Say what you mean…`, five clickable example chips, `N apps, files and settings indexed` (85 on the VM) and `Jev · one judgment per keystroke` in the footer. `⌥Space` hides and shows it from any app. The menu bar shows a ⚡ item.
+1. Search for a set of recent files or links. A clear set intent should offer an `Open all` row, with individual results still selectable.
+2. Uncheck a member while a judgment is in flight. It must remain excluded when the reply arrives.
+3. Build a manual group using member actions or checkboxes. ⌘Space is also available when the system Spotlight shortcut does not intercept it.
+4. Save two or more members as `Research`. Search that name in Workspaces, restart the app, and search again.
+5. Open the workspace's Actions menu → Review and edit items. Remove one member and check that the group count and primary action reflect the edited selection. Save as a new workspace if desired.
+6. Enter on a member opens one item; Enter on the group opens its selected members. Nothing opens from a Jev response alone.
+7. Delete the workspace through Actions and verify it no longer appears.
 
-If the empty state says `TYPESAFE_API_KEY is not set — local matching only`, the key was not inherited; export it in the same shell or paste it in ⚡ → Settings….
+### Failure and rapid-input behavior
 
-Click a chip: the query fills in and the panel grows to fit the rows (56 pt each, at most seven) and shrinks again when the field is cleared.
+1. Type a query, move down to another result, and wait for Jev. Selection should follow the same candidate identity rather than jump to index zero.
+2. Rapidly replace queries and change scopes. Replies and Spotlight callbacks for old generations must not replace current results.
+3. Switch to local-only mode and reopen the launcher. Search, pins, preview, workspaces, arithmetic and manual groups should remain available with no Jev requests.
+4. Use an invalid API key in a separate launch or disconnect networking. Verify local results remain usable and the header warning explains the failure.
+5. Remove a disposable file after retrieving it, then try to open it. An error should be shown and no successful launch should be recorded.
+6. Search Empty Trash and press Enter once. A separate confirmation should appear. Press Escape to cancel. Do not confirm in an account with personal Trash contents.
+7. Start a slow action, then enter another query. The old completion must not dismiss that new search.
 
-### 3. The five queries
+## OS permissions and gaps
 
-Type each query, wait for the leading `N ms` value in the footer to update, and check the top row.
+File access follows macOS folder permissions and Spotlight indexing. Dark Mode, Sleep and Empty Trash can require Automation permission. Wi-Fi behavior depends on macOS and local administrator policy. Quick Look, Finder reveal, global shortcuts and permission dialogs require a desktop pass; unit tests cannot establish their rendered behavior.
 
-| Query | Expected top row | Expected badge |
-|---|---|---|
-| `dark` | Toggle Dark Mode | green ↵, ≥ 90% |
-| `wifi off` | Turn Wi-Fi Off above Turn Wi-Fi On | green ↵, ≥ 90% |
-| `15% of 240` | `= 36` (orange `=` icon) | green ↵ |
-| `the pdf I just downloaded` | `Q3-Roadmap-Review.pdf` (newest) above the other PDFs | green ↵ |
-| `sleep` | Sleep | green ↵ |
-
-The percentage on the right of each row is Jev's target probability; the selected row shows it in full, the others dimmed. A small blue dot at the right of the field is visible while a request is in flight; the header bolt turns green with the badge. `N decisions` increments once per keystroke and the leading latency settles around 100 ms after the first (TLS) request. At human typing speed the `(N stale)` count stays in single digits. Hover the footer for decisions/s and tokens per decision.
-
-### 3b. Sets
-
-| Query | Expected |
-|---|---|
-| `open devin ambassador links I visited in the past 24 hours` | top row `Open all 3 links` with green ↵ and 100%; the three Ambassador pages directly under it with blue checkmarks; GitHub / Hacker News / TypeSafe docs rows unchecked; the `?ref=tw` duplicate from 70 h ago absent (`docs/set-ambassador.png`) |
-| `the files I downloaded in the last hour` | `Open all 3 files` on top; the three PDFs modified in the last hour checked; older PDFs absent |
-| `the pdf I just downloaded` | unchanged: `Q3-Roadmap-Review.pdf` on top, **no** group row, no checkmarks |
-| `pages about typesafe I read today` | `System One - TypeSafe Docs` on top, no group row (one match) |
-| ↓ on a set query | selection moves through the members one by one; ↵ on a member opens just that one |
-
-### 4. Enter executes
-
-- `open devin ambassador links I visited in the past 24 hours` then ↵ on `Open all 3 links`: Chrome comes forward with three new tabs (the fixture URLs 404, which is fine). Nothing opens before ↵. Without Chrome installed the default browser opens them instead.
-- `the files I downloaded in the last hour` then ↵: the three PDFs open in Preview.
-- `15% of 240` then ↵: panel hides, `pbpaste` prints `36`.
-- `dark` then ↵: the first time, macOS prompts to allow Jev Launcher to control System Events; approve and the appearance flips. ↵ again flips it back.
-- `wifi off` then ↵: Wi-Fi turns off (`networksetup -getairportpower en0` prints `Off`). `wifi on` then ↵ restores it.
-- Any app row then ↵: the app activates.
-
-Do not press ↵ on `sleep` or `Lock Screen` in a remote session unless you can wake the machine.
-
-### 5. Failure handling (fuzzy fallback)
-
-- `export TYPESAFE_API_KEY=invalid; ./run.sh --show`, type `dark`: rows appear in fuzzy order with no probabilities or badge, the footer shows `HTTP 401` in red, and the panel never stalls. Type `the pdf I just downloaded`: the two PDFs that tie on fuzzy score keep their index order, which is the difference Jev makes.
-- Disconnect the network and type: same fuzzy fallback, footer shows the transport error instead. Once requests succeed again the footer returns to the latency line with `(N failed)` in the decision count.
-
-## Permissions
-
-| Feature | Permission | When prompted |
-|---|---|---|
-| Dark Mode, Sleep, Empty Trash | Automation → System Events / Finder (`NSAppleEventsUsageDescription`) | first execution of that toggle |
-| Wi-Fi on/off | none on macOS 26; `networksetup` may ask for an admin password on some versions | on execution |
-| Indexing `~/Downloads`, `~/Desktop`, `~/Documents` | none (app is unsandboxed); Desktop/Documents may prompt for folder access on first index | first panel show |
-| Chrome history | none; `~/Library/Application Support` is readable without a prompt. Safari history would need Full Disk Access and is not read | — |
-| ⌥Space hotkey | none (Carbon `RegisterEventHotKey`) | never |
-
-No Accessibility, Screen Recording, or Full Disk Access is required. The VM user password (`MACOS_DEVIN_ADMIN_PASSWORD`) was not needed during verification.
+Do not execute Sleep, Lock Screen, Wi-Fi off or Empty Trash on a remote machine unless those effects are explicitly intended and recoverable. For grouped opens, a failure after some members have opened cannot roll those members back.

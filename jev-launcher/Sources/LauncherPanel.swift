@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import Quartz
 import SwiftUI
 
 /// Borderless windows refuse key status by default; a launcher must accept it to receive typing.
@@ -13,21 +14,23 @@ final class KeyablePanel: NSPanel {
 final class LauncherPanelController: NSObject, NSWindowDelegate {
   static let panelWidth: CGFloat = 680
   static let headerHeight: CGFloat = 72
+  static let scopeHeight: CGFloat = 40
   static let rowHeight: CGFloat = 56
   static let footerHeight: CGFloat = 40
   static let maxRows = 7
-  static let emptyHeight: CGFloat = 76
+  static let emptyHeight: CGFloat = 96
 
   /// The panel grows and shrinks with its content, like Spotlight, instead of sitting in a fixed box.
   static func height(rows: Int, empty: Bool) -> CGFloat {
     let body = empty ? emptyHeight : rowHeight * CGFloat(min(max(rows, 1), maxRows)) + 12
-    return headerHeight + body + footerHeight
+    return headerHeight + scopeHeight + body + footerHeight
   }
 
   let model: LauncherModel
   private let panel: KeyablePanel
   private var keyMonitor: Any?
   private var subscriptions: Set<AnyCancellable> = []
+  private var previewWindow: NSWindow?
 
   init(model: LauncherModel) {
     self.model = model
@@ -51,9 +54,16 @@ final class LauncherPanelController: NSObject, NSWindowDelegate {
     host.autoresizingMask = [.width, .height]
     panel.contentView = host
     model.onExecute = { [weak self] in self?.hide() }
-    model.$hits.combineLatest(model.$query)
-      .map { hits, query in
-        Self.height(rows: hits.count, empty: query.trimmingCharacters(in: .whitespaces).isEmpty)
+    model.onPreview = { [weak self] url in self?.preview(url) }
+    model.objectWillChange
+      .receive(on: RunLoop.main)
+      .map { [weak model] _ in
+        guard let model else { return Self.height(rows: 0, empty: true) }
+        return Self.height(
+          rows: model.actionsVisible
+            ? 6
+            : model.savingWorkspace || model.confirmation != nil ? 3 : model.hits.count,
+          empty: model.hits.isEmpty && !model.actionsVisible && model.confirmation == nil)
       }
       .removeDuplicates()
       .sink { [weak self] height in self?.resize(to: height) }
@@ -83,7 +93,7 @@ final class LauncherPanelController: NSObject, NSWindowDelegate {
     model.panelWillShow()
     if let screen = NSScreen.main {
       let frame = screen.visibleFrame
-      let height = Self.height(rows: 0, empty: true)
+      let height = Self.height(rows: model.hits.count, empty: model.hits.isEmpty)
       let top = frame.midY + frame.height * 0.22
       panel.setFrame(
         NSRect(
@@ -102,25 +112,75 @@ final class LauncherPanelController: NSObject, NSWindowDelegate {
   }
 
   func windowDidResignKey(_ notification: Notification) {
+    guard !model.isExecuting else { return }
     hide()
+  }
+
+  private func preview(_ url: URL) {
+    let window = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 640, height: 560),
+      styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    window.title = url.lastPathComponent
+    let preview = QLPreviewView(frame: window.contentView?.bounds ?? .zero, style: .normal)!
+    preview.autoresizingMask = [.width, .height]
+    preview.previewItem = url as NSURL
+    window.contentView = preview
+    window.center()
+    previewWindow?.close()
+    previewWindow = window
+    window.makeKeyAndOrderFront(nil)
   }
 
   private func installKeyMonitor() {
     removeKeyMonitor()
     keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
       guard let self, self.panel.isVisible else { return event }
+      let command = event.modifierFlags.contains(.command)
+      if command && !self.model.savingWorkspace {
+        switch event.keyCode {
+        case 40: self.model.actionsVisible.toggle()
+        case 35: self.model.togglePin()
+        case 16: self.model.previewSelection()
+        case 15: self.model.revealSelection()
+        case 8 where event.modifierFlags.contains(.shift): self.model.copySelection()
+        case 49:
+          if let candidate = self.model.topHit?.candidate { self.model.toggleMember(candidate) }
+        default: return event
+        }
+        return nil
+      }
       switch event.keyCode {
       case 53:  // Escape
-        self.hide()
+        if !self.model.cancelOverlay() { self.hide() }
+        return nil
+      case 48 where !self.model.actionsVisible && !self.model.savingWorkspace:
+        self.model.cycleScope(backward: event.modifierFlags.contains(.shift))
         return nil
       case 125:  // Down
-        self.model.moveSelection(by: 1)
+        if self.model.savingWorkspace { return event }
+        if self.model.actionsVisible {
+          self.model.moveActionSelection(by: 1)
+        } else {
+          self.model.moveSelection(by: 1)
+        }
         return nil
       case 126:  // Up
-        self.model.moveSelection(by: -1)
+        if self.model.savingWorkspace { return event }
+        if self.model.actionsVisible {
+          self.model.moveActionSelection(by: -1)
+        } else {
+          self.model.moveSelection(by: -1)
+        }
         return nil
       case 36, 76:  // Return, keypad Enter
-        self.model.executeSelection()
+        if self.model.savingWorkspace {
+          self.model.saveWorkspace()
+        } else if self.model.actionsVisible {
+          self.model.performSelectedAction()
+        } else {
+          self.model.executeSelection()
+        }
         return nil
       default:
         return event

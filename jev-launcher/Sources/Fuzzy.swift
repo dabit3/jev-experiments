@@ -9,6 +9,7 @@ enum Fuzzy {
     "from", "for", "with", "all", "every", "everything", "any", "and", "was", "were", "been",
     "have", "had", "ive", "did", "about", "at", "page", "pages", "site", "sites", "stuff",
     "thing", "things", "read", "looked", "saw", "some", "those", "these", "them", "this",
+    "opened", "used", "last", "edited", "modified", "working", "worked",
   ]
 
   static func tokens(_ text: String) -> [String] {
@@ -54,6 +55,9 @@ enum Fuzzy {
     for term in terms {
       if term == token {
         return 1
+      }
+      if token.hasSuffix("s"), String(token.dropLast()) == term {
+        best = max(best, 0.98)
       }
       if term.hasPrefix(token) {
         best = max(best, 0.8 + 0.15 * Double(token.count) / Double(term.count))

@@ -10,6 +10,7 @@ struct JevClient: Sendable {
   enum Failure: Error, Equatable {
     case missingAPIKey
     case http(Int)
+    case rateLimited(TimeInterval)
     case transport(String)
   }
 
@@ -56,13 +57,28 @@ struct JevClient: Sendable {
     do {
       (data, response) = try await session.data(for: urlRequest)
     } catch {
+      if Task.isCancelled { throw CancellationError() }
       throw Failure.transport(error.localizedDescription)
     }
     let latencyMs = Double(DispatchTime.now().uptimeNanoseconds - started.uptimeNanoseconds) / 1e6
     if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+      if http.statusCode == 429 || http.statusCode == 529 {
+        throw Failure.rateLimited(Self.retryDelay(http.value(forHTTPHeaderField: "Retry-After")))
+      }
       throw Failure.http(http.statusCode)
     }
     let decoded = try JSONDecoder().decode(JevResponse.self, from: data)
     return Result(response: decoded, latencyMs: latencyMs)
+  }
+
+  static func retryDelay(_ value: String?, now: Date = Date()) -> TimeInterval {
+    guard let value else { return 15 }
+    if let seconds = Double(value), seconds.isFinite { return max(1, seconds) }
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+    guard let date = formatter.date(from: value) else { return 15 }
+    return max(1, date.timeIntervalSince(now))
   }
 }

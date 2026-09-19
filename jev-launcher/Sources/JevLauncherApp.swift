@@ -13,14 +13,14 @@ struct JevLauncherApp: App {
       Button("Quit Jev Launcher") { NSApplication.shared.terminate(nil) }
     }
     Settings {
-      SettingsView()
+      SettingsView(model: delegate.model)
     }
   }
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-  private let model = LauncherModel()
+  let model = LauncherModel()
   private var panel: LauncherPanelController?
   private var hotKey: HotKey?
 
@@ -38,7 +38,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 struct SettingsView: View {
+  @ObservedObject var model: LauncherModel
   @AppStorage(JevClient.apiKeyDefaultsKey) private var apiKey = ""
+  @AppStorage("includeSpotlight") private var includeSpotlight = true
+  @AppStorage("includeChromeHistory") private var includeHistory = true
+  @AppStorage("localOnly") private var localOnly = false
+  @State private var historyCleared = false
 
   var body: some View {
     Form {
@@ -52,6 +57,30 @@ struct SettingsView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
       }
+      Section("Search and privacy") {
+        Toggle("Search files with Spotlight", isOn: $includeSpotlight)
+        Toggle("Include Chrome browsing history", isOn: $includeHistory)
+        Toggle("Keep searches on this Mac", isOn: $localOnly)
+        Text(
+          "Local mode makes no Jev requests. Otherwise only your query, context and a short list of candidate metadata are sent. File contents and clipboard text stay on this Mac."
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      }
+      Section("Personal library") {
+        Text(
+          "Successful opens teach the launcher your preferences. Pins and saved workspaces appear before you type."
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        Button(historyCleared ? "Launch history cleared" : "Clear launch history") {
+          model.clearHistory()
+          historyCleared = true
+        }
+        Text("Keeps your pins and saved workspaces. Does not change Chrome history.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
       Section("Permissions") {
         Text(
           "Dark Mode, Sleep and Empty Trash send Apple Events to System Events / Finder. macOS asks for Automation permission the first time."
@@ -61,7 +90,10 @@ struct SettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(width: 440)
+    .frame(width: 480)
     .padding()
+    .onChange(of: includeSpotlight) { _, _ in model.preferencesChanged() }
+    .onChange(of: includeHistory) { _, _ in model.preferencesChanged() }
+    .onChange(of: localOnly) { _, _ in model.preferencesChanged() }
   }
 }
