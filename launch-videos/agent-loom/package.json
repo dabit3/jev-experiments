@@ -1,0 +1,12 @@
+{
+  "name": "launch-video-agent-loom",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Agent Loom launch video composition (macOS in Devin Cloud)",
+  "scripts": {
+    "render": "node render.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}
