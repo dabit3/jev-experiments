@@ -1,0 +1,698 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Margin Notes</title>
+<script src="config.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    font-family: "NB International Pro", "Helvetica Neue", "Inter Tight", Helvetica, Arial, sans-serif;
+    color: #1F1D1A; -webkit-font-smoothing: antialiased;
+  }
+  .abs { position: absolute; }
+  .layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+  .hidden { display: none !important; }
+  img { display: block; }
+  svg { display: block; }
+
+  /* ---------- paper ---------- */
+  #paper { background: var(--paper); }
+  #paperGrain {
+    background:
+      radial-gradient(1400px 900px at 30% 20%, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%),
+      radial-gradient(1200px 800px at 85% 90%, rgba(214,200,180,0.35), rgba(214,200,180,0) 70%);
+  }
+
+  /* ---------- title ---------- */
+  #titleWrap { left: 0; top: 0; width: 1920px; height: 1080px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #titleLockup { height: 150px; }
+  #titleText { font-size: 112px; font-weight: 500; line-height: 1.05; letter-spacing: -0.035em; color: #161412; margin-top: 4px; white-space: nowrap; }
+
+  /* ---------- composer (1160 wide) ---------- */
+  .devinHeader { display: flex; align-items: center; justify-content: space-between; width: 1160px; }
+  .devinHeader .brand { display: flex; align-items: center; gap: 16px; font-size: 48px; font-weight: 600; letter-spacing: -0.03em; color: #141414; }
+  .devinHeader .brand img { width: 50px; height: 50px; }
+  .toggle { display: flex; background: #EFEFED; border-radius: 999px; padding: 5px; font-size: 27px; font-weight: 500; color: #8A8A8A; }
+  .toggle span { padding: 9px 30px; border-radius: 999px; }
+  .toggle span.on { background: #fff; color: #141414; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .composerBox {
+    width: 1160px; height: 244px; box-sizing: border-box; background: #fff; border-radius: 30px;
+    border: 1px solid rgba(0,0,0,0.07);
+    box-shadow: 0 18px 50px rgba(70,50,30,0.10), 0 2px 6px rgba(0,0,0,0.04);
+    padding: 30px 36px 24px 36px; position: relative;
+  }
+  .composerText { font-size: 36px; line-height: 1.3; color: #141414; letter-spacing: -0.012em; min-height: 94px; white-space: pre-wrap; }
+  .composerText .ph { color: #9A9A98; }
+  .caret { display: inline-block; width: 2px; height: 40px; background: #141414; vertical-align: -7px; margin-left: 1px; }
+  .composerRow { position: absolute; left: 28px; right: 26px; bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .rowLeft { display: flex; align-items: center; gap: 12px; }
+  .iconBtn { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 13px; color: #6B6B6B; }
+  .envPill { display: flex; align-items: center; gap: 11px; height: 50px; padding: 0 18px 0 14px; border-radius: 13px; font-size: 26px; color: #4A4A4A; letter-spacing: -0.01em; }
+  .envPill.pressed { background: #EFEFED; }
+  .envPill .glyph { width: 27px; height: 27px; display: flex; align-items: center; justify-content: center; font-size: 27px; color: #1a1a1a; }
+  .rowRight { display: flex; align-items: center; gap: 14px; }
+  .sendBtn { display: flex; align-items: center; height: 54px; background: #1F1F1F; border-radius: 999px; color: #fff; overflow: hidden; }
+  .sendBtn .up { width: 58px; height: 54px; display: flex; align-items: center; justify-content: center; }
+  .sendBtn .dd { width: 46px; height: 54px; display: flex; align-items: center; justify-content: center; border-left: 1px solid rgba(255,255,255,0.18); }
+
+  .menu {
+    position: absolute; width: 370px; background: #fff; border-radius: 20px; border: 1px solid rgba(0,0,0,0.07);
+    box-shadow: 0 20px 50px rgba(60,40,20,0.14), 0 2px 6px rgba(0,0,0,0.05); padding: 10px; box-sizing: border-box;
+    transform-origin: 40px 0;
+  }
+  .menu .label { font-size: 22px; color: #8A8A8A; padding: 10px 16px 8px 16px; }
+  .menu .item { display: flex; align-items: center; gap: 16px; height: 60px; padding: 0 16px; border-radius: 13px; font-size: 27px; color: #1a1a1a; letter-spacing: -0.01em; }
+  .menu .item.hl { background: #F1F1EF; }
+  .menu .item .glyph { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .menu .item .name { flex: 1; }
+
+  /* ---------- cursor ---------- */
+  #cursor { width: 32px; height: 32px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
+
+  /* ---------- margin notes (stage layer, outside the camera) ---------- */
+  .note { position: absolute; font-size: 44px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; color: #1F1D1A; width: 380px; }
+  .note .w { display: inline-block; margin-right: 0.26em; }
+  .leader { position: absolute; height: 2px; background: #9B948B; transform-origin: 0 50%; border-radius: 1px; }
+  .leaderV { width: 2px; height: 0; }
+  .leaderDot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #9B948B; }
+
+  /* ---------- Devin session window (1380 x 1000) ---------- */
+  #devinWin { width: 1380px; height: 1000px; border-radius: 20px; background: #fff; overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 34px 90px rgba(60,40,20,0.16), 0 3px 10px rgba(0,0,0,0.06); }
+  .winHeader { position: absolute; left: 0; top: 0; right: 0; height: 64px; display: flex; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .winHeader .left { width: 400px; display: flex; align-items: center; gap: 14px; padding: 0 22px; box-sizing: border-box; border-right: 1px solid rgba(0,0,0,0.06); height: 100%; }
+  .winHeader .title { font-size: 22px; font-weight: 500; color: #1a1a1a; letter-spacing: -0.01em; white-space: nowrap; }
+  .chip { display: flex; align-items: center; gap: 6px; font-size: 18px; color: #2F6FED; background: #EEF3FF; border-radius: 8px; padding: 5px 10px; }
+  .winHeader .right { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 18px; }
+  .tab { display: flex; align-items: center; gap: 9px; font-size: 21px; color: #6B6B6B; padding: 9px 16px; border-radius: 11px; }
+  .tab.on { background: #F1F1EF; color: #1a1a1a; font-weight: 500; }
+  .chatCol { position: absolute; left: 0; top: 64px; width: 400px; bottom: 0; border-right: 1px solid rgba(0,0,0,0.06); padding: 22px 22px; box-sizing: border-box; font-size: 21px; line-height: 1.38; color: #1a1a1a; }
+  .userMsg { background: #F1F1EF; border-radius: 16px; padding: 14px 18px; margin-left: 26px; margin-bottom: 22px; letter-spacing: -0.005em; }
+  .devMsg { margin-bottom: 22px; color: #2b2b2b; }
+  .devMsg .row { display: flex; gap: 12px; align-items: flex-start; }
+  .devMsg .mark { width: 24px; height: 24px; margin-top: 3px; flex: none; }
+  .stepList { margin: 0 0 22px 0; padding: 0; list-style: none; color: #3a3a3a; }
+  .stepList li { display: flex; align-items: center; gap: 11px; padding: 6px 0; }
+  .stepList li.todo { color: #9A9A98; }
+  .stepList .ok { width: 20px; height: 20px; border-radius: 50%; background: #1a1a1a; display: flex; align-items: center; justify-content: center; flex: none; }
+  .stepList .dot { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .stepList .ring { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #D5D3CE; box-sizing: border-box; }
+  .pulse { width: 11px; height: 11px; border-radius: 50%; background: #E8873A; display: block; }
+  .status { display: flex; align-items: center; gap: 10px; color: #6B6B6B; font-size: 19px; }
+  .miniComposer { position: absolute; left: 22px; right: 22px; bottom: 22px; height: 116px; border-radius: 18px; border: 1px solid rgba(0,0,0,0.08); background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.05); padding: 16px 18px; box-sizing: border-box; font-size: 19px; color: #9A9A98; }
+  .miniComposer .send { position: absolute; right: 12px; bottom: 12px; width: 36px; height: 36px; border-radius: 50%; background: #1F1F1F; display: flex; align-items: center; justify-content: center; }
+  .pane { position: absolute; left: 400px; top: 64px; right: 0; bottom: 0; background: #F3F2EF; }
+  .pane.code { background: #fff; }
+  .paneBar { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px; color: #6B6B6B; font-size: 19px; border-top: 1px solid rgba(0,0,0,0.05); background: #fff; }
+  .livePill { display: flex; align-items: center; gap: 8px; border: 1px solid rgba(0,0,0,0.1); border-radius: 999px; padding: 6px 14px; color: #1a1a1a; }
+  .livePill i { width: 9px; height: 9px; border-radius: 50%; background: #E5484D; display: block; }
+  .progress { position: absolute; left: 20px; right: 20px; bottom: 66px; height: 8px; border-radius: 4px; background: #E6E9F2; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: #2F6FED; border-radius: 4px; }
+
+  /* ---------- Changes tab: code view + build strip ---------- */
+  #codeView { left: 0; top: 0; width: 980px; height: 936px; }
+  .fileBar { position: absolute; left: 0; top: 0; right: 0; height: 60px; display: flex; align-items: center; gap: 12px; padding: 0 36px; font-size: 22px; color: #4A4A4A; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .fileBar .added { margin-left: auto; color: #2E9B5B; font-weight: 500; }
+  #code { position: absolute; left: 36px; top: 88px; margin: 0; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 27px; line-height: 1.45; color: #1a1a1a; white-space: pre; }
+  #code .k { color: #AD3DA4; } #code .s { color: #D12F1B; } #code .n { color: #272AD8; } #code .t { color: #3E8087; } #code .p { color: #326D74; }
+  #code .caret { height: 30px; vertical-align: -4px; }
+  .buildStrip { position: absolute; left: 36px; right: 36px; bottom: 36px; height: 96px; border-radius: 18px; background: #F3F2EF; display: flex; align-items: center; gap: 18px; padding: 0 26px; box-sizing: border-box; font-size: 24px; color: #1a1a1a; letter-spacing: -0.01em; }
+  .buildStrip .ic { width: 40px; height: 40px; border-radius: 10px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; flex: none; }
+  .buildStrip .lbl { white-space: nowrap; }
+  .buildStrip .bar { flex: 1; height: 8px; border-radius: 4px; background: #E3E1DC; overflow: hidden; margin-left: 10px; }
+  .buildStrip .bar i { display: block; height: 100%; background: #2F6FED; border-radius: 4px; }
+  .buildStrip .okBig { width: 30px; height: 30px; border-radius: 50%; background: #2E9B5B; display: flex; align-items: center; justify-content: center; flex: none; margin-left: auto; }
+
+  /* ---------- phone + detail ---------- */
+  #phone { z-index: 2; width: 380px; height: 795px; border-radius: 72px; background: #17171a; box-shadow: 0 30px 60px rgba(30,20,10,0.25), inset 0 0 0 2px #3a3a3e; }
+  #phoneScreen { position: absolute; left: 12px; top: 12px; width: 356px; height: 771px; border-radius: 60px; overflow: hidden; background: #000; }
+  #phoneScreen img { width: 356px; height: 771px; }
+  #detail { width: 500px; height: 820px; border-radius: 30px; overflow: hidden; background: #0d0d0d; box-shadow: 0 30px 70px rgba(30,20,10,0.22); }
+  #detailImg { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+  /* ---------- outro ---------- */
+  #wipe { background: #0B0B0C; }
+  #outro { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #outroLockup { height: 240px; }
+  #outroUrl { font-size: 52px; font-weight: 400; letter-spacing: -0.01em; color: rgba(255,255,255,0.8); margin-top: 26px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="paper" class="layer"></div>
+  <div id="paperGrain" class="layer"></div>
+
+  <!-- camera: everything on the paper drifts and pushes together -->
+  <div id="camera" class="layer">
+
+    <!-- TITLE -->
+    <div id="titleWrap" class="abs">
+      <img id="titleLockup" src="assets/devin-lockup-black.png" />
+      <div id="titleText"></div>
+    </div>
+
+    <!-- COMPOSER -->
+    <div id="composerScene" class="abs" style="left:240px; top:0; width:1160px; height:1080px;">
+      <div id="cHeader" class="devinHeader abs" style="left:0; top:352px;">
+        <div class="brand"><img src="assets/devin-mark-black.png" /><span>Devin</span></div>
+        <div class="toggle"><span class="on">Agent</span><span>Ask</span></div>
+      </div>
+      <div id="cBox" class="composerBox abs" style="left:0; top:440px;">
+        <div id="cText" class="composerText"></div>
+        <div class="composerRow">
+          <div class="rowLeft">
+            <div class="iconBtn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="iconBtn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-linecap="round"><path d="M8 4v16M16 4v16"/><circle cx="8" cy="9" r="2.6" fill="#fff"/><circle cx="16" cy="15" r="2.6" fill="#fff"/></svg></div>
+            <div id="envPill" class="envPill">
+              <span id="envGlyph" class="glyph"></span><span id="envName">Ubuntu</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div class="rowRight">
+            <div class="iconBtn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+            <div id="sendBtn" class="sendBtn">
+              <div class="up"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+              <div class="dd"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="envMenu" class="menu abs" style="left:150px; top:698px;">
+        <div class="label">Hosted</div>
+        <div id="miUbuntu" class="item"><span class="glyph" id="ubuntuGlyph2"></span><span class="name">Ubuntu</span><svg id="miCheck" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div id="miMac" class="item"><span class="glyph"></span><span class="name">macOS</span></div>
+        <div id="miWin" class="item"><span class="glyph"><svg width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="2" width="9.5" height="9.5" fill="#F25022"/><rect x="12.5" y="2" width="9.5" height="9.5" fill="#7FBA00"/><rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900"/></svg></span><span class="name">Windows</span></div>
+      </div>
+    </div>
+
+    <!-- DEVIN SESSION WINDOW -->
+    <div id="devinWin" class="abs" style="left:40px; top:40px;">
+      <div class="winHeader">
+        <div class="left">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          <span class="title" id="sessionTitle"></span>
+          <span class="chip"><span style="font-size:16px; line-height:1">&#xF8FF;</span>macOS</span>
+        </div>
+        <div class="right">
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Progress</div>
+          <div class="tab" id="tabChanges"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Changes</div>
+          <div class="tab" id="tabComputer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/></svg>Computer</div>
+        </div>
+      </div>
+      <div class="chatCol">
+        <div class="userMsg" id="chatPrompt"></div>
+        <div class="devMsg"><div class="row"><img class="mark" src="assets/devin-mark-black.png" /><div id="devinReply"></div></div></div>
+        <ul class="stepList" id="stepList"></ul>
+        <div class="status"><span class="pulse"></span>Devin is working</div>
+        <div class="miniComposer">Ask Devin to build features, fix bugs, or work on your code
+          <div class="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+      </div>
+      <div class="pane" id="pane">
+        <div id="codeView" class="abs">
+          <div class="fileBar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/></svg>
+            <span id="codeFile"></span><span class="added" id="codeAdded"></span>
+          </div>
+          <pre id="code"></pre>
+          <div id="buildStrip" class="buildStrip">
+            <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l4 4-9 9H5v-4z"/><path d="M13 7l4 4"/></svg></span>
+            <span class="lbl" id="buildLabel"></span>
+            <div class="bar" id="buildBar"><i id="buildFill" style="width:0%"></i></div>
+            <span class="okBig" id="buildOk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          </div>
+        </div>
+        <div id="simView">
+          <div id="phone" class="abs" style="left:36px; top:44px;">
+            <div id="phoneScreen"><img id="phoneImg" /></div>
+          </div>
+          <div id="detail" class="abs" style="left:446px; top:22px;">
+            <img id="detailImg" />
+          </div>
+          <div class="progress"><i id="progFill" style="width:0%"></i></div>
+          <div class="paneBar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <span class="livePill"><i></i>Live</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CURSOR -->
+    <svg id="cursor" class="abs" viewBox="0 0 24 24"><path d="M5.5 3.2 L18.8 12.3 L12.6 13.4 L16.2 20.4 L13.6 21.6 L10 14.7 L5.5 19.1 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  </div>
+
+  <!-- MARGIN NOTE + LEADER (single instance, stage coordinates) -->
+  <div id="notes" class="layer">
+    <div id="leaderDot" class="leaderDot"></div>
+    <div id="leader" class="leader"></div>
+    <div id="leaderV" class="leader leaderV"></div>
+    <div id="note" class="note"></div>
+  </div>
+
+  <!-- OUTRO -->
+  <div id="wipe" class="layer"></div>
+  <div id="outro" class="layer">
+    <img id="outroLockup" src="assets/devin-lockup-white.png" />
+    <div id="outroUrl"></div>
+  </div>
+</div>
+
+<script>
+// ------------------------------------------------------------------
+// helpers
+// ------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+// fast out, gentle in
+const easeOut = (t) => 1 - Math.pow(1 - t, 4);
+const easeInOut = (t) => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+const easeIn = (t) => t * t * t;
+// progress of a segment [a, b] at time t, eased
+const seg = (t, a, b, e = easeOut) => e(clamp01((t - a) / (b - a)));
+const show = (el, on) => el.classList.toggle('hidden', !on);
+const setT = (el, { x = 0, y = 0, s = 1, o = 1 }) => {
+  el.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+  el.style.opacity = o;
+};
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function words(el, text) {
+  el.innerHTML = '';
+  text.split(' ').forEach((w) => {
+    const s = document.createElement('span');
+    s.className = 'w';
+    s.textContent = w;
+    el.appendChild(s);
+  });
+  return [...el.children];
+}
+// word-by-word in/out. tIn/tOut are start times; returns overall visibility
+function wordReveal(spans, t, tIn, tOut, stagger = 0.09, dur = 0.38, rise = 14) {
+  let any = false;
+  spans.forEach((s, i) => {
+    const pin = seg(t, tIn + i * stagger, tIn + i * stagger + dur);
+    const pout = seg(t, tOut + i * stagger, tOut + i * stagger + dur * 0.8, easeIn);
+    const o = pin * (1 - pout);
+    s.style.opacity = o;
+    s.style.transform = `translateY(${lerp(rise, 0, pin) - pout * rise * 0.6}px)`;
+    if (o > 0.001) any = true;
+  });
+  return any;
+}
+
+// Swift syntax highlighting for the code view
+const SWIFT_KW = /\b(let|var|case|switch|func|if|else|return|import|struct|enum|class|default|in|for|while|guard|self)\b/g;
+function highlight(src) {
+  const out = [];
+  const re = /("[^"\n]*"?)|(\b\d+(?:\.\d+)?\b)|(\b[A-Z][A-Za-z0-9]*\b)|(\bkCI[A-Za-z]+\b)|(\.[a-z][A-Za-z]*)|(\b(?:let|var|case|switch|func|if|else|return|import|struct|enum|class|default|in|guard)\b)/g;
+  let last = 0, m;
+  while ((m = re.exec(src))) {
+    out.push(esc(src.slice(last, m.index)));
+    const cls = m[1] ? 's' : m[2] ? 'n' : m[3] ? 't' : m[4] ? 'p' : m[5] ? 'p' : 'k';
+    out.push(`<span class="${cls}">${esc(m[0])}</span>`);
+    last = re.lastIndex;
+  }
+  out.push(esc(src.slice(last)));
+  return out.join('');
+}
+
+// ------------------------------------------------------------------
+// static setup
+// ------------------------------------------------------------------
+document.documentElement.style.setProperty('--paper', CONFIG.colors.paper);
+$('titleText').textContent = CONFIG.text.headline;
+$('chatPrompt').textContent = CONFIG.text.prompt;
+$('sessionTitle').textContent = CONFIG.text.sessionTitle;
+$('devinReply').textContent = CONFIG.text.devinReply;
+$('codeFile').textContent = CONFIG.text.codeFile;
+$('outroUrl').textContent = CONFIG.text.url;
+const noteSpans = { current: '', spans: [] };
+const CODE = CONFIG.code.join('\n');
+
+const ubuntuSVG = `<svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#E95420"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="12" cy="3.2" r="2.4" fill="#E95420" stroke="#fff" stroke-width="1.2"/><circle cx="4.4" cy="16.4" r="2.4" fill="#E95420" stroke="#fff" stroke-width="1.2"/><circle cx="19.6" cy="16.4" r="2.4" fill="#E95420" stroke="#fff" stroke-width="1.2"/></svg>`;
+$('ubuntuGlyph2').innerHTML = ubuntuSVG;
+$('miMac').querySelector('.glyph').textContent = '\uF8FF';
+
+const OK_SVG = '<span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+const ACTIVE_SVG = '<span class="dot"><span class="pulse"></span></span>';
+const TODO_SVG = '<span class="dot"><span class="ring"></span></span>';
+// steps: number done, and whether the next one is active
+function renderSteps(done, active) {
+  const items = CONFIG.text.steps.map((s, i) => {
+    const state = i < done ? 'done' : (i === done && active) ? 'active' : 'todo';
+    const icon = state === 'done' ? OK_SVG : state === 'active' ? ACTIVE_SVG : TODO_SVG;
+    return `<li class="${state}">${icon}${esc(s)}</li>`;
+  });
+  $('stepList').innerHTML = items.join('');
+}
+
+// frames of the genuine Simulator take
+const FRAME_COUNT = CONFIG.take.frameCount;
+const framePath = (i) => `${CONFIG.take.framesDir}/f${String(i).padStart(4, '0')}.jpg`;
+const frameCache = new Map();
+function frameImg(i) {
+  if (!frameCache.has(i)) {
+    const img = new Image();
+    img.src = framePath(i);
+    frameCache.set(i, img);
+  }
+  return frameCache.get(i);
+}
+window.preloadFrames = async () => {
+  const all = [];
+  for (let i = 1; i <= FRAME_COUNT; i++) all.push(frameImg(i).decode().catch(() => {}));
+  await Promise.all(all);
+};
+
+// ------------------------------------------------------------------
+// camera (page drift + pushes). Notes live outside it, so they convert through cam2stage.
+// ------------------------------------------------------------------
+const camState = { dx: 0, dy: 0, ds: 1, ox: 960, oy: 540, zs: 1, zx: 0, zy: 0 };
+function cam2stage(x, y) {
+  const c = camState;
+  let sx = c.ox + (x - c.ox) * c.ds + c.dx, sy = c.oy + (y - c.oy) * c.ds + c.dy;
+  sx = c.zx + (sx - c.zx) * c.zs; sy = c.zy + (sy - c.zy) * c.zs;
+  return { x: sx, y: sy };
+}
+function applyCamera() {
+  const c = camState;
+  $('camera').style.transformOrigin = '0 0';
+  $('camera').style.transform =
+    `translate(${c.zx}px, ${c.zy}px) scale(${c.zs}) translate(${-c.zx}px, ${-c.zy}px) ` +
+    `translate(${c.dx}px, ${c.dy}px) translate(${c.ox}px, ${c.oy}px) scale(${c.ds}) translate(${-c.ox}px, ${-c.oy}px)`;
+}
+
+// ------------------------------------------------------------------
+// note + leader (one at a time). Inputs are camera coordinates; the note lands in the stage margin.
+// ------------------------------------------------------------------
+function setNote(text) {
+  if (noteSpans.current !== text) {
+    noteSpans.current = text;
+    noteSpans.spans = words($('note'), text);
+  }
+}
+// the leader starts at (fromX, fromY), drops to y if needed, then runs into the margin
+function placeNote(text, fromX, fromY, y, t, tIn, tOut, marginX = CONFIG.layout.marginX) {
+  setNote(text);
+  const a = cam2stage(fromX, fromY), b = cam2stage(fromX, y);
+  fromX = a.x; fromY = a.y; y = b.y;
+  const note = $('note');
+  const anyWord = wordReveal(noteSpans.spans, t, tIn, tOut);
+  const lineIn = seg(t, tIn - 0.2, tIn + 0.5);
+  const lineOut = seg(t, tOut + 0.1, tOut + 0.55, easeIn);
+  const len = (marginX - 18) - fromX;
+  const visible = anyWord || (lineIn > 0 && lineOut < 1);
+  show(note, visible); show($('leader'), visible); show($('leaderDot'), visible); show($('leaderV'), visible);
+  if (!visible) return;
+  note.style.left = marginX + 'px';
+  note.style.top = (y - 26) + 'px';
+  const vLen = Math.abs(y - fromY);
+  const vShare = vLen / (vLen + len);
+  const vIn = vShare > 0 ? clamp01(lineIn / vShare) : 1;
+  const hIn = clamp01((lineIn - vShare) / (1 - vShare));
+  const hOut = lineOut;
+  const vOut = clamp01((lineOut - (1 - vShare)) / vShare);
+  const lv = $('leaderV');
+  lv.style.left = (fromX - 1) + 'px';
+  lv.style.top = Math.min(fromY, y) + 'px';
+  lv.style.height = vLen + 'px';
+  lv.style.transformOrigin = (fromY < y) === (vOut > 0) ? '50% 100%' : '50% 0';
+  lv.style.transform = `scaleY(${vIn * (1 - vOut)})`;
+  const leader = $('leader');
+  leader.style.left = fromX + 'px';
+  leader.style.top = (y - 1) + 'px';
+  leader.style.width = len + 'px';
+  leader.style.transform = `scaleX(${hIn * (1 - hOut)})`;
+  leader.style.transformOrigin = hOut > 0 ? '100% 50%' : '0 50%';
+  const dot = $('leaderDot');
+  dot.style.left = (fromX - 5) + 'px';
+  dot.style.top = (fromY - 5) + 'px';
+  dot.style.opacity = Math.min(1, vIn * 3) * (1 - vOut);
+}
+function hideNote() { ['note', 'leader', 'leaderV', 'leaderDot'].forEach((id) => show($(id), false)); }
+
+// ------------------------------------------------------------------
+// main seek
+// ------------------------------------------------------------------
+const T = CONFIG.timeline;
+// Devin window geometry (camera coordinates)
+const WIN = { x: 40, y: 40, w: 1380, h: 1000, header: 64, chat: 400 };
+const PANE = { x: WIN.x + WIN.chat, y: WIN.y + WIN.header, w: WIN.w - WIN.chat, h: WIN.h - WIN.header };
+const PHONE = { x: 36, y: 44, w: 380, h: 795 };
+const DETAIL = { w: 500, h: 820 };
+
+window.seek = async function seek(t) {
+  hideNote();
+  show($('cursor'), false);
+  const B = T.build, S = T.sim;
+
+  // ---------------- CAMERA ----------------
+  {
+    camState.dx = 0; camState.dy = 0; camState.ds = 1; camState.zs = 1;
+    if (t >= B.in) {
+      const p = clamp01((t - B.in) / (S.out - B.in));
+      camState.dx = -6 * p; camState.dy = -3 * p; camState.ds = 1 + 0.01 * p;
+    }
+    // push onto the phone for the key beats
+    const vt = t - S.videoStart;
+    let z = 0, zAmt = 1;
+    for (const zb of CONFIG.simZoom) {
+      const k = seg(vt, zb.in, zb.in + 0.7, easeInOut) * (1 - seg(vt, zb.out, zb.out + 0.7, easeInOut));
+      if (k > z) { z = k; zAmt = zb.scale; }
+    }
+    camState.zs = 1 + (zAmt - 1) * z;
+    // origin: near the phone, biased so the window chrome stays inside the frame
+    camState.zx = CONFIG.zoomOrigin.x;
+    camState.zy = CONFIG.zoomOrigin.y;
+    applyCamera();
+  }
+
+  // ---------------- TITLE ----------------
+  const titleOn = t < T.title.out + 0.6;
+  show($('titleWrap'), titleOn);
+  if (titleOn) {
+    const inL = seg(t, T.title.in, T.title.in + 0.7);
+    const inT = seg(t, T.title.in + 0.22, T.title.in + 0.95);
+    const out = seg(t, T.title.out, T.title.out + 0.55, easeIn);
+    const drift = 1 + 0.03 * clamp01((t - T.title.in) / (T.title.out - T.title.in + 0.5));
+    setT($('titleLockup'), { y: lerp(26, 0, inL) - out * 40, o: inL * (1 - out) });
+    setT($('titleText'), { y: lerp(34, 0, inT) - out * 40, o: inT * (1 - out) });
+    $('titleWrap').style.transform = `scale(${drift})`;
+  }
+
+  // ---------------- COMPOSER ----------------
+  const C = T.composer;
+  const compOn = t >= C.in && t < C.out + 0.6;
+  show($('composerScene'), compOn);
+  if (compOn) {
+    const inBox = seg(t, C.in, C.in + 0.65);
+    const inHdr = seg(t, C.in + 0.22, C.in + 0.8);
+    const out = seg(t, C.out, C.out + 0.5, easeIn);
+    // slow 3% page push, plus a focus zoom onto the environment selector while macOS is chosen
+    const zoom = 1 + 0.06 * seg(t, C.cursorStart, C.menuOpen + 0.3, easeInOut) * (1 - seg(t, C.noteIn + 0.9, C.typeStart + 1.3, easeInOut));
+    const push = (1 + 0.03 * clamp01((t - C.in) / (C.out - C.in))) * zoom;
+    const SX = 240; // composer scene left edge on stage
+    const OX = 640, OY = 620; // zoom origin, scene coordinates
+    $('composerScene').style.transformOrigin = `${OX}px ${OY}px`;
+    $('composerScene').style.transform = `scale(${push})`;
+    setT($('cBox'), { y: lerp(44, 0, inBox) - out * 40, o: inBox * (1 - out) });
+    setT($('cHeader'), { y: lerp(18, 0, inHdr) - out * 40, o: inHdr * (1 - out) });
+
+    // env pill state
+    const picked = t >= C.macPick;
+    $('envGlyph').innerHTML = picked ? '\uF8FF' : ubuntuSVG;
+    $('envName').textContent = picked ? 'macOS' : 'Ubuntu';
+    const pressed = t >= C.menuOpen - 0.02 && t < C.macPick + 0.25;
+    $('envPill').classList.toggle('pressed', pressed);
+
+    // menu
+    const menuOpen = seg(t, C.menuOpen, C.menuOpen + 0.36);
+    const menuClose = seg(t, C.macPick + 0.06, C.macPick + 0.34, easeIn);
+    const mo = menuOpen * (1 - menuClose);
+    show($('envMenu'), mo > 0.001);
+    const hoverMac = t >= C.hoverMac;
+    $('miUbuntu').classList.toggle('hl', !hoverMac);
+    $('miMac').classList.toggle('hl', hoverMac);
+    show($('miCheck'), !picked);
+    setT($('envMenu'), { y: lerp(-10, 0, menuOpen) - menuClose * 6, s: lerp(0.96, 1, menuOpen), o: mo });
+
+    // typing
+    const prompt = CONFIG.text.prompt;
+    const typeP = clamp01((t - C.typeStart) / (C.typeEnd - C.typeStart));
+    const n = Math.round(prompt.length * typeP);
+    const typed = prompt.slice(0, n);
+    const caretOn = t >= C.in + 0.5 && (Math.floor((t * 2.2)) % 2 === 0 || (t > C.typeStart && t < C.typeEnd));
+    if (n === 0) {
+      $('cText').innerHTML = `<span class="ph">${CONFIG.text.placeholder}</span>`;
+      if (caretOn) $('cText').insertAdjacentHTML('afterbegin', '<span class="caret"></span>');
+    } else {
+      $('cText').textContent = typed;
+      if (caretOn) $('cText').insertAdjacentHTML('beforeend', '<span class="caret"></span>');
+    }
+
+    // send press
+    const press = seg(t, C.send, C.send + 0.12) * (1 - seg(t, C.send + 0.12, C.send + 0.3));
+    $('sendBtn').style.transform = `scale(${1 - 0.08 * press})`;
+
+    // cursor path, stage coordinates before the scene push
+    const pill = { x: SX + 244, y: 634 };            // env pill center
+    const mac = { x: SX + 150 + 180, y: 698 + 140 }; // macOS row
+    const send = { x: SX + 1160 - 26 - 52, y: 634 };  // send button
+    const start = { x: 1180, y: 900 };
+    const park = { x: SX + 900, y: 820 };
+    let cx, cy;
+    if (t < C.cursorStart) { cx = start.x; cy = start.y; }
+    else if (t < C.menuOpen) { const p = seg(t, C.cursorStart, C.menuOpen - 0.05); cx = lerp(start.x, pill.x, p); cy = lerp(start.y, pill.y, p); }
+    else if (t < C.hoverMac) { const p = seg(t, C.menuOpen + 0.2, C.hoverMac); cx = lerp(pill.x, mac.x, p); cy = lerp(pill.y, mac.y, p); }
+    else if (t < C.typeEnd) { const p = seg(t, C.macPick + 0.3, C.macPick + 1.0); cx = lerp(mac.x, park.x, p); cy = lerp(mac.y, park.y, p); }
+    else { const p = seg(t, C.typeEnd, C.send - 0.04); cx = lerp(park.x, send.x, p); cy = lerp(park.y, send.y, p); }
+    const curIn = seg(t, C.cursorStart - 0.2, C.cursorStart + 0.2);
+    const curOut = seg(t, C.send + 0.25, C.send + 0.5, easeIn);
+    const clickScale = 1 - 0.15 * (seg(t, C.menuOpen - 0.02, C.menuOpen + 0.08) * (1 - seg(t, C.menuOpen + 0.08, C.menuOpen + 0.22))
+      + seg(t, C.macPick - 0.02, C.macPick + 0.08) * (1 - seg(t, C.macPick + 0.08, C.macPick + 0.22))
+      + press);
+    // cursor rides the scene push
+    const pcx = SX + OX + (cx - SX - OX) * push, pcy = OY + (cy - OY) * push;
+    show($('cursor'), curIn * (1 - curOut) > 0.001);
+    $('cursor').style.left = (pcx - 4) + 'px';
+    $('cursor').style.top = (pcy - 3) + 'px';
+    $('cursor').style.transformOrigin = '5px 3px';
+    $('cursor').style.transform = `scale(${clickScale})`;
+    $('cursor').style.opacity = curIn * (1 - curOut);
+
+    // margin note: macOS selected
+    const pillBottom = 660, elbowY = 770;
+    placeNote(CONFIG.text.noteMac, SX + OX + (pill.x - SX - OX) * push, OY + (pillBottom - OY) * push + 8,
+      OY + (elbowY - OY) * push, t, C.noteIn, C.noteOut);
+  }
+
+  // ---------------- DEVIN SESSION WINDOW (build, then simulator) ----------------
+  const winOn = t >= B.in && t < S.out + 1.0;
+  show($('devinWin'), winOn);
+  if (winOn) {
+    const inn = seg(t, B.in, B.in + 0.7);
+    setT($('devinWin'), { y: lerp(70, 0, inn), o: inn });
+
+    // tabs and pane phase
+    const switchT = S.in - 0.35;
+    const simPhase = t >= switchT + 0.2;
+    $('tabChanges').classList.toggle('on', !simPhase);
+    $('tabComputer').classList.toggle('on', simPhase);
+    $('pane').classList.toggle('code', !simPhase);
+    const codeOut = seg(t, switchT, switchT + 0.45, easeIn);
+    show($('codeView'), codeOut < 1);
+    show($('simView'), t >= S.in);
+
+    // chat steps
+    const built = t >= B.buildEnd;
+    const launched = t >= S.in + 0.4;
+    const vt0 = t - S.videoStart;
+    const tested = vt0 > CONFIG.take.duration - 1.6;
+    renderSteps(t < B.buildStart ? 0 : !built ? 1 : !launched ? 2 : !tested ? 3 : 4, !tested);
+
+    // ---- Changes tab: Swift being written, then the Xcode build ----
+    if (codeOut < 1) {
+      setT($('codeView'), { x: -40 * codeOut, o: 1 - codeOut });
+      const typeP = clamp01((t - B.codeStart) / (B.codeEnd - B.codeStart));
+      const n = Math.round(CODE.length * easeInOut(typeP) ** 0.8);
+      const typed = CODE.slice(0, n);
+      const lines = typed.split('\n').length;
+      $('codeAdded').textContent = n > 0 ? `+${lines}` : '';
+      const caretOn = t < B.buildEnd && Math.floor(t * 2.2) % 2 === 0 || (t > B.codeStart && t < B.codeEnd);
+      $('code').innerHTML = highlight(typed) + (caretOn ? '<span class="caret"></span>' : '');
+
+      const bIn = seg(t, B.buildStart, B.buildStart + 0.5);
+      show($('buildStrip'), bIn > 0);
+      setT($('buildStrip'), { y: lerp(30, 0, bIn), o: bIn });
+      const prog = seg(t, B.buildStart + 0.2, B.buildEnd, easeInOut);
+      $('buildFill').style.width = (prog * 100).toFixed(2) + '%';
+      $('buildLabel').textContent = built ? CONFIG.text.built : CONFIG.text.building;
+      show($('buildBar'), !built);
+      show($('buildOk'), built);
+      // margin note: Built with Xcode, from the build strip's right edge
+      const stripY = WIN.y + WIN.h - 36 - 48;
+      placeNote(CONFIG.text.noteXcode, WIN.x + WIN.w + 10, stripY, stripY, t, B.noteIn, B.noteOut);
+    }
+
+    // ---- Computer tab: the genuine take ----
+    if (t >= S.in) {
+      const vt = Math.min(Math.max(t - S.videoStart, 0), CONFIG.take.duration);
+      const fi = Math.min(FRAME_COUNT, Math.max(1, Math.floor(vt * 30) + 1));
+      const img = frameImg(fi);
+      if (img.decode) { try { await img.decode(); } catch (e) {} }
+      $('phoneImg').src = img.src;
+      $('detailImg').src = img.src;
+      $('progFill').style.width = (vt / CONFIG.take.duration * 100).toFixed(2) + '%';
+
+      // detail focus: interpolate keyframes (source-fraction cx, cy, w)
+      const K = CONFIG.focus;
+      let a = K[0], b = K[0];
+      for (let i = 0; i < K.length; i++) { if (K[i].t <= vt) { a = K[i]; b = K[i + 1] || K[i]; } }
+      let cxF, cyF, wF;
+      if (b !== a) {
+        const mp = seg(vt, b.t - (b.tr || 0.7), b.t);
+        cxF = lerp(a.cx, b.cx, mp); cyF = lerp(a.cy, b.cy, mp); wF = lerp(a.w, b.w, mp);
+      } else { cxF = a.cx; cyF = a.cy; wF = a.w; }
+      // slow constant pan inside the crop so it never sits still
+      const srcW = CONFIG.take.width, srcH = CONFIG.take.height;
+      const cropW = wF * srcW;
+      const scale = DETAIL.w / cropW;
+      const cropH = DETAIL.h / scale;
+      const drift = Math.sin(vt * 0.9) * 0.006;
+      let x0 = cxF * srcW - cropW / 2, y0 = (cyF + drift) * srcH - cropH / 2;
+      x0 = Math.max(0, Math.min(srcW - cropW, x0));
+      y0 = Math.max(0, Math.min(srcH - cropH, y0));
+      $('detailImg').style.width = srcW + 'px';
+      $('detailImg').style.height = srcH + 'px';
+      $('detailImg').style.transform = `translate(${-x0 * scale}px, ${-y0 * scale}px) scale(${scale})`;
+
+      // detail panel independent slide/fade; leaves during the recenter
+      const R = S.recenter;
+      const dIn = seg(t, S.in + 0.3, S.in + 1.0);
+      const dOut = seg(t, R - 0.35, R + 0.15, easeIn);
+      setT($('detail'), { x: lerp(40, 0, dIn) + dOut * 60, o: dIn * (1 - dOut) });
+      // phone: slides in, then recenters on the pane on its finished state
+      const pIn = seg(t, S.in + 0.15, S.in + 0.85);
+      const rc = seg(t, R, R + 0.75);
+      const targetX = (PANE.w - PHONE.w) / 2 - PHONE.x, targetY = (PANE.h - 56 - PHONE.h) / 2 - PHONE.y;
+      $('phone').style.transform = `translate(${lerp(30, 0, pIn) + targetX * rc}px, ${targetY * rc}px)`;
+      $('phone').style.opacity = pIn;
+      $('progFill').parentElement.style.opacity = 1 - rc;
+
+      // notes in the margin, one at a time; the margin moves out with the camera push
+      const winRight = WIN.x + WIN.w;
+      const marginX = Math.max(CONFIG.layout.marginX, cam2stage(winRight, 0).x + 48);
+      for (const nt of CONFIG.simNotes) {
+        if (vt >= nt.in - 0.3 && vt < nt.out + 1.2) {
+          const y = PANE.y + 22 + nt.y * DETAIL.h;
+          placeNote(nt.text, winRight + 10, y, y, t, S.videoStart + nt.in, S.videoStart + nt.out, marginX);
+          break;
+        }
+      }
+    }
+  }
+
+  // ---------------- WIPE + OUTRO ----------------
+  const O = T.outro;
+  const wipeP = seg(t, O.wipe, O.wipe + 0.7, easeInOut);
+  show($('wipe'), wipeP > 0);
+  $('wipe').style.transform = `translateY(${(1 - wipeP) * 1080}px)`;
+  const outroOn = t >= O.lockup - 0.1;
+  show($('outro'), outroOn);
+  if (outroOn) {
+    const lIn = seg(t, O.lockup, O.lockup + 0.75);
+    setT($('outroLockup'), { y: lerp(30, 0, lIn), o: lIn });
+    const uIn = seg(t, O.url, O.url + 0.6);
+    setT($('outroUrl'), { y: lerp(16, 0, uIn), o: uIn });
+    const hold = clamp01((t - O.lockup) / (O.end - O.lockup));
+    $('outro').style.transform = `scale(${1 + 0.02 * hold})`;
+  }
+};
+</script>
+</body>
+</html>

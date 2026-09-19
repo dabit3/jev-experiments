@@ -1,0 +1,16 @@
+{
+  "name": "margin-notes-launch-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Margin Notes launch video for macOS in Devin Cloud (HTML composition rendered with Playwright + ffmpeg)",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "still": "node render.mjs --still",
+    "check": "node --check render.mjs && node --check config.js"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}

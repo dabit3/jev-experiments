@@ -1,0 +1,4 @@
+node_modules/
+frames/
+out/frames/
+out/still*.png
