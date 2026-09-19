@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud, shadow-only launch video</title>
+<style>
+@font-face { font-family: "Inter Tight"; src: url("fonts/InterTight.ttf"); font-weight: 100 900; }
+@font-face { font-family: "Inter"; src: url("fonts/Inter.ttf"); font-weight: 100 900; }
+
+:root {
+  --paper: #fbfbfa;
+  --ink: #191919;
+  --ink-2: #4a4a4a;
+  --muted: #8a8a8a;
+  --line: #ededed;
+  --blue: #467af6;
+  --blue-soft: #e9eefa;
+  --green: #2e9e5b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+body { font-family: "Inter Tight", "Inter", "Helvetica Neue", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+#stage { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, #ffffff 0%, #f8f8f6 55%, #efefec 100%); }
+#world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+
+.abs { position: absolute; }
+.hidden { visibility: hidden; }
+
+/* ---------- shadow plane ---------- */
+.shadow { position: absolute; top: -800px; left: 0; width: 1100px; height: 2700px; pointer-events: none;
+  transform-origin: 50% 50%;
+  background: linear-gradient(90deg,
+    rgba(28,30,38,0) 0%, rgba(28,30,38,0.10) 20%, rgba(28,30,38,0.30) 42%, rgba(28,30,38,0.32) 50%, rgba(28,30,38,0.30) 58%, rgba(28,30,38,0.10) 80%, rgba(28,30,38,0) 100%);
+}
+#shadowOuter { z-index: 50; }
+#shadowTop { z-index: 90; }
+
+/* ---------- scene 1: headline ---------- */
+#s1 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; }
+#s1 .lockup { width: 300px; }
+#s1 .line1 { font-size: 200px; font-weight: 600; letter-spacing: -0.05em; line-height: 0.95; }
+#s1 .line2 { font-size: 118px; font-weight: 500; letter-spacing: -0.04em; line-height: 1; color: var(--ink); }
+#s1 .line2 span { display: inline-block; margin-right: 0.22em; }
+#s1 .line2 span:last-child { margin-right: 0; }
+
+/* ---------- scene 2: composer ---------- */
+#s2 { position: absolute; inset: 0; }
+#composerWrap { position: absolute; left: 360px; top: 300px; width: 1200px; }
+#composerHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; padding: 0 6px; }
+#composerHead .lockup { width: 168px; }
+.segmented { display: flex; background: #f1f1ef; border-radius: 999px; padding: 4px; font-size: 22px; font-weight: 500; }
+.segmented div { padding: 8px 24px; border-radius: 999px; color: var(--muted); }
+.segmented div.on { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+#composer { background: #fff; border-radius: 28px; box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 20px 60px rgba(20,20,30,0.10), 0 2px 10px rgba(20,20,30,0.05); padding: 34px 36px 26px; }
+#promptText { font-size: 34px; line-height: 1.35; min-height: 124px; font-weight: 400; color: var(--ink); white-space: pre-wrap; }
+#promptText .ph { color: #a3a3a3; }
+#promptText .caret { display: inline-block; width: 3px; height: 34px; background: var(--ink); vertical-align: -6px; margin-left: 2px; }
+#composerBar { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; }
+#composerBar .left, #composerBar .right { display: flex; align-items: center; gap: 22px; }
+.tool { display: flex; align-items: center; gap: 10px; color: #6b6b6b; font-size: 22px; font-weight: 500; }
+.tool svg { width: 26px; height: 26px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#send { width: 52px; height: 52px; border-radius: 50%; background: #e6e6e4; display: flex; align-items: center; justify-content: center; }
+#send svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+#envRow { display: flex; align-items: center; gap: 14px; margin-top: 24px; padding: 0 8px; }
+.chip { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 22px; border-radius: 999px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 6px 18px rgba(20,20,30,0.06); font-size: 22px; font-weight: 500; color: var(--ink-2); }
+.chip svg { width: 24px; height: 24px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chip .val { color: var(--ink); }
+.chip .chev { width: 18px; height: 18px; }
+
+#envMenu { position: absolute; left: 368px; top: 736px; width: 420px; background: #fff; border-radius: 22px; padding: 12px; box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 24px 60px rgba(20,20,30,0.14); transform-origin: 40px 0; }
+#envMenu .hdr { font-size: 18px; font-weight: 500; color: var(--muted); padding: 10px 16px 8px; letter-spacing: 0.01em; }
+#envMenu .item { display: flex; align-items: center; justify-content: space-between; height: 62px; padding: 0 18px; border-radius: 14px; font-size: 24px; font-weight: 500; color: var(--ink); }
+#envMenu .item.hover { background: #f2f4f9; }
+#envMenu .item .lbl { display: flex; align-items: center; gap: 14px; }
+#envMenu .item svg { width: 26px; height: 26px; stroke: #4a4a4a; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#envMenu .item .check { width: 24px; height: 24px; stroke: var(--blue); stroke-width: 2.6; opacity: 0; }
+#envMenu .item.sel .check { opacity: 1; }
+
+/* ---------- cursor ---------- */
+#cursor { position: absolute; width: 34px; height: 34px; z-index: 80; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); }
+
+/* ---------- scene 3: session ---------- */
+#s3 { position: absolute; inset: 0; }
+#win { position: absolute; left: 60px; top: 70px; width: 1800px; height: 940px; background: #fff; border-radius: 22px; box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 30px 80px rgba(20,20,30,0.10), 0 4px 14px rgba(20,20,30,0.04); display: flex; overflow: hidden; }
+#chat { width: 640px; height: 100%; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+#chatHead { height: 74px; display: flex; align-items: center; gap: 18px; padding: 0 26px; }
+#chatHead .ttl { font-size: 22px; font-weight: 500; }
+#chatHead svg { width: 24px; height: 24px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tag { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 8px; background: var(--blue-soft); color: var(--blue); font-size: 19px; font-weight: 500; }
+.tag svg { stroke: var(--blue) !important; width: 20px !important; height: 20px !important; }
+#chatBody { flex: 1; padding: 22px 30px 0; font-size: 21px; line-height: 1.4; }
+#userMsg { display: flex; justify-content: flex-end; }
+#userMsg div { background: #f3f3f1; border-radius: 16px; padding: 14px 20px; max-width: 520px; font-weight: 400; }
+#devinMsg { margin-top: 30px; display: flex; gap: 16px; }
+#devinMsg img { width: 36px; height: 36px; margin-top: 2px; }
+#devinMsg .who { font-weight: 600; font-size: 21px; }
+#devinMsg .txt { margin-top: 8px; color: var(--ink); }
+#worked { margin-top: 20px; color: var(--muted); font-size: 20px; display: flex; align-items: center; gap: 10px; }
+#worked svg { width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2.4; }
+#steps { margin-top: 12px; margin-left: 8px; padding-left: 20px; border-left: 2px solid #ececea; font-size: 20px; color: var(--ink-2); }
+#steps .st { height: 38px; display: flex; align-items: center; gap: 12px; }
+#steps .st b { font-weight: 500; color: var(--ink); }
+#steps .st .plus { color: var(--green); font-weight: 500; }
+#steps .st .ok { width: 20px; height: 20px; stroke: var(--green); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+#chatComposer { margin: 0 24px 24px; border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px 14px; box-shadow: 0 6px 20px rgba(20,20,30,0.04); }
+#chatComposer .ph { color: #a3a3a3; font-size: 19px; }
+#chatComposer .bar { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+#chatComposer .bar .tool { font-size: 18px; }
+#chatComposer .bar .tool svg { width: 20px; height: 20px; }
+#chatComposer .mini { width: 36px; height: 36px; border-radius: 50%; background: #e6e6e4; display: flex; align-items: center; justify-content: center; }
+#chatComposer .mini svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; }
+
+#pane { flex: 1; height: 100%; display: flex; flex-direction: column; }
+#tabs { height: 74px; display: flex; align-items: center; gap: 8px; padding: 0 22px; }
+.tab { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 10px; font-size: 20px; font-weight: 500; color: #6b6b6b; }
+.tab.on { background: #f1f1ef; color: var(--ink); }
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#tabs .spacer { flex: 1; }
+#tabs .icons { display: flex; gap: 22px; padding-right: 8px; }
+#tabs .icons svg { width: 22px; height: 22px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+#paneBody { position: relative; flex: 1; margin: 0 22px 0 22px; border-radius: 14px; overflow: hidden; }
+
+/* code view */
+#code { position: absolute; inset: 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+#codeHead { height: 58px; display: flex; align-items: center; gap: 14px; padding: 0 22px; border-bottom: 1px solid var(--line); font-size: 20px; font-weight: 500; }
+#codeHead .path { color: var(--muted); font-weight: 400; }
+#codeHead .plus { color: var(--green); margin-left: 6px; }
+#codeLines { padding: 18px 0; font-family: "SF Mono", Menlo, monospace; font-size: 20px; line-height: 34px; }
+.ln { display: flex; height: 34px; white-space: pre; }
+.ln .n { width: 70px; text-align: right; padding-right: 26px; color: #b5b5b5; flex: none; }
+.ln.new { background: #effaf2; }
+.ln.new .n { color: #7fb894; }
+.k { color: #a626a4; } .ty { color: #2a63d6; } .s { color: #c0392b; } .nm { color: #986801; } .c { color: #9a9a9a; } .fn { color: #3d7f3d; } .p { color: #383a42; }
+
+/* computer view */
+#computer { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; background: #dfe6ea; }
+#computer .wall { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+#computer .menubar { position: absolute; left: 0; top: 0; width: 100%; height: 38px; background: #2e7cae; }
+#computer .menubar img { position: absolute; top: 0; height: 38px; }
+#computer .menubar .l { left: 0; } #computer .menubar .r { right: 0; }
+#computer .dock { position: absolute; left: 50%; bottom: 10px; width: 780px; transform: translateX(-50%); }
+#paneFoot { height: 76px; display: flex; align-items: center; gap: 16px; padding: 0 22px; }
+#progress { flex: 1; height: 8px; border-radius: 4px; background: #e3e3e1; position: relative; overflow: hidden; }
+#progress div { position: absolute; left: 0; top: 0; height: 100%; width: 40%; background: var(--blue); border-radius: 4px; }
+#live { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); font-size: 19px; font-weight: 500; }
+#live i { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+#paneFoot svg { width: 22px; height: 22px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* phone (absolute in world coordinates, above shadow) */
+#phone { position: absolute; left: 1129px; top: 192px; width: 302px; height: 648px; z-index: 60; }
+#phone .body { position: absolute; inset: 0; border-radius: 50px; background: #101113; box-shadow: 0 30px 70px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.25), inset 0 0 0 2px #3a3b3f; }
+#phone .screen { position: absolute; left: 11px; top: 11px; right: 11px; bottom: 11px; border-radius: 40px; overflow: hidden; background: #000; }
+#phone .screen img { width: 100%; height: 100%; display: block; }
+#phone .island { position: absolute; left: 50%; top: 24px; width: 84px; height: 24px; border-radius: 12px; background: #000; transform: translateX(-50%); }
+#phone .btn { position: absolute; width: 4px; background: #2a2b2f; border-radius: 2px; }
+
+/* ---------- scene 4: end card ---------- */
+#s4 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; }
+#s4 .lockup { width: 768px; }
+#s4 .url { font-size: 64px; font-weight: 600; letter-spacing: -0.03em; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="stage">
+ <div id="world">
+
+  <!-- Scene 1 -->
+  <section id="s1">
+    <img class="lockup el" id="s1logo" src="assets/lockup-black.png" alt="Devin" />
+    <div class="line1 el" id="s1l1">macOS.</div>
+    <div class="line2" id="s1l2"><span class="el">Now</span><span class="el">in</span><span class="el">Devin</span><span class="el">Cloud.</span></div>
+  </section>
+
+  <!-- Scene 2 -->
+  <section id="s2" class="hidden">
+    <div id="composerWrap">
+      <div id="composerHead" class="el">
+        <img class="lockup" src="assets/lockup-black.png" alt="Devin" />
+        <div class="segmented"><div class="on">Agent</div><div>Ask</div></div>
+      </div>
+      <div id="composer" class="el">
+        <div id="promptText"><span class="ph">Ask Devin to build features, fix bugs, or work on your code</span></div>
+        <div id="composerBar">
+          <div class="left">
+            <div class="tool"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="tool"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 16l6-8"/></svg>Fusion</div>
+          </div>
+          <div class="right">
+            <div class="tool"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+            <div class="tool"><svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 5v14M16 9v6M20 12h1"/></svg></div>
+            <div id="send"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div id="envRow" class="el">
+        <div class="chip" id="envChip">
+          <svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10a4 4 0 0 1-1 8H7z"/></svg>
+          <span>Virtual environment</span><span class="val" id="envVal">Ubuntu</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="chip">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
+          <span>Security profile</span><span class="val">Default</span>
+        </div>
+      </div>
+    </div>
+    <div id="envMenu" class="hidden">
+      <div class="hdr">Virtual environment</div>
+      <div class="item sel" id="miUbuntu"><div class="lbl"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg>Ubuntu</div><svg class="check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+      <div class="item" id="miMac"><div class="lbl"><svg viewBox="0 0 24 24"><path d="M15.5 3c.2 1.6-.6 3-1.9 3.6-.2-1.5.7-3.1 1.9-3.6zM12 7.6c1.2 0 2-.8 3.6-.8 1 0 2.6.5 3.6 2-3 1.8-2.5 6.3.7 7.6-.8 2.1-2.6 5.2-4.6 5.2-1.4 0-1.8-.8-3.4-.8s-2.1.8-3.4.8C6.3 21.6 3 16.6 3 12.7 3 9 5.4 6.8 7.9 6.8c1.5 0 2.6.8 4.1.8z"/></svg>macOS</div><svg class="check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+    </div>
+  </section>
+
+  <!-- Scene 3 -->
+  <section id="s3" class="hidden">
+    <div id="win">
+      <div id="chat">
+        <div id="chatHead" class="el">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          <div class="ttl">Build Lumen Drift</div>
+          <div class="tag"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg>macOS</div>
+        </div>
+        <div id="chatBody">
+          <div id="userMsg" class="el"><div>Build Lumen Drift, a glowing lane dodging arcade game for iPhone, and play it in the Simulator</div></div>
+          <div id="devinMsg" class="el">
+            <img src="assets/avatar-black.png" alt="" />
+            <div>
+              <div class="who">Devin</div>
+              <div class="txt">I will build Lumen Drift with SwiftUI and SpriteKit, run it in the iOS Simulator on my Mac, then play a round to verify it.</div>
+              <div id="worked"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>Working</div>
+              <div id="steps"></div>
+            </div>
+          </div>
+        </div>
+        <div id="chatComposer" class="el">
+          <div class="ph">Ask Devin to build features, fix bugs, or work on your code</div>
+          <div class="bar">
+            <div class="left" style="display:flex;gap:18px;align-items:center">
+              <div class="tool"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+              <div class="tool"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 16l6-8"/></svg>Fusion</div>
+            </div>
+            <div class="mini"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div id="pane">
+        <div id="tabs" class="el">
+          <div class="tab" id="tabChanges"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Changes</div>
+          <div class="tab" id="tabComputer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Computer</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></svg>iOS Simulator</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Tasks</div>
+          <div class="spacer"></div>
+          <div class="icons">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 4v16"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M4 10V4h6M20 14v6h-6M4 4l7 7M20 20l-7-7"/></svg>
+          </div>
+        </div>
+        <div id="paneBody" class="el">
+          <div id="code">
+            <div id="codeHead"><span>GameScene.swift</span><span class="path">LumenDrift / Game</span><span class="plus">+214</span></div>
+            <div id="codeLines"></div>
+          </div>
+          <div id="computer" class="hidden">
+            <img class="wall" src="assets/wallpaper.png" alt="" />
+            <div class="menubar"><img class="l" src="assets/menubar-left.png" alt="" /><img class="r" src="assets/menubar-right.png" alt="" /></div>
+            <img class="dock" src="assets/dock.png" alt="" />
+          </div>
+        </div>
+        <div id="paneFoot" class="el">
+          <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+          <div id="live"><i></i>Live</div>
+          <div id="progress"><div id="progressFill"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="shadowOuter" class="shadow"></div>
+
+  <div id="phone" class="hidden">
+    <div class="btn" style="left:-4px;top:150px;height:36px"></div>
+    <div class="btn" style="left:-4px;top:210px;height:64px"></div>
+    <div class="btn" style="left:-4px;top:290px;height:64px"></div>
+    <div class="btn" style="right:-4px;top:230px;height:96px"></div>
+    <div class="body"></div>
+    <div class="screen"><img id="phoneImg" src="clipA/0001.png" alt="" /></div>
+    <div class="island"></div>
+  </div>
+
+  <!-- Scene 4 -->
+  <section id="s4" class="hidden">
+    <img class="lockup el" src="assets/lockup-black.png" alt="Devin" />
+    <div class="url el">devin.ai</div>
+  </section>
+
+  <svg id="cursor" class="hidden" viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.2 1.4L9.6 19z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+ </div>
+ <div id="shadowTop" class="shadow"></div>
+</div>
+
+<script>
+/* ======================= EDITABLE CONSTANTS ======================= */
+const FPS = 30;
+const DURATION = 28.4;                       // seconds
+const PROMPT = "Build Lumen Drift, a glowing lane dodging arcade game for iPhone, and play it in the Simulator";
+const CLIPS = { A: { dir: "clipA", frames: 188 }, B: { dir: "clipB", frames: 188 } };
+
+const T = {
+  // scene 1
+  sweep1: [0.0, 1.5],          // opening shadow crosses left to right
+  head1: 0.85, head2: 1.25,    // headline lines build
+  headOut: 3.55,
+  sweep2: [3.35, 4.65],        // shadow returns, carries composer in
+  // scene 2
+  composerIn: 4.05,
+  cursorToEnv: [5.05, 5.6],
+  menuOpen: 5.65,
+  cursorToMac: [5.95, 6.4],
+  pickMac: 6.5,
+  menuClose: 6.6,
+  typing: [7.15, 9.35],
+  cursorToSend: [9.45, 9.85],
+  clickSend: 9.9,
+  sweep3: [9.95, 11.2],
+  composerOut: 10.05,
+  // scene 3
+  sessionIn: 10.55,
+  codeStart: 10.9, codeLineEvery: 0.16,
+  sweep4: [13.7, 14.8],        // code view to Computer
+  clipAStart: 14.25,
+  sweep5: [20.0, 21.1],        // clip A to clip B (outer only)
+  clipBStart: 20.5,
+  sweep6: [26.05, 27.25],      // final shadow, end card
+  sessionOut: 26.15,
+  endIn: 26.85,
+};
+
+const STEPS = [
+  { t: 11.0, html: 'Created <b>LumenDriftApp.swift</b> <span class="plus">+38</span>' },
+  { t: 11.35, html: 'Created <b>GameScene.swift</b> <span class="plus">+214</span>' },
+  { t: 11.7, html: 'Created <b>LaneField.swift</b> <span class="plus">+96</span>' },
+  { t: 12.05, html: 'Created <b>HUDView.swift</b> <span class="plus">+71</span>' },
+  { t: 12.7, html: 'Built LumenDrift for the iOS Simulator', ok: true },
+  { t: 13.3, html: 'Booted iPhone 17 and launched Lumen Drift', ok: true },
+  { t: 15.4, html: 'Started a run and tapped the left lane' },
+  { t: 17.3, html: 'Tapped the right lane to catch energy' },
+  { t: 19.1, html: 'Observed the score climbing', ok: true },
+  { t: 22.0, html: 'Survived a faster wave of walls' },
+  { t: 24.2, html: 'Reached the game over panel', ok: true },
+  { t: 25.2, html: 'Verified: Lumen Drift runs in the Simulator', ok: true },
+];
+
+const CODE = [
+  'import SpriteKit',
+  '',
+  'final class GameScene: SKScene {',
+  '    private let lanes = LaneField(count: 3)',
+  '    private let player = SKShapeNode(circleOfRadius: 18)',
+  '    private var speed: CGFloat = 320',
+  '    private(set) var score = 0',
+  '',
+  '    override func didMove(to view: SKView) {',
+  '        backgroundColor = .black',
+  '        player.fillColor = .cyan',
+  '        player.glowWidth = 14',
+  '        player.position = lanes.center(at: 1)',
+  '        addChild(player)',
+  '        spawnWalls()',
+  '    }',
+  '',
+  '    func move(to lane: Int) {',
+  '        let target = lanes.center(at: lane)',
+  '        let slide = SKAction.moveTo(x: target.x, duration: 0.12)',
+  '        slide.timingMode = .easeOut',
+  '        player.run(slide)',
+  '    }',
+  '',
+  '    override func update(_ currentTime: TimeInterval) {',
+  '        speed += 0.4',
+  '        score += 1',
+  '        checkCollisions()',
+  '    }',
+  '}',
+];
+
+const CAMERA = [ // t, scale, focusX, focusY (world coords mapped to frame center)
+  { t: 0.0, s: 1.0, x: 960, y: 540 },
+  { t: 4.0, s: 1.0, x: 960, y: 540 },
+  { t: 5.2, s: 1.12, x: 960, y: 570 },
+  { t: 9.9, s: 1.12, x: 960, y: 570 },
+  { t: 10.7, s: 1.0, x: 960, y: 540 },
+  { t: 12.2, s: 1.28, x: 1230, y: 470 },
+  { t: 13.0, s: 1.28, x: 1230, y: 470 },
+  { t: 13.9, s: 1.0, x: 960, y: 540 },
+  { t: 14.4, s: 1.0, x: 960, y: 540 },
+  { t: 17.2, s: 1.38, x: 1236, y: 516 },
+  { t: 19.6, s: 1.40, x: 1236, y: 500 },
+  { t: 21.6, s: 1.40, x: 1236, y: 500 },
+  { t: 24.4, s: 1.38, x: 1236, y: 530 },
+  { t: 25.4, s: 1.38, x: 1236, y: 530 },
+  { t: 26.2, s: 1.0, x: 960, y: 540 },
+  { t: 28.4, s: 1.0, x: 960, y: 540 },
+];
+/* ================================================================== */
+
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const seg = (t, a, d) => clamp((t - a) / d);
+const outExpo = (p) => (p >= 1 ? 1 : 1 - Math.pow(2, -10 * p));
+const outQuint = (p) => 1 - Math.pow(1 - p, 5);
+const inOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+const inQuad = (p) => p * p;
+
+function show(el, on) { el.classList.toggle("hidden", !on); }
+function enter(el, t, start, dur = 0.55, dy = 36, dxs = 0) {
+  const p = outQuint(seg(t, start, dur));
+  el.style.opacity = p;
+  el.style.transform = `translate(${dxs * (1 - p)}px, ${dy * (1 - p)}px)`;
+}
+function leave(el, t, start, dur = 0.45, dy = -40) {
+  const p = inQuad(seg(t, start, dur));
+  el.style.opacity = 1 - p;
+  el.style.transform = `translateY(${dy * p}px)`;
+}
+function stagger(nodes, t, start, gap = 0.12, dur = 0.6, dy = 30) {
+  nodes.forEach((n, i) => enter(n, t, start + i * gap, dur, dy));
+}
+
+/* shadow plane sweep: the band travels diagonally across the frame */
+function sweep(el, t, [a, b], dir = 1) {
+  if (t < a || t > b) { el.style.opacity = 0; return; }
+  const p = inOut(seg(t, a, b - a));
+  const x = lerp(-1500, 2500, dir > 0 ? p : 1 - p);
+  el.style.opacity = 1;
+  el.style.transform = `translateX(${x}px) rotate(-16deg)`;
+}
+
+/* cursor movement */
+function cursorAt(t, from, to, [a, b]) {
+  const p = outQuint(seg(t, a, b - a));
+  return [lerp(from[0], to[0], p), lerp(from[1], to[1], p)];
+}
+function setCursor(x, y, on) { const c = $("cursor"); show(c, on); c.style.left = x + "px"; c.style.top = y + "px"; }
+
+/* code highlighter */
+const KW = /\b(import|final|class|private|let|var|override|func|set|return|if|else|self|true|false|nil|in)\b/g;
+function hl(line) {
+  let out = "", i = 0;
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const tokens = line.split(/(".*?"|\b[A-Z][A-Za-z]*\b|\b\d+(?:\.\d+)?\b|\.\w+|\b\w+\b|\S)/g).filter(Boolean);
+  for (const tk of tokens) {
+    if (/^".*"$/.test(tk)) out += `<span class="s">${esc(tk)}</span>`;
+    else if (/^[A-Z]/.test(tk)) out += `<span class="ty">${tk}</span>`;
+    else if (/^\d/.test(tk)) out += `<span class="nm">${tk}</span>`;
+    else if (/^\.\w+/.test(tk)) out += `<span class="nm">${tk}</span>`;
+    else if (KW.test(tk) && (KW.lastIndex = 0, true)) out += `<span class="k">${tk}</span>`;
+    else out += `<span class="p">${esc(tk)}</span>`;
+  }
+  return out;
+}
+(function buildCode() {
+  const c = $("codeLines");
+  CODE.forEach((l, i) => {
+    const d = document.createElement("div"); d.className = "ln new";
+    d.innerHTML = `<span class="n">${i + 1}</span><span class="t">${hl(l) || " "}</span>`;
+    c.appendChild(d);
+  });
+  const st = $("steps");
+  STEPS.forEach((s) => {
+    const d = document.createElement("div"); d.className = "st";
+    d.innerHTML = (s.ok ? '<svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>' : "") + s.html;
+    st.appendChild(d);
+  });
+})();
+
+/* preload footage */
+const frames = { A: [], B: [] };
+window.ready = false;
+(async function preload() {
+  const jobs = [];
+  for (const k of Object.keys(CLIPS)) {
+    for (let i = 1; i <= CLIPS[k].frames; i++) {
+      const src = `${CLIPS[k].dir}/${String(i).padStart(4, "0")}.png`;
+      frames[k].push(src);
+      const im = new Image(); im.src = src; jobs.push(im.decode().catch(() => {}));
+    }
+  }
+  await Promise.all(jobs);
+  await document.fonts.ready;
+  window.ready = true;
+})();
+
+function camera(t) {
+  let a = CAMERA[0], b = CAMERA[CAMERA.length - 1];
+  for (let i = 0; i < CAMERA.length - 1; i++) if (t >= CAMERA[i].t && t <= CAMERA[i + 1].t) { a = CAMERA[i]; b = CAMERA[i + 1]; break; }
+  const p = b.t === a.t ? 1 : inOut(seg(t, a.t, b.t - a.t));
+  const s = lerp(a.s, b.s, p), x = lerp(a.x, b.x, p), y = lerp(a.y, b.y, p);
+  $("world").style.transform = `translate(${960 - x * s}px, ${540 - y * s}px) scale(${s})`;
+}
+
+window.seek = function seek(t) {
+  camera(t);
+  const so = $("shadowOuter"), stp = $("shadowTop");
+  so.style.opacity = 0; stp.style.opacity = 0;
+
+  /* ---- scene 1 ---- */
+  const s1on = t < T.sweep2[1];
+  show($("s1"), s1on);
+  if (s1on) {
+    sweep(stp, t, T.sweep1, 1);
+    enter($("s1logo"), t, T.head1 - 0.2, 0.7, 24);
+    enter($("s1l1"), t, T.head1, 0.8, 70);
+    stagger([...$("s1l2").children], t, T.head2, 0.09, 0.7, 40);
+    if (t >= T.headOut) {
+      leave($("s1logo"), t, T.headOut + 0.12, 0.5, -24);
+      leave($("s1l1"), t, T.headOut, 0.55, -70);
+      [...$("s1l2").children].forEach((n, i) => leave(n, t, T.headOut + 0.06 + i * 0.04, 0.5, -34));
+    }
+    // subtle drift so nothing is still
+    const drift = Math.sin(t * 1.1) * 4;
+    $("s1").style.transform = `translateY(${drift}px)`;
+  }
+
+  /* ---- scene 2 ---- */
+  const s2on = t >= T.composerIn - 0.1 && t < T.sweep3[1];
+  show($("s2"), s2on);
+  if (s2on) {
+    if (t < T.sweep2[1]) sweep(stp, t, T.sweep2, -1);
+    const wrap = $("composerWrap");
+    const pin = outExpo(seg(t, T.composerIn, 0.9));
+    let wy = 120 * (1 - pin), wo = pin;
+    if (t >= T.composerOut) { const q = inQuad(seg(t, T.composerOut, 0.6)); wy -= 700 * q; wo = 1 - q; }
+    wrap.style.transform = `translateY(${wy}px)`; wrap.style.opacity = wo;
+    stagger([$("composerHead"), $("composer"), $("envRow")], t, T.composerIn + 0.12, 0.13, 0.7, 26);
+
+    // env menu
+    const menu = $("envMenu");
+    const mo = t >= T.menuOpen && t < T.menuClose + 0.3;
+    show(menu, mo);
+    if (mo) {
+      const op = outExpo(seg(t, T.menuOpen, 0.4));
+      const cl = t >= T.menuClose ? inQuad(seg(t, T.menuClose, 0.3)) : 0;
+      menu.style.opacity = op * (1 - cl);
+      menu.style.transform = `translateY(${(1 - op) * -10 + cl * -8}px) scale(${lerp(0.94, 1, op)})`;
+      $("miMac").classList.toggle("hover", t >= T.cursorToMac[1] - 0.05);
+      const picked = t >= T.pickMac;
+      $("miMac").classList.toggle("sel", picked);
+      $("miUbuntu").classList.toggle("sel", !picked);
+    }
+    $("envVal").textContent = t >= T.pickMac ? "macOS" : "Ubuntu";
+    $("envChip").style.boxShadow = t >= T.pickMac && t < T.pickMac + 0.6
+      ? `0 0 0 ${3 * (1 - seg(t, T.pickMac, 0.6))}px rgba(70,122,246,${0.5 * (1 - seg(t, T.pickMac, 0.6))}), 0 6px 18px rgba(20,20,30,0.06)` : "";
+
+    // typing
+    const pt = $("promptText");
+    if (t < T.typing[0]) pt.innerHTML = '<span class="ph">Ask Devin to build features, fix bugs, or work on your code</span>';
+    else {
+      const n = Math.floor(PROMPT.length * outQuint(seg(t, T.typing[0], T.typing[1] - T.typing[0])) );
+      const caretOn = Math.floor(t * 2.6) % 2 === 0 || t < T.typing[1];
+      pt.innerHTML = PROMPT.slice(0, n).replace(/&/g, "&amp;") + (caretOn && t < T.clickSend ? '<span class="caret"></span>' : "");
+    }
+    const armed = t >= T.typing[0] + 0.15;
+    const ap = outQuint(seg(t, T.typing[0] + 0.15, 0.4));
+    $("send").style.background = armed ? `rgb(${lerp(230, 70, ap)},${lerp(230, 122, ap)},${lerp(228, 246, ap)})` : "#e6e6e4";
+    $("send").style.transform = t >= T.clickSend ? `scale(${1 - 0.12 * Math.sin(Math.PI * seg(t, T.clickSend, 0.25))})` : `scale(${1 + 0.06 * Math.sin(Math.PI * ap)})`;
+
+    // cursor path
+    const envPt = [640, 690], macPt = [560, 880], sendPt = [1516, 596], start = [1260, 900];
+    let cpos;
+    if (t < T.cursorToEnv[0]) cpos = start;
+    else if (t < T.cursorToMac[0]) cpos = cursorAt(t, start, envPt, T.cursorToEnv);
+    else if (t < T.cursorToSend[0]) cpos = cursorAt(t, envPt, macPt, T.cursorToMac);
+    else cpos = cursorAt(t, macPt, sendPt, T.cursorToSend);
+    const cvis = t >= T.cursorToEnv[0] - 0.3 && t < T.composerOut + 0.1;
+    setCursor(cpos[0], cpos[1], cvis);
+    $("cursor").style.opacity = t < T.cursorToEnv[0] ? seg(t, T.cursorToEnv[0] - 0.3, 0.3) : (t >= T.composerOut ? 1 - seg(t, T.composerOut, 0.1) : 1);
+    const pressing = (t >= T.menuOpen - 0.06 && t < T.menuOpen + 0.14) || (t >= T.pickMac - 0.06 && t < T.pickMac + 0.14) || (t >= T.clickSend - 0.06 && t < T.clickSend + 0.14);
+    $("cursor").style.transform = pressing ? "scale(0.85)" : "scale(1)";
+  }
+
+  /* ---- scene 3 ---- */
+  const s3on = t >= T.sessionIn - 0.1 && t < T.sweep6[1];
+  show($("s3"), s3on);
+  if (!s2on) show($("cursor"), false);
+  const phoneOn = t >= T.clipAStart - 0.55 && t < T.sessionOut + 0.6;
+  show($("phone"), phoneOn);
+  if (s3on) {
+    if (t < T.sweep3[1]) sweep(stp, t, T.sweep3, 1);
+    const win = $("win");
+    const pin = outExpo(seg(t, T.sessionIn, 0.9));
+    let wo = pin, wy = 90 * (1 - pin), ws = lerp(0.97, 1, pin);
+    if (t >= T.sessionOut) { const q = inQuad(seg(t, T.sessionOut, 0.5)); wo = 1 - q; wy = -60 * q; ws = 1 - 0.02 * q; }
+    win.style.opacity = wo; win.style.transform = `translateY(${wy}px) scale(${ws})`;
+    stagger([$("chatHead"), $("tabs"), $("userMsg"), $("paneBody"), $("devinMsg"), $("paneFoot"), $("chatComposer")], t, T.sessionIn + 0.15, 0.1, 0.65, 22);
+
+    // steps
+    [...$("steps").children].forEach((n, i) => {
+      const st = STEPS[i];
+      const p = outQuint(seg(t, st.t, 0.5));
+      n.style.opacity = p; n.style.transform = `translateX(${(1 - p) * -10}px)`;
+      n.style.height = `${38 * outQuint(seg(t, st.t - 0.1, 0.4))}px`;
+    });
+    const secs = Math.max(0, Math.floor(t - T.sessionIn) + 3);
+    $("worked").innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>${t < T.clipBStart + 4.6 ? "Working" : "Worked for 41s"}`;
+
+    // code lines
+    [...$("codeLines").children].forEach((n, i) => {
+      const p = outQuint(seg(t, T.codeStart + i * T.codeLineEvery, 0.35));
+      n.style.opacity = p; n.style.transform = `translateX(${(1 - p) * 8}px)`;
+    });
+
+    // pane switch: code to computer, carried by shadow crossing
+    const computerOn = t >= T.clipAStart - 0.55;
+    show($("code"), !computerOn); show($("computer"), computerOn);
+    $("tabChanges").classList.toggle("on", !computerOn);
+    $("tabComputer").classList.toggle("on", computerOn);
+    if (t >= T.sweep4[0] && t < T.sweep4[1]) sweep(so, t, T.sweep4, -1);
+    if (t >= T.sweep5[0] && t < T.sweep5[1]) sweep(so, t, T.sweep5, 1);
+    if (t >= T.sweep6[0] && t < T.sweep6[1]) sweep(so, t, T.sweep6, -1);
+
+    // footage: two excerpts from one continuous take, 1x, no internal cuts
+    if (phoneOn) {
+      const ph = $("phone");
+      const pp = outQuint(seg(t, T.clipAStart - 0.55, 0.8));
+      let po = pp, py = 30 * (1 - pp);
+      if (t >= T.sessionOut) { const q = inQuad(seg(t, T.sessionOut, 0.5)); po = 1 - q; py = -60 * q; }
+      ph.style.opacity = po; ph.style.transform = `translateY(${py}px)`;
+      const clip = t >= T.clipBStart ? "B" : "A";
+      const start = clip === "B" ? T.clipBStart : T.clipAStart;
+      const idx = clamp(Math.floor((t - start) * FPS), 0, CLIPS[clip].frames - 1);
+      $("phoneImg").src = frames[clip][idx];
+    }
+    $("progressFill").style.width = `${lerp(18, 92, seg(t, T.sessionIn, T.sessionOut - T.sessionIn))}%`;
+  }
+
+  /* ---- scene 4 ---- */
+  const s4on = t >= T.endIn - 0.1;
+  show($("s4"), s4on);
+  if (s4on) {
+    if (t < T.sweep6[1]) sweep(stp, t, T.sweep6, -1);
+    stagger([...$("s4").children], t, T.endIn, 0.14, 0.9, 30);
+    const d = t - T.endIn;
+    $("s4").style.transform = `translateY(${Math.sin(d * 1.4) * -5}px) scale(${1 + d * 0.004})`;
+  }
+};
+seek(0);
+</script>
+</body>
+</html>
