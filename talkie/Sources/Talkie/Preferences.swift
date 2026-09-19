@@ -73,7 +73,7 @@ final class Preferences: ObservableObject {
   init() {
     let defaults = UserDefaults.standard
     defaults.register(defaults: [
-      "speak": true, "screenContext": true, "keepHistory": false, "companion": true,
+      "speak": true, "screenContext": true, "keepHistory": false, "companion": false,
     ])
     speak = defaults.bool(forKey: "speak")
     screenContext = defaults.bool(forKey: "screenContext")

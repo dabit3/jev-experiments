@@ -4,6 +4,8 @@ A little voice. A lot less clicking.
 
 Talkie is a native macOS companion built with SwiftUI, AppKit, and **Jev**. Hold **Control–Option–Space**, ask for something, and release. Talkie can operate accessible Mac apps, point to controls, explain the current screen, dictate into a focused field, and research the web with citations.
 
+Talkie stays in the menu bar, with no window or floating widget on launch. A small indicator appears while listening or working and disappears after completion. Click the menu-bar waveform to type in a compact command panel; answers, errors, and approvals appear there. Open **History & activity** or **Settings** explicitly when you need the full window.
+
 ## Run
 
 Requires macOS 14 or newer, Xcode 15.3+ or its matching Swift toolchain, and a [TypeSafe API key](https://typesafe.ai/).
@@ -15,7 +17,7 @@ bash run.sh
 
 The script builds `build/Talkie.app`, generates its icon, signs it for local development, and starts it. `bash run.sh --build-only` produces the bundle without launching. Copy the app to Applications to launch from Finder.
 
-In **Settings**, add your Jev key. Add an optional OpenAI key for conversation, web search, generated drafts, and imported audio transcription. Keys are stored in macOS Keychain, never the conversation file.
+Click the menu-bar waveform, then **Set up Talkie** or the gear to open **Settings** and add your Jev key. Add an optional OpenAI key for conversation, web search, generated drafts, and imported audio transcription. Keys are stored in macOS Keychain, never the conversation file.
 
 Developers can instead export `TYPESAFE_API_KEY` and `OPENAI_API_KEY` before running the script. `JEV_API_KEY` is also accepted when `TYPESAFE_API_KEY` is absent. Environment credentials take precedence over Keychain and are only inherited when launching from that shell.
 
@@ -39,7 +41,7 @@ Ad-hoc signing is for development: this build is not notarized for public distri
 | Select **Dictate**, then speak | Your exact words go into the previously focused app. |
 | Import a short audio file | OpenAI transcribes it into the composer for review before sending. |
 
-Auto mode lets Jev choose the route. Talk, Act, Research, and Dictate let you choose explicitly. Closing the window keeps the menu-bar app and companion running. Click the waveform in the menu bar to reopen it. **Escape** or **Stop** cancels current work; **Command–N** starts a new conversation; **Command–comma** opens Settings.
+Auto mode lets Jev choose the route. Talk, Act, Research, and Dictate let you choose explicitly. The command panel includes audio import; transcription always waits for review and explicit Send. Closing the full window leaves Talkie running quietly in the menu bar. **Escape** dismisses the command panel and cancels work; **Stop** cancels work; **Command–N** starts a new conversation; **Command–comma** opens Settings. An always-visible companion is optional in Settings and off by default.
 
 ## How Jev controls the Mac
 

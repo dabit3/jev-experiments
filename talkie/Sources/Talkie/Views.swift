@@ -517,7 +517,7 @@ struct SettingsView: View {
             .onChange(of: model.preferences.speak) { _, enabled in
               if !enabled { model.speaker.stop() }
             }
-          Toggle("Show floating companion", isOn: $model.preferences.companion)
+          Toggle("Keep companion visible while idle", isOn: $model.preferences.companion)
           Toggle("Include screen context when I ask", isOn: $model.preferences.screenContext)
           Toggle("Remember conversations on this Mac", isOn: $model.preferences.keepHistory)
             .onChange(of: model.preferences.keepHistory) { _, _ in model.historyPreferenceChanged()
@@ -621,6 +621,129 @@ struct SettingsView: View {
   }
 }
 
+struct QuickView: View {
+  @ObservedObject var model: TalkieModel
+  @FocusState private var focused: Bool
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack(spacing: 9) {
+        TalkieMark(size: 24, active: model.listening || model.busy)
+        Text(model.busy ? model.status : "Talkie").font(.system(size: 13, weight: .medium))
+          .lineLimit(1)
+        Spacer()
+        Menu {
+          Button("New conversation") { model.newConversation() }
+            .keyboardShortcut("n", modifiers: .command)
+          Button("History & activity") { model.showHistory?() }
+          Button("Settings…") { model.showSettings?() }
+            .keyboardShortcut(",", modifiers: .command)
+          Divider()
+          Button("Quit Talkie") { NSApplication.shared.terminate(nil) }
+        } label: {
+          Image(systemName: "ellipsis").frame(width: 22)
+        }
+        .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("Talkie menu")
+        Button {
+          model.dismissQuick?()
+        } label: {
+          Image(systemName: "xmark").frame(width: 22, height: 22)
+        }.buttonStyle(.plain).foregroundStyle(Palette.secondary).accessibilityLabel(
+          "Dismiss Talkie")
+      }
+
+      if let pending = model.pending {
+        Text("Your go-ahead").font(.system(size: 16, weight: .medium))
+        ScrollView {
+          Text("\(pending.action.label)\n\nIn \(pending.appName)")
+            .font(.system(size: 13)).textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        HStack {
+          Button("Cancel") { model.confirm(false) }
+          Spacer()
+          Button("Allow this action") { model.confirm(true) }
+            .buttonStyle(.borderedProminent).tint(Palette.orange)
+        }
+      } else {
+        if let reply = model.quickReply {
+          ScrollView { MessageView(message: reply).padding(.trailing, 4) }
+        } else if let notice = model.notice {
+          ScrollView {
+            Text(notice).font(.system(size: 12)).foregroundStyle(Palette.secondary)
+              .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+          }
+        }
+        HStack(spacing: 10) {
+          TextField("Ask anything, or hold ⌃ ⌥ space…", text: $model.input, axis: .vertical)
+            .textFieldStyle(.plain).font(.system(size: 14)).lineLimit(1...3)
+            .focused($focused).disabled(model.busy || model.listening)
+            .onSubmit { model.submit() }.accessibilityLabel("Ask Talkie")
+          Button {
+            if model.busy || model.listening {
+              model.stop()
+            } else if !model.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+              model.submit()
+            } else {
+              model.startListening()
+            }
+          } label: {
+            Image(
+              systemName: model.busy || model.listening
+                ? "stop.fill" : model.input.isEmpty ? "mic" : "arrow.up"
+            )
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.white).frame(width: 32, height: 32)
+            .background(Palette.ink, in: Circle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(
+            model.busy || model.listening
+              ? "Stop" : model.input.isEmpty ? "Start microphone" : "Send")
+        }
+        .padding(.horizontal, 12).frame(height: 54)
+        .background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+      }
+
+      HStack(spacing: 12) {
+        if !model.connected {
+          Button("Set up Talkie") { model.showSettings?() }
+            .foregroundStyle(Palette.orange)
+        } else {
+          Text(model.preferences.screenContext ? model.contextApp : "Screen context off")
+            .lineLimit(1)
+        }
+        Spacer()
+        if model.pending == nil {
+          Button {
+            model.importAudio()
+          } label: {
+            Image(systemName: "paperclip")
+          }.disabled(model.busy || model.listening).accessibilityLabel("Import audio")
+          Picker("Mode", selection: $model.mode) {
+            ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+          }
+          .labelsHidden().fixedSize().disabled(model.busy || model.listening)
+          .accessibilityLabel("Mode")
+        }
+        Button {
+          model.showSettings?()
+        } label: {
+          Image(systemName: "gearshape")
+        }.accessibilityLabel("Settings")
+      }
+      .font(.system(size: 10)).buttonStyle(.plain).foregroundStyle(Palette.secondary)
+    }
+    .padding(20).frame(width: 420, height: model.quickHeight)
+    .foregroundStyle(Palette.ink)
+    .background(Palette.paper, in: RoundedRectangle(cornerRadius: 20))
+    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Palette.line))
+    .preferredColorScheme(.light)
+    .onAppear { focused = true }
+    .onExitCommand { model.dismissQuick?() }
+  }
+}
+
 struct CompanionView: View {
   @ObservedObject var model: TalkieModel
   var body: some View {
@@ -630,14 +753,19 @@ struct CompanionView: View {
       } label: {
         TalkieMark(size: 29, active: model.listening || model.busy)
       }
-      .buttonStyle(.plain).accessibilityLabel("Open Talkie")
+      .buttonStyle(.plain).accessibilityLabel("Ask Talkie")
       VStack(alignment: .leading, spacing: 3) {
-        Text(model.listening ? "I’m listening" : model.busy ? "On it…" : "Say the word")
-          .font(.system(size: 12, weight: .medium)).foregroundStyle(.white)
+        Text(
+          model.listening
+            ? "I’m listening"
+            : model.busy ? "On it…" : model.quickReply != nil ? "Done" : "Say the word"
+        )
+        .font(.system(size: 12, weight: .medium)).foregroundStyle(.white)
         Text(
           model.listening && !model.voice.transcript.isEmpty
             ? model.voice.transcript
-            : model.busy ? model.status : "Hold ⌃ ⌥ space"
+            : model.busy
+              ? model.status : model.quickReply != nil ? "Click to review" : "Hold ⌃ ⌥ space"
         )
         .font(.system(size: 9)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
       }

@@ -31,12 +31,17 @@ final class TalkieModel: ObservableObject {
   @Published var contextApp = "your Mac"
   @Published var shortcutAvailable = true
   @Published var notice: String?
+  @Published var quickReply: Message?
   private var externalApp: NSRunningApplication?
   private var job: Task<Void, Never>?
   private var runID = UUID()
   private var confirmation: CheckedContinuation<Bool, Never>?
   private var subscriptions: Set<AnyCancellable> = []
   var showWindow: (() -> Void)?
+  var showHistory: (() -> Void)?
+  var showSettings: (() -> Void)?
+  var dismissQuick: (() -> Void)?
+  var showCompletion: (() -> Void)?
   var hideWindow: (() -> Void)?
   var highlight: ((CGRect, String) -> Void)?
   var hideHighlight: (() -> Void)?
@@ -77,6 +82,12 @@ final class TalkieModel: ObservableObject {
   var messages: [Message] { conversations.first(where: { $0.id == currentID })?.messages ?? [] }
   var listening: Bool { voice.active }
   var connected: Bool { !preferences.jevKey.isEmpty }
+  var quickHeight: CGFloat {
+    if pending != nil { return 330 }
+    if quickReply != nil { return 390 }
+    if notice != nil { return 260 }
+    return 170
+  }
 
   private func remember(_ app: NSRunningApplication?) {
     guard let app, app.bundleIdentifier != Bundle.main.bundleIdentifier,
@@ -98,12 +109,14 @@ final class TalkieModel: ObservableObject {
     }
     input = ""
     notice = nil
+    quickReply = nil
   }
 
   func select(_ conversation: Conversation) {
     stop()
     currentID = conversation.id
     showingSettings = false
+    quickReply = conversation.messages.last(where: { $0.role == "assistant" })
   }
 
   func clearHistory() {
@@ -115,6 +128,7 @@ final class TalkieModel: ObservableObject {
     let conversation = Conversation()
     conversations = [conversation]
     currentID = conversation.id
+    quickReply = nil
   }
 
   func historyPreferenceChanged() {
@@ -135,6 +149,7 @@ final class TalkieModel: ObservableObject {
   func startListening() {
     stop()
     notice = nil
+    quickReply = nil
     status = "Listening…"
     job = Task { await voice.start() }
     updateCompanion?()
@@ -176,6 +191,7 @@ final class TalkieModel: ObservableObject {
     stop()
     input = ""
     notice = nil
+    quickReply = nil
     showingSettings = false
     activities = []
     append(Message(role: "user", text: goal))
@@ -192,10 +208,11 @@ final class TalkieModel: ObservableObject {
         return
       } catch {
         guard token == runID else { return }
-        append(
-          Message(
-            role: "assistant", text: error.localizedDescription, activities: activities,
-            isError: true))
+        let message = Message(
+          role: "assistant", text: error.localizedDescription, activities: activities,
+          isError: true)
+        quickReply = message
+        append(message)
         showWindow?()
       }
       guard token == runID else { return }
@@ -226,6 +243,7 @@ final class TalkieModel: ObservableObject {
         throw TalkieError(
           "Focus the text field you want to dictate into, then use the global shortcut.")
       }
+      hideWindow?()
       target.activate()
       try await Task.sleep(for: .milliseconds(250))
       _ = desktop.snapshot(app: target)
@@ -422,6 +440,8 @@ final class TalkieModel: ObservableObject {
     panel.prompt = "Transcribe"
     guard panel.runModal() == .OK, let url = panel.url else { return }
     stop()
+    notice = nil
+    quickReply = nil
     busy = true
     status = "Transcribing audio…"
     let token = UUID()
@@ -439,6 +459,7 @@ final class TalkieModel: ObservableObject {
       guard token == runID else { return }
       busy = false
       status = "Ready when you are"
+      showWindow?()
     }
   }
 
@@ -451,7 +472,10 @@ final class TalkieModel: ObservableObject {
     activities.append(Activity(text, milliseconds: result.milliseconds))
   }
   private func finish(_ text: String, sources: [WebSource] = [], speak: Bool = true) {
-    append(Message(role: "assistant", text: text, activities: activities, sources: sources))
+    let message = Message(role: "assistant", text: text, activities: activities, sources: sources)
+    quickReply = message
+    append(message)
+    showCompletion?()
     if preferences.speak, speak { speaker.say(text) }
   }
   private func append(_ message: Message) {
