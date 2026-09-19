@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud: Anamorphic Alignment</title>
+<style>
+  @font-face { font-family: "Inter Tight"; src: url("assets/fonts/InterTight.ttf"); font-weight: 100 900; }
+  @font-face { font-family: "Inter"; src: url("assets/fonts/Inter.ttf"); font-weight: 100 900; }
+
+  :root {
+    --paper: #fbfbfa;
+    --ink: #191919;
+    --ink-2: rgba(25, 25, 25, 0.56);
+    --ink-3: rgba(25, 25, 25, 0.34);
+    --line: rgba(25, 25, 25, 0.10);
+    --line-2: rgba(25, 25, 25, 0.06);
+    --wash: #f3f3f1;
+    --accent: #2200ff;
+    --dark: #121212;
+  }
+
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: "Inter", "Helvetica Neue", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+  .layer { position: absolute; inset: 0; }
+  .hidden { display: none !important; }
+
+  /* ---------- Scene A: anamorphic title ---------- */
+  #title-scene { perspective: 1800px; perspective-origin: 50% 50%; }
+  #title-rig { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .plane { position: absolute; transform-style: preserve-3d; will-change: transform; }
+  .headline { font-family: "Inter Tight", "Inter", sans-serif; font-weight: 600; font-size: 168px; line-height: 1; letter-spacing: -0.045em; color: var(--ink); white-space: nowrap; }
+  .strip { position: absolute; overflow: visible; }
+  .side { position: absolute; background: var(--accent); }
+  #title-mark { position: absolute; width: 112px; height: 112px; }
+  #title-mark img { width: 100%; height: 100%; display: block; }
+
+  /* ---------- Product frame ---------- */
+  #frame-wrap { position: absolute; inset: 0; }
+  #frame {
+    position: absolute; left: 100px; top: 56px; width: 1720px; height: 968px;
+    background: #ffffff; border-radius: 22px; overflow: hidden;
+    box-shadow: 0 1px 0 rgba(25,25,25,0.06), 0 30px 80px rgba(25,25,25,0.10), 0 2px 8px rgba(25,25,25,0.05);
+    transform-origin: 50% 50%;
+  }
+  #frame::after { content: ""; position: absolute; inset: 0; border-radius: 22px; border: 1px solid var(--line); pointer-events: none; }
+
+  /* Composer view */
+  #composer-view { position: absolute; inset: 0; }
+  .app-top { position: absolute; left: 0; right: 0; top: 0; height: 88px; display: flex; align-items: center; padding: 0 36px; }
+  .app-top .sidebar-toggle { width: 34px; height: 34px; display: grid; place-items: center; }
+  .app-top .sidebar-toggle svg { width: 26px; height: 26px; }
+  .app-top .brand { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 26px; }
+  .app-top .brand img { height: 30px; display: block; }
+  .mode-toggle { display: flex; align-items: center; height: 44px; padding: 4px; border-radius: 12px; background: var(--wash); }
+  .mode-toggle span { height: 36px; padding: 0 20px; display: grid; place-items: center; font-size: 21px; font-weight: 500; color: var(--ink-2); border-radius: 9px; }
+  .mode-toggle span.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(25,25,25,0.10), 0 0 0 1px var(--line-2); }
+
+  #composer { position: absolute; left: 50%; top: 300px; width: 1240px; transform: translateX(-50%); }
+  #composer-box {
+    position: relative; background: #fff; border-radius: 26px;
+    box-shadow: 0 0 0 1.5px rgba(25,25,25,0.11), 0 18px 50px rgba(25,25,25,0.07);
+    padding: 34px 38px 26px;
+  }
+  #composer-text { min-height: 128px; font-size: 32px; line-height: 1.34; font-weight: 400; color: var(--ink); letter-spacing: -0.008em; }
+  #composer-text .placeholder { color: var(--ink-3); }
+  .caret { display: inline-block; width: 3px; height: 34px; background: var(--ink); vertical-align: -6px; margin-left: 2px; border-radius: 1px; }
+  .caret.off { opacity: 0; }
+  .composer-row { display: flex; align-items: center; margin-top: 20px; gap: 14px; }
+  .icon-btn { width: 50px; height: 50px; border-radius: 13px; display: grid; place-items: center; color: var(--ink-2); }
+  .icon-btn svg { width: 28px; height: 28px; }
+  .pill { height: 50px; padding: 0 20px 0 16px; border-radius: 13px; display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 500; color: var(--ink); }
+  .pill svg { width: 26px; height: 26px; }
+  .spacer { flex: 1; }
+  #send-btn { width: 54px; height: 54px; border-radius: 15px; display: grid; place-items: center; background: var(--wash); color: var(--ink-3); transform-origin: 50% 50%; }
+  #send-btn svg { width: 30px; height: 30px; }
+  #send-btn.armed { background: var(--ink); color: #fff; }
+
+  #env-row { position: absolute; left: 50%; top: 572px; transform: translateX(-50%); width: 1240px; display: flex; align-items: center; justify-content: center; }
+  #env-chip { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 22px 0 20px; border-radius: 15px; font-size: 22px; font-weight: 500; color: var(--ink); box-shadow: 0 0 0 1.5px var(--line); background: #fff; }
+  #env-chip.hover { background: var(--wash); }
+  #env-chip svg.ico { width: 26px; height: 26px; }
+  #env-chip svg.chev { width: 20px; height: 20px; color: var(--ink-2); }
+
+  .menu { position: absolute; background: #fff; border-radius: 18px; padding: 10px; box-shadow: 0 0 0 1px var(--line), 0 24px 60px rgba(25,25,25,0.14), 0 4px 12px rgba(25,25,25,0.06); transform-origin: 50% 0%; }
+  .menu .menu-title { font-size: 17px; font-weight: 500; color: var(--ink-3); padding: 10px 16px 8px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .menu .item { display: flex; align-items: center; gap: 14px; height: 58px; padding: 0 16px; border-radius: 12px; font-size: 22px; font-weight: 500; color: var(--ink); white-space: nowrap; }
+  .menu .item svg.ico { width: 26px; height: 26px; flex: 0 0 auto; }
+  .menu .item .grow { flex: 1; min-width: 160px; }
+  .menu .item .check { width: 24px; height: 24px; color: var(--ink); }
+  .menu .item .sub { width: 20px; height: 20px; color: var(--ink-2); }
+  .menu .item.hover { background: var(--wash); }
+  .menu .item.selected .check { color: var(--ink); }
+  #env-menu { left: 50%; top: 638px; transform: translateX(-50%); width: 340px; }
+  #env-submenu { left: 50%; top: 654px; margin-left: 172px; width: 300px; transform-origin: 0% 20%; }
+
+  /* Cursor */
+  #cursor { position: absolute; left: 0; top: 0; width: 40px; height: 40px; transform-origin: 6px 4px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); z-index: 50; }
+
+  /* Session view */
+  #session-view { position: absolute; inset: 0; background: #fff; }
+  .sess-top { position: absolute; left: 0; right: 0; top: 0; height: 84px; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 30px; gap: 22px; }
+  .sess-top .sess-title { font-size: 23px; font-weight: 600; color: var(--ink); }
+  .sess-top .sess-status { display: flex; align-items: center; gap: 10px; font-size: 19px; color: var(--ink-2); font-weight: 500; }
+  .sess-top .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .sess-top .right { margin-left: auto; display: flex; align-items: center; gap: 18px; }
+  .sess-top .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--wash); box-shadow: 0 0 0 1px var(--line); }
+
+  #chat { position: absolute; left: 0; top: 84px; bottom: 0; width: 560px; border-right: 1px solid var(--line); padding: 34px 30px 0 30px; overflow: hidden; }
+  .msg { display: flex; gap: 16px; margin-bottom: 30px; }
+  .msg .who { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 10px; display: grid; place-items: center; }
+  .msg .who img { width: 40px; height: 40px; display: block; }
+  .msg .who.user { border-radius: 50%; background: var(--wash); box-shadow: 0 0 0 1px var(--line); }
+  .msg .body { font-size: 24px; line-height: 1.42; color: var(--ink); letter-spacing: -0.005em; padding-top: 4px; }
+  .msg .body.muted { color: var(--ink-2); }
+  .msg.step .body { display: flex; align-items: center; gap: 12px; }
+  .msg .body .tick { width: 24px; height: 24px; color: var(--ink); flex: 0 0 auto; }
+  .msg .body .spin { display: inline-block; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid var(--line); border-top-color: var(--ink); flex: 0 0 auto; }
+
+  #pane { position: absolute; left: 560px; top: 84px; right: 0; bottom: 0; background: var(--paper); }
+  .pane-tabs { position: absolute; left: 0; right: 0; top: 0; height: 68px; display: flex; align-items: center; padding: 0 30px; gap: 8px; border-bottom: 1px solid var(--line); background: #fff; }
+  .pane-tabs .tab { height: 42px; padding: 0 18px; border-radius: 11px; display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 500; color: var(--ink-2); }
+  .pane-tabs .tab.on { background: var(--wash); color: var(--ink); }
+  .pane-tabs .tab svg { width: 22px; height: 22px; }
+  .pane-tabs .tab-right { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 18px; color: var(--ink-2); font-weight: 500; }
+  .pane-tabs .tab-right .live { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+  #pane-body { position: absolute; left: 0; right: 0; top: 68px; bottom: 0; overflow: hidden; }
+
+  /* Code view */
+  #code-view { position: absolute; inset: 0; background: #fff; }
+  .code-head { position: absolute; left: 0; right: 0; top: 0; height: 56px; display: flex; align-items: center; padding: 0 30px; gap: 12px; font-size: 19px; color: var(--ink-2); border-bottom: 1px solid var(--line-2); font-weight: 500; }
+  .code-head b { color: var(--ink); font-weight: 600; }
+  .code-head svg { width: 20px; height: 20px; }
+  #code { position: absolute; left: 30px; top: 78px; right: 30px; bottom: 0; font-family: "SF Mono", Menlo, monospace; font-size: 22px; line-height: 1.7; color: var(--ink); white-space: pre; tab-size: 4; }
+  #code .ln { display: inline-block; width: 52px; color: var(--ink-3); text-align: right; margin-right: 34px; user-select: none; }
+  #code .kw { color: #a626a4; } #code .fn { color: #4078f2; } #code .ty { color: #c18401; } #code .en { color: #0184bc; } #code .cm { color: var(--ink-3); } #code .nu { color: #986801; }
+  #code .cur { display: inline-block; width: 2px; height: 26px; background: var(--ink); vertical-align: -5px; }
+
+  /* Simulator pane */
+  #sim-view { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, #ffffff 0%, #f1f1ef 100%); }
+  #phone { position: absolute; left: 50%; top: 50%; width: 1100px; height: 530px; transform: translate(-50%, -50%); }
+  #phone .body { position: absolute; inset: 0; border-radius: 74px; background: #0c0c0d; box-shadow: 0 30px 70px rgba(25,25,25,0.22), 0 6px 18px rgba(25,25,25,0.12), inset 0 0 0 2px #2a2a2c; }
+  #phone .body::before { content: ""; position: absolute; inset: 5px; border-radius: 69px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.10); }
+  #phone .screen { position: absolute; left: 22px; top: 22px; right: 22px; bottom: 22px; border-radius: 54px; overflow: hidden; background: #000; }
+  #phone .screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+  #phone .island { position: absolute; left: 36px; top: 50%; width: 22px; height: 84px; margin-top: -42px; border-radius: 12px; background: #000; }
+  #phone .btn { position: absolute; background: #1f1f21; border-radius: 3px; }
+
+  /* ---------- Scene D: end ---------- */
+  #end-scene { perspective: 1800px; }
+  #end-plane { position: absolute; inset: 0; background: var(--dark); transform-origin: 0% 50%; }
+  #end-rig { position: absolute; inset: 0; transform-style: preserve-3d; }
+  #p-logo, #p-url { inset: 0; }
+  #end-logo { position: absolute; left: 50%; top: 50%; width: 760px; transform: translate(-50%, -50%); }
+  #end-logo img { width: 100%; display: block; }
+  #end-url { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: "Inter Tight", "Inter", sans-serif; font-weight: 500; font-size: 88px; letter-spacing: -0.03em; color: #fff; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- Scene A -->
+  <div id="title-scene" class="layer">
+    <div id="title-rig">
+      <div class="plane" id="p-mark"><div id="title-mark"><img src="assets/logo/avatar-black.png" alt="" /></div></div>
+      <div class="plane strip" id="p-s1"><div class="headline">mac</div></div>
+      <div class="plane strip" id="p-s2"><div class="headline">OS.</div></div>
+      <div class="plane strip" id="p-s3"><div class="headline">Now in</div></div>
+      <div class="plane strip" id="p-s4"><div class="headline">Devin Cloud.</div></div>
+      <div class="plane side" id="p-top"></div>
+      <div class="plane side" id="p-bottom"></div>
+      <div class="plane side" id="p-left"></div>
+      <div class="plane side" id="p-right"></div>
+    </div>
+  </div>
+
+  <!-- Scene D -->
+  <div id="end-scene" class="layer hidden">
+    <div id="end-plane"></div>
+    <div id="end-rig">
+      <div class="plane" id="p-logo"><div id="end-logo"><img src="assets/logo/lockup-white.png" alt="Devin" /></div></div>
+      <div class="plane" id="p-url"><div id="end-url">devin.ai</div></div>
+    </div>
+  </div>
+
+  <!-- Product frame -->
+  <div id="frame-wrap" class="layer">
+    <div id="frame">
+
+      <div id="composer-view">
+        <div class="app-top">
+          <div class="sidebar-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#191919" stroke-width="1.6"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M9 4.5v15"/></svg>
+          </div>
+          <div class="brand">
+            <img src="assets/logo/lockup-black.png" alt="Devin" />
+            <div class="mode-toggle"><span class="on">Agent</span><span>Ask</span></div>
+          </div>
+        </div>
+
+        <div id="composer">
+          <div id="composer-box">
+            <div id="composer-text"><span class="placeholder">Give Devin a task to work on</span></div>
+            <div class="composer-row">
+              <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></div>
+              <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 4L9 20"/></svg></div>
+              <div class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="#fff"/><circle cx="15" cy="12" r="2" fill="#fff"/><circle cx="8" cy="17" r="2" fill="#fff"/></svg>Fusion</div>
+              <div class="spacer"></div>
+              <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+              <div id="send-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="env-row">
+          <div id="env-chip">
+            <svg class="ico" id="env-ico" viewBox="0 0 24 24"></svg>
+            <span id="env-label">Ubuntu</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+
+        <div class="menu" id="env-menu">
+          <div class="menu-title">Environment</div>
+          <div class="item selected" id="mi-ubuntu"><svg class="ico" viewBox="0 0 24 24"></svg><span class="grow">Ubuntu</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+          <div class="item" id="mi-windows"><svg class="ico" viewBox="0 0 24 24"></svg><span class="grow">Windows</span></div>
+          <div class="item" id="mi-macos"><svg class="ico" viewBox="0 0 24 24"></svg><span class="grow">macOS</span><svg class="sub" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="menu" id="env-submenu">
+          <div class="menu-title">macOS</div>
+          <div class="item" id="si-mac"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span class="grow">Mac desktop</span></div>
+          <div class="item" id="si-sim"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5.5h3"/></svg><span class="grow">iOS Simulator</span></div>
+        </div>
+      </div>
+
+      <div id="session-view" class="hidden">
+        <div class="sess-top">
+          <div class="sess-title">RTX Afterdark for iPhone</div>
+          <div class="sess-status"><span class="dot"></span><span id="sess-status-text">Working</span></div>
+          <div class="right"><div class="avatar"></div></div>
+        </div>
+        <div id="chat">
+          <div class="msg" id="m-user">
+            <div class="who user"></div>
+            <div class="body">Build RTX Afterdark, a night driving arcade game for iPhone, run it in the Simulator and verify pause and resume</div>
+          </div>
+          <div class="msg step" id="m-1"><div class="who"><img src="assets/logo/avatar-black.png" alt="" /></div><div class="body"><span class="state"></span><span class="txt">Writing the race engine in Swift</span></div></div>
+          <div class="msg step" id="m-2"><div class="who"><img src="assets/logo/avatar-black.png" alt="" /></div><div class="body"><span class="state"></span><span class="txt">Xcode build succeeded</span></div></div>
+          <div class="msg step" id="m-3"><div class="who"><img src="assets/logo/avatar-black.png" alt="" /></div><div class="body"><span class="state"></span><span class="txt">Running on the iPhone Simulator</span></div></div>
+          <div class="msg step" id="m-4"><div class="who"><img src="assets/logo/avatar-black.png" alt="" /></div><div class="body"><span class="state"></span><span class="txt">Tapping Pause</span></div></div>
+          <div class="msg step" id="m-5"><div class="who"><img src="assets/logo/avatar-black.png" alt="" /></div><div class="body"><span class="state"></span><span class="txt">Tapping Resume</span></div></div>
+          <div class="msg step" id="m-6"><div class="who"><img src="assets/logo/avatar-black.png" alt="" /></div><div class="body"><span class="state"></span><span class="txt">Pause and resume verified</span></div></div>
+        </div>
+        <div id="pane">
+          <div class="pane-tabs">
+            <div class="tab" id="tab-progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h4l3-7 4 14 3-7h2"/></svg>Progress</div>
+            <div class="tab on" id="tab-changes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v12M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 9c0 4-8 3-8 6"/></svg>Changes</div>
+            <div class="tab" id="tab-computer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg>Simulator</div>
+            <div class="tab-right"><span class="live"></span><span id="tab-right-text">Devin's Mac</span></div>
+          </div>
+          <div id="pane-body">
+            <div id="code-view">
+              <div class="code-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span>Sources /</span><b>GameSession.swift</b></div>
+              <div id="code"></div>
+            </div>
+            <div id="sim-view" class="hidden">
+              <div id="phone">
+                <div class="body"></div>
+                <div class="btn" style="left:200px;top:-3px;width:70px;height:6px;"></div>
+                <div class="btn" style="left:300px;top:-3px;width:120px;height:6px;"></div>
+                <div class="btn" style="left:600px;bottom:-3px;width:150px;height:6px;"></div>
+                <div class="screen"><img id="sim-frame" alt="" /></div>
+                <div class="island"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <svg id="cursor" viewBox="0 0 40 40"><path d="M6 4 L6 30 L12.5 24.5 L17 35 L21.5 33 L17 22.5 L26 22.5 Z" fill="#111" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================================
+   EDITABLE CONSTANTS
+   All times are in seconds on the 28 s timeline. FPS and size fixed by the brief.
+   ===================================================================== */
+const CONFIG = {
+  fps: 30,
+  duration: 28.0,
+  footageDir: "build/footage/",   // frames f0001.jpg ... extracted from footage/*.mp4 at 30 fps
+  footageFrames: 435,
+  footageStart: 11.6,             // when the first Simulator frame appears (1x, no speed change)
+  prompt: "Build RTX Afterdark, a night driving arcade game for iPhone, run it in the Simulator and verify pause and resume",
+  // Scene A
+  alignStart: 0.10, alignEnd: 2.10, sidesDelay: 0.22, titleLiftStart: 3.95, titleLiftEnd: 4.55,
+  // Composer
+  frameIn: 4.35, headerIn: 4.75, composerIn: 4.90,
+  cursorAppear: 5.05, cursorToChip: [5.15, 5.65], chipClick: 5.72, menuOpen: 5.78,
+  cursorToMac: [5.95, 6.35], submenuOpen: 6.40, cursorToSim: [6.55, 6.95], simClick: 7.02, menuClose: 7.06, chipSwap: 7.08,
+  typeStart: 7.35, typeEnd: 9.35, armAt: 9.40, cursorToSend: [9.45, 9.85], sendClick: 9.92,
+  // Session view
+  sessionIn: 10.05, codeTypeStart: 10.30, codeTypeEnd: 11.30, simTabAt: 11.45,
+  // Footage moments (relative to footageStart): pause tap and resume tap in the recording
+  pauseAt: 8.95, resumeAt: 11.45,
+  // End
+  frameOutStart: 26.10, frameOutEnd: 26.75, darkWipe: [26.10, 26.60],
+  endAlignStart: 26.55, endAlignEnd: 27.35, endDriftEnd: 28.0,
+};
+
+/* Single easing: fast out, gentle in. */
+function ease(x) { x = Math.min(1, Math.max(0, x)); return 1 - Math.pow(1 - x, 3.2); }
+function seg(t, a, b) { return ease((t - a) / (b - a)); }
+function lerp(a, b, u) { return a + (b - a) * u; }
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const $ = (id) => document.getElementById(id);
+const show = (el, on) => el.classList.toggle("hidden", !on);
+
+/* ---------------- Icons ---------------- */
+const UBUNTU = `<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="4.2" r="1.8" fill="currentColor"/><circle cx="5.3" cy="16" r="1.8" fill="currentColor"/><circle cx="18.7" cy="16" r="1.8" fill="currentColor"/>`;
+const WINDOWS = `<path d="M3.5 5.5 11 4.4v7.1H3.5zM12 4.2 20.5 3v8.5H12zM3.5 12.5H11v7.1l-7.5-1.1zM12 12.5h8.5V21L12 19.8z" fill="currentColor"/>`;
+const APPLE = `<path fill="currentColor" d="M16.4 12.7c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.8 2.3 1.1 0 1.6-.7 2.9-.7 1.4 0 1.7.7 2.9.7 1.2 0 2-1.1 2.7-2.2.9-1.2 1.2-2.4 1.2-2.5 0 0-2.3-.9-2.3-3.8zM14.7 6.2c.6-.7 1-1.7.9-2.7-.9 0-2 .6-2.6 1.3-.6.6-1.1 1.7-.9 2.6 1 .1 2-.5 2.6-1.2z"/>`;
+$("env-ico").innerHTML = UBUNTU;
+document.querySelector("#mi-ubuntu .ico").innerHTML = UBUNTU;
+document.querySelector("#mi-windows .ico").innerHTML = WINDOWS;
+document.querySelector("#mi-macos .ico").innerHTML = APPLE;
+
+/* ---------------- Scene A layout ----------------
+   Final positions (centered block): mark above, two lines, accent rectangle around. */
+const TITLE = (() => {
+  const cx = 960, lineH = 168, gap = 18;
+  const line1Y = 400, line2Y = line1Y + lineH + gap;
+  const w1 = { mac: 292, os: 292 };           // measured widths for "mac" and "OS." at 168px
+  return { cx, line1Y, line2Y, lineH };
+})();
+
+// Scattered start transforms: [x, y, z, rx, ry, rz]
+const SCATTER = {
+  "p-mark":   [-420, -260, -900, 20, -40, -18],
+  "p-s1":     [-760, 120, -700, 0, 55, 0],
+  "p-s2":     [ 520, -320, -400, 0, -50, 10],
+  "p-s3":     [-600, 380, -250, 40, 0, 0],
+  "p-s4":     [ 700, 260, -900, -25, 30, -8],
+  "p-top":    [-300, -520, -500, 70, 0, 12],
+  "p-bottom": [ 300, 560, -400, -60, 0, -14],
+  "p-left":   [-900, 0, -300, 0, 60, 0],
+  "p-right":  [ 900, 60, -600, 0, -70, 6],
+};
+const STAGGER = { "p-s1": 0, "p-s2": 0.06, "p-s3": 0.10, "p-s4": 0.16, "p-mark": 0.12, "p-top": 0, "p-bottom": 0.05, "p-left": 0.10, "p-right": 0.15 };
+
+function layoutTitle() {
+  // Measure headline widths once, then position strips so that the two lines are centered.
+  const m = (id) => $(id).querySelector(".headline").getBoundingClientRect().width;
+  const w = { s1: m("p-s1"), s2: m("p-s2"), s3: m("p-s3"), s4: m("p-s4") };
+  const spaceW = 40;
+  const line1W = w.s1 + w.s2;
+  const line2W = w.s3 + spaceW + w.s4;
+  const blockW = Math.max(line1W, line2W);
+  const cx = 960;
+  const y1 = 392, y2 = y1 + 168 + 22;
+  const pos = {
+    "p-s1": [cx - line1W / 2, y1], "p-s2": [cx - line1W / 2 + w.s1, y1],
+    "p-s3": [cx - line2W / 2, y2], "p-s4": [cx - line2W / 2 + w.s3 + spaceW, y2],
+    "p-mark": [cx - 56, y1 - 170],
+  };
+  for (const id in pos) { const el = $(id); el.dataset.x = pos[id][0]; el.dataset.y = pos[id][1]; }
+  // Accent rectangle: 2px lines around the block with generous padding.
+  const padX = 96, padTop = 232, padBot = 72;
+  const L = cx - blockW / 2 - padX, R = cx + blockW / 2 + padX, T = y1 - padTop, B = y2 + 168 + padBot;
+  const th = 2.5;
+  const rect = { "p-top": [L, T, R - L, th], "p-bottom": [L, B - th, R - L, th], "p-left": [L, T, th, B - T], "p-right": [R - th, T, th, B - T] };
+  for (const id in rect) { const el = $(id); const r = rect[id]; el.dataset.x = r[0]; el.dataset.y = r[1]; el.style.width = r[2] + "px"; el.style.height = r[3] + "px"; }
+}
+
+function renderTitle(t) {
+  const scene = $("title-scene");
+  const on = t < CONFIG.titleLiftEnd + 0.05;
+  show(scene, on);
+  if (!on) return;
+  const A0 = CONFIG.alignStart, A1 = CONFIG.alignEnd;
+  for (const id in SCATTER) {
+    const el = $(id);
+    const isSide = el.classList.contains("side");
+    const start = A0 + STAGGER[id] * 2.0 + (isSide ? CONFIG.sidesDelay : 0);
+    const end = A1 + STAGGER[id] * 0.6 + (isSide ? CONFIG.sidesDelay : 0);
+    const u = seg(t, start, end);
+    const s = SCATTER[id];
+    const x = +el.dataset.x + lerp(s[0], 0, u), y = +el.dataset.y + lerp(s[1], 0, u), z = lerp(s[2], 0, u);
+    const rx = lerp(s[3], 0, u), ry = lerp(s[4], 0, u), rz = lerp(s[5], 0, u);
+    el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+    el.style.opacity = isSide ? String(lerp(0.15, 1, u)) : "1";
+  }
+  // Camera path: rig rotates from an oblique viewpoint to frontal, then a subtle push, then the lift out.
+  const cam = seg(t, A0, A1 + 0.25);
+  const push = clamp01((t - A1) / (CONFIG.titleLiftStart - A1));
+  const lift = seg(t, CONFIG.titleLiftStart, CONFIG.titleLiftEnd);
+  const ry = lerp(-34, 0, cam), rx = lerp(12, 0, cam), rz = lerp(-6, 0, cam);
+  const scale = lerp(0.92, 1.0, cam) * lerp(1.0, 1.035, push) * lerp(1.0, 1.06, lift);
+  const ty = lerp(0, -170, lift);
+  $("title-rig").style.transform = `translate3d(0px, ${ty}px, 0px) scale(${scale}) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+  $("title-rig").style.transformOrigin = "50% 50%";
+  scene.style.opacity = String(1 - lift);
+}
+
+/* ---------------- Cursor ---------------- */
+// Positions in frame coordinates (frame is 1720x968 at 100,56), measured from the DOM once.
+const CURSOR_PTS = { start: [1180, 720], rest: [1360, 690], chip: [0, 0], mac: [0, 0], sim: [0, 0], send: [0, 0] };
+function measureCursorTargets() {
+  const frame = $("frame").getBoundingClientRect();
+  const menu = $("env-menu"), sub = $("env-submenu");
+  const wasMenu = menu.classList.contains("hidden"), wasSub = sub.classList.contains("hidden");
+  show(menu, true); show(sub, true);
+  menu.style.transform = "translateX(-50%)"; sub.style.transform = "";
+  const center = (id, fx = 0.5, fy = 0.5) => { const r = $(id).getBoundingClientRect(); return [r.left - frame.left + r.width * fx, r.top - frame.top + r.height * fy]; };
+  CURSOR_PTS.chip = center("env-chip", 0.55, 0.55);
+  CURSOR_PTS.mac = center("mi-macos", 0.42, 0.55);
+  CURSOR_PTS.sim = center("si-sim", 0.45, 0.55);
+  CURSOR_PTS.send = center("send-btn", 0.5, 0.55);
+  show(menu, !wasMenu ? true : false); show(sub, !wasSub ? true : false);
+}
+function cursorAt(t) {
+  const C = CONFIG;
+  const path = [
+    [C.cursorAppear, CURSOR_PTS.start],
+    [C.cursorToChip[0], CURSOR_PTS.start], [C.cursorToChip[1], CURSOR_PTS.chip],
+    [C.cursorToMac[0], CURSOR_PTS.chip], [C.cursorToMac[1], CURSOR_PTS.mac],
+    [C.cursorToSim[0], CURSOR_PTS.mac], [C.cursorToSim[1], CURSOR_PTS.sim],
+    [C.simClick + 0.15, CURSOR_PTS.sim], [C.typeStart + 0.3, CURSOR_PTS.rest],
+    [C.cursorToSend[0], CURSOR_PTS.rest], [C.cursorToSend[1], CURSOR_PTS.send],
+    [C.sessionIn + 0.4, CURSOR_PTS.send],
+  ];
+  if (t <= path[0][0]) return path[0][1];
+  for (let i = 0; i < path.length - 1; i++) {
+    const [ta, pa] = path[i], [tb, pb] = path[i + 1];
+    if (t >= ta && t <= tb) {
+      const u = tb > ta ? seg(t, ta, tb) : 1;
+      // Slight arc on travel for natural feel.
+      const arc = Math.sin(Math.PI * u) * (Math.abs(pb[0] - pa[0]) > 100 ? -14 : 0);
+      return [lerp(pa[0], pb[0], u), lerp(pa[1], pb[1], u) + arc];
+    }
+  }
+  return path[path.length - 1][1];
+}
+
+/* ---------------- Composer ---------------- */
+function renderComposer(t) {
+  const C = CONFIG;
+  const view = $("composer-view");
+  const on = t < C.sessionIn + 0.45;
+  show(view, on);
+  if (!on) { show($("cursor"), false); return; }
+  // Shell leads, header and composer follow.
+  const h = seg(t, C.headerIn, C.headerIn + 0.45);
+  const c = seg(t, C.composerIn, C.composerIn + 0.55);
+  const top = view.querySelector(".app-top");
+  top.style.opacity = h; top.style.transform = `translateY(${lerp(-14, 0, h)}px)`;
+  const comp = $("composer"); comp.style.opacity = c; comp.style.transform = `translateX(-50%) translateY(${lerp(22, 0, c)}px)`;
+  const envRow = $("env-row"); const e = seg(t, C.composerIn + 0.12, C.composerIn + 0.62);
+  envRow.style.opacity = e; envRow.style.transform = `translateX(-50%) translateY(${lerp(16, 0, e)}px)`;
+
+  // Session handoff: composer view fades and scales slightly.
+  const out = seg(t, C.sessionIn, C.sessionIn + 0.45);
+  view.style.opacity = String(1 - out);
+  view.style.transform = `scale(${lerp(1, 0.985, out)})`;
+
+  // Environment chip and menus.
+  const chip = $("env-chip");
+  const cursorOverChip = t >= C.cursorToChip[1] - 0.05 && t < C.menuClose;
+  chip.classList.toggle("hover", cursorOverChip);
+  const pressed = t >= C.chipClick && t < C.chipClick + 0.12;
+  chip.style.transform = pressed ? "scale(0.97)" : "scale(1)";
+  const swapped = t >= C.chipSwap;
+  const sw = seg(t, C.chipSwap, C.chipSwap + 0.35);
+  $("env-label").textContent = swapped ? "macOS" : "Ubuntu";
+  $("env-ico").innerHTML = swapped ? APPLE : UBUNTU;
+  chip.style.opacity = swapped ? String(lerp(0.4, 1, sw)) : "1";
+  chip.querySelector("#env-label").style.transform = swapped ? `translateY(${lerp(6, 0, sw)}px)` : "";
+  chip.querySelector("#env-ico").style.transform = swapped ? `translateY(${lerp(6, 0, sw)}px)` : "";
+
+  const menu = $("env-menu");
+  const menuOn = t >= C.menuOpen && t < C.menuClose + 0.18;
+  show(menu, menuOn);
+  if (menuOn) {
+    const mi = seg(t, C.menuOpen, C.menuOpen + 0.36);
+    const mo = seg(t, C.menuClose, C.menuClose + 0.18);
+    menu.style.opacity = String(mi * (1 - mo));
+    menu.style.transform = `translateX(-50%) translateY(${lerp(-10, 0, mi)}px) scale(${lerp(0.96, 1, mi)})`;
+    const hoverMac = t >= C.cursorToMac[1] - 0.06;
+    $("mi-macos").classList.toggle("hover", hoverMac);
+    $("mi-ubuntu").classList.toggle("hover", false);
+  }
+  const sub = $("env-submenu");
+  const subOn = t >= C.submenuOpen && t < C.menuClose + 0.18;
+  show(sub, subOn);
+  if (subOn) {
+    const si = seg(t, C.submenuOpen, C.submenuOpen + 0.32);
+    const so = seg(t, C.menuClose, C.menuClose + 0.18);
+    sub.style.opacity = String(si * (1 - so));
+    sub.style.transform = `translateX(${lerp(-12, 0, si)}px) scale(${lerp(0.97, 1, si)})`;
+    const hoverSim = t >= C.cursorToSim[1] - 0.06;
+    $("si-sim").classList.toggle("hover", hoverSim);
+    const pressedSim = t >= C.simClick && t < C.simClick + 0.1;
+    $("si-sim").style.transform = pressedSim ? "scale(0.985)" : "";
+  }
+
+  // Typing with blinking caret.
+  const text = $("composer-text");
+  const n = CONFIG.prompt.length;
+  const typed = Math.floor(clamp01((t - C.typeStart) / (C.typeEnd - C.typeStart)) * n);
+  const blink = Math.floor(t * 2.2) % 2 === 0;
+  if (t < C.typeStart - 0.4) {
+    text.innerHTML = `<span class="placeholder">Give Devin a task to work on</span>`;
+  } else if (typed === 0) {
+    text.innerHTML = `<span class="placeholder">Give Devin a task to work on</span><span class="caret ${blink ? "" : "off"}" style="position:absolute"></span>`;
+  } else {
+    const caretOn = t < C.typeEnd ? true : blink;
+    text.innerHTML = `${CONFIG.prompt.slice(0, typed)}<span class="caret ${caretOn ? "" : "off"}"></span>`;
+  }
+
+  // Send button arms and is pressed.
+  const send = $("send-btn");
+  send.classList.toggle("armed", t >= C.armAt);
+  const sp = t >= C.sendClick && t < C.sendClick + 0.14;
+  const sendHover = t >= C.cursorToSend[1] - 0.05;
+  send.style.transform = sp ? "scale(0.90)" : sendHover ? "scale(1.04)" : "scale(1)";
+
+  // Cursor
+  const cur = $("cursor");
+  const curOn = t >= C.cursorAppear && t < C.sessionIn + 0.1;
+  show(cur, curOn);
+  if (curOn) {
+    const [x, y] = cursorAt(t);
+    const fadeIn = seg(t, C.cursorAppear, C.cursorAppear + 0.3);
+    const fadeOut = seg(t, C.sendClick + 0.1, C.sessionIn + 0.1);
+    cur.style.opacity = String(fadeIn * (1 - fadeOut));
+    const press = (t >= C.chipClick && t < C.chipClick + 0.12) || (t >= C.simClick && t < C.simClick + 0.1) || (t >= C.sendClick && t < C.sendClick + 0.14);
+    cur.style.transform = `translate(${x}px, ${y}px) scale(${press ? 0.9 : 1})`;
+  }
+}
+
+/* ---------------- Code view (Swift) ---------------- */
+const CODE_LINES = [
+  [106, `<span class="kw">func</span> <span class="fn">pause</span>() {`],
+  [107, `    <span class="kw">guard</span> race.phase == <span class="en">.racing</span> <span class="kw">else</span> { <span class="kw">return</span> }`],
+  [108, `    <span class="fn">clearControls</span>()`],
+  [109, `    race.phase = <span class="en">.paused</span>`],
+  [110, `    audio.<span class="fn">update</span>(enabled: <span class="kw">false</span>, speed: <span class="nu">0</span>, boosting: <span class="kw">false</span>)`],
+  [111, `}`],
+  [112, ``],
+  [113, `<span class="kw">func</span> <span class="fn">resume</span>() {`],
+  [114, `    race.phase = <span class="en">.racing</span>`],
+  [115, `}`],
+  [116, ``],
+  [117, `<span class="kw">func</span> <span class="fn">menu</span>() {`],
+  [118, `    <span class="fn">clearControls</span>()`],
+  [119, `    race.<span class="fn">preview</span>(<span class="en">.harbor</span>)`],
+  [120, `    race.phase = <span class="en">.title</span>`],
+  [121, `    showGuide = <span class="kw">false</span>`],
+  [122, `}`],
+];
+function stripTags(s) { return s.replace(/<[^>]+>/g, ""); }
+function typedHTML(html, count) {
+  // Reveal `count` visible characters while keeping tags intact.
+  let out = "", visible = 0, i = 0;
+  while (i < html.length && visible < count) {
+    if (html[i] === "<") { const j = html.indexOf(">", i); out += html.slice(i, j + 1); i = j + 1; }
+    else { out += html[i]; i++; visible++; }
+  }
+  // Close any open spans.
+  const opens = (out.match(/<span/g) || []).length, closes = (out.match(/<\/span>/g) || []).length;
+  for (let k = 0; k < opens - closes; k++) out += "</span>";
+  return out;
+}
+function renderCode(t) {
+  const C = CONFIG;
+  const total = CODE_LINES.reduce((a, l) => a + stripTags(l[1]).length + 1, 0);
+  const u = clamp01((t - C.codeTypeStart) / (C.codeTypeEnd - C.codeTypeStart));
+  let budget = Math.floor(u * total);
+  let html = "";
+  for (const [ln, src] of CODE_LINES) {
+    const len = stripTags(src).length;
+    if (budget <= 0) break;
+    const take = Math.min(len, budget);
+    html += `<span class="ln">${ln}</span>${typedHTML(src, take)}`;
+    budget -= take + 1;
+    if (take >= len && budget >= 0) html += "\n";
+    else { html += `<span class="cur"></span>`; break; }
+  }
+  if (u >= 1) html = html.replace(/\n$/, "");
+  $("code").innerHTML = html;
+}
+
+/* ---------------- Session view + footage ---------------- */
+const simImg = $("sim-frame");
+function renderSession(t) {
+  const C = CONFIG;
+  const view = $("session-view");
+  const on = t >= C.sessionIn;
+  show(view, on);
+  if (!on) return;
+  const si = seg(t, C.sessionIn, C.sessionIn + 0.5);
+  view.style.opacity = String(si);
+  view.style.transform = `scale(${lerp(1.01, 1, si)})`;
+
+  // Chat steps appear in sequence, each with a spinner that becomes a tick.
+  const f0 = C.footageStart;
+  const steps = [
+    ["m-1", C.sessionIn + 0.25, C.simTabAt - 0.1],
+    ["m-2", C.simTabAt - 0.1, f0 + 0.6],
+    ["m-3", f0 + 0.6, f0 + 2.2],
+    ["m-4", f0 + C.pauseAt - 1.2, f0 + C.pauseAt + 0.15],
+    ["m-5", f0 + C.resumeAt - 1.2, f0 + C.resumeAt + 0.15],
+    ["m-6", f0 + C.resumeAt + 1.2, f0 + C.resumeAt + 1.3],
+  ];
+  const user = $("m-user"); const uu = seg(t, C.sessionIn + 0.05, C.sessionIn + 0.45);
+  user.style.opacity = uu; user.style.transform = `translateY(${lerp(12, 0, uu)}px)`;
+  for (const [id, at, done] of steps) {
+    const el = $(id);
+    const a = seg(t, at, at + 0.4);
+    el.style.opacity = a; el.style.transform = `translateY(${lerp(12, 0, a)}px)`;
+    const state = el.querySelector(".state");
+    const isDone = t >= done;
+    state.innerHTML = isDone
+      ? `<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+      : `<span class="spin" style="transform:rotate(${(t * 540) % 360}deg)"></span>`;
+    el.querySelector(".txt").style.color = isDone ? "" : "rgba(25,25,25,0.7)";
+  }
+  $("sess-status-text").textContent = t >= f0 + C.resumeAt + 1.3 ? "Verified" : "Working";
+
+  // Pane: code first, then Simulator tab.
+  const simOn = t >= C.simTabAt;
+  $("tab-changes").classList.toggle("on", !simOn);
+  $("tab-computer").classList.toggle("on", simOn);
+  show($("code-view"), !simOn || t < C.simTabAt + 0.4);
+  show($("sim-view"), simOn);
+  if (!simOn || t < C.simTabAt + 0.4) {
+    renderCode(t);
+    const co = seg(t, C.simTabAt, C.simTabAt + 0.4);
+    $("code-view").style.opacity = String(1 - co);
+  }
+  if (simOn) {
+    const pi = seg(t, C.simTabAt + 0.05, C.simTabAt + 0.6);
+    $("sim-view").style.opacity = String(pi);
+    const phone = $("phone");
+    phone.style.transform = `translate(-50%, -50%) translateY(${lerp(40, 0, pi)}px) scale(${lerp(0.96, 1, pi)})`;
+    // Footage frame (1x, no speed change). Before footageStart show frame 1.
+    const idx = Math.max(1, Math.min(C.footageFrames, Math.floor((t - C.footageStart) * C.fps) + 1));
+    const src = `${C.footageDir}f${String(idx).padStart(4, "0")}.jpg`;
+    if (simImg.getAttribute("src") !== src) simImg.setAttribute("src", src);
+  }
+}
+
+/* ---------------- Frame camera (motion only around the recording) ---------------- */
+function renderFrame(t) {
+  const C = CONFIG;
+  const wrap = $("frame-wrap");
+  const on = t >= C.frameIn - 0.05 && t < C.frameOutEnd + 0.05;
+  show(wrap, on);
+  if (!on) return;
+  const fi = seg(t, C.frameIn, C.frameIn + 0.65);
+  const frame = $("frame");
+  const f0 = C.footageStart;
+  // Keyframes: [time, scale, originX, originY] with origin in frame-space fractions.
+  // Phone center in frame space: pane spans x 640..1720 (center 1180), y 152..968 (center 560).
+  const keys = [
+    [C.frameIn, 1.00, 0.50, 0.50],
+    [C.cursorToChip[0], 1.00, 0.50, 0.50],
+    [C.menuOpen + 0.3, 1.30, 0.50, 0.75],          // zoom into the environment selection
+    [C.chipSwap + 0.35, 1.30, 0.50, 0.75],
+    [C.typeStart + 0.2, 1.00, 0.50, 0.50],         // back to full view for typing
+    [C.simTabAt + 0.5, 1.00, 0.50, 0.50],
+    [f0 + 1.6, 1.30, 0.663, 0.578],                 // ease toward the Simulator pane
+    [f0 + C.pauseAt - 0.8, 1.30, 0.663, 0.578],
+    [f0 + C.pauseAt - 0.15, 1.55, 0.88, 0.43],     // push toward the pause control (top right of the screen)
+    [f0 + C.pauseAt + 1.0, 1.55, 0.88, 0.43],
+    [f0 + C.resumeAt - 0.7, 1.55, 0.88, 0.43],
+    [f0 + C.resumeAt - 0.1, 1.60, 0.640, 0.600],   // push toward Resume (left of the screen center)
+    [f0 + C.resumeAt + 0.9, 1.60, 0.640, 0.600],
+    [f0 + C.resumeAt + 1.7, 1.00, 0.50, 0.50],     // settle back to full view
+    [C.frameOutStart, 1.00, 0.50, 0.50],
+  ];
+  let s = 1, ox = 0.5, oy = 0.5;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (t >= a[0] && t <= b[0]) { const u = seg(t, a[0], b[0]); s = lerp(a[1], b[1], u); ox = lerp(a[2], b[2], u); oy = lerp(a[3], b[3], u); break; }
+    if (t > keys[keys.length - 1][0]) { s = 1; ox = 0.5; oy = 0.5; }
+  }
+  // Convert origin to translation so the chosen point stays centered on stage.
+  const fw = 1720, fh = 968;
+  // Subtle continuous drift during the demo so nothing is static.
+  const drift = (t >= f0 && t < C.frameOutStart) ? Math.sin((t - f0) * 0.9) * 5 : 0;
+  let tx = (0.5 - ox) * fw * s + drift, ty = (0.5 - oy) * fh * s;
+  // Never expose the paper behind the frame while zoomed in.
+  const mx = Math.max(0, (fw * s - 1920) / 2), my = Math.max(0, (fh * s - 1080) / 2);
+  if (s > 1.001) { tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty)); }
+  const fo = seg(t, C.frameOutStart, C.frameOutEnd);
+  const inY = lerp(140, 0, fi), inS = lerp(0.94, 1, fi);
+  const outY = lerp(0, -220, fo), outS = lerp(1, 1.04, fo);
+  frame.style.transform = `translate(${tx}px, ${ty + inY + outY}px) scale(${s * inS * outS})`;
+  frame.style.opacity = String(fi * (1 - fo));
+}
+
+/* ---------------- Scene D ---------------- */
+const END_SCATTER = { "p-logo": [-520, -80, -700, 0, 40, -6], "p-url": [560, 120, -500, 0, -35, 5] };
+function renderEnd(t) {
+  const C = CONFIG;
+  const scene = $("end-scene");
+  const on = t >= C.darkWipe[0];
+  show(scene, on);
+  if (!on) return;
+  const w = seg(t, C.darkWipe[0], C.darkWipe[1]);
+  $("end-plane").style.transform = `scaleX(${w})`;
+  const rig = $("end-rig");
+  const layout = { "p-logo": [0, -60], "p-url": [0, 150] };
+  for (const id in END_SCATTER) {
+    const el = $(id), s = END_SCATTER[id];
+    const delay = id === "p-url" ? 0.14 : 0;
+    const u = seg(t, C.endAlignStart + delay, C.endAlignEnd + delay);
+    const x = layout[id][0] + lerp(s[0], 0, u), y = layout[id][1] + lerp(s[1], 0, u), z = lerp(s[2], 0, u);
+    el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${lerp(s[3], 0, u)}deg) rotateY(${lerp(s[4], 0, u)}deg) rotateZ(${lerp(s[5], 0, u)}deg)`;
+    el.style.opacity = String(Math.min(1, u * 1.6 + 0.0));
+  }
+  const cam = seg(t, C.endAlignStart, C.endAlignEnd + 0.2);
+  const drift = clamp01((t - C.endAlignEnd) / (C.endDriftEnd - C.endAlignEnd));
+  rig.style.transform = `scale(${lerp(0.94, 1, cam) * lerp(1, 1.012, drift)}) rotateY(${lerp(-18, 0, cam)}deg) translateY(${lerp(0, -4, drift)}px)`;
+}
+
+/* ---------------- Master seek ---------------- */
+let laidOut = false;
+async function seek(t) {
+  if (!laidOut) { layoutTitle(); measureCursorTargets(); laidOut = true; }
+  renderTitle(t);
+  renderFrame(t);
+  renderComposer(t);
+  renderSession(t);
+  renderEnd(t);
+  if (simImg.getAttribute("src")) { try { await simImg.decode(); } catch (e) {} }
+  await document.fonts.ready;
+  return true;
+}
+window.seek = seek;
+window.CONFIG = CONFIG;
+
+// Preview mode in a browser: ?play plays the timeline in real time; ?t=12.3 seeks.
+const q = new URLSearchParams(location.search);
+if (q.has("play")) {
+  const t0 = performance.now();
+  (function loop() { const t = ((performance.now() - t0) / 1000) % CONFIG.duration; seek(t); requestAnimationFrame(loop); })();
+} else {
+  document.fonts.ready.then(() => seek(q.has("t") ? parseFloat(q.get("t")) : 2.4));
+}
+</script>
+</body>
+</html>
