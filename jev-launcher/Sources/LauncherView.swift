@@ -69,7 +69,7 @@ struct LauncherView: View {
       } else if model.isLocalOnly {
         Image(systemName: "lock.shield")
           .foregroundStyle(Theme.dim)
-          .help("Local search. No requests are sent to Jev.")
+          .help("Local search. Online ranking is disabled.")
       } else if let status = model.status {
         Image(systemName: "checkmark.circle")
           .foregroundStyle(Theme.ready)

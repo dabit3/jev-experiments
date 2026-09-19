@@ -1,4 +1,4 @@
-# Jev Launcher
+# Launcher
 
 A native macOS launcher for things you remember by meaning: `the last pdf I opened`, `files I used in the last hour`, `open the devin ambassador links I visited today`. Press ⌥Space, describe what you need, and press Enter. Local search finds candidates, [Jev](https://docs.typesafe.ai) judges your intent on each keystroke, and the selected result opens. Pin frequent items, preview files, edit a matching group, or save it as a workspace you can reopen by name.
 
@@ -169,6 +169,8 @@ cd jev-launcher
 export TYPESAFE_API_KEY=...        # read from the environment; never hardcoded
 ./run.sh --show                    # builds Debug and launches with the panel open
 ```
+
+The built application is `Launcher.app`. The Xcode project and module retain their internal names, and the bundle identifier stays unchanged so existing settings, pins and workspaces carry over.
 
 `run.sh` execs the binary from the shell so the environment variable is inherited. If you launch the `.app` from Finder instead, the key is read from the Settings field (menu bar ⚡, then Settings, stored in `UserDefaults` under `typesafeAPIKey`). With no key the panel works locally and a header icon explains why. Settings also control Spotlight, Chrome history and local-only mode. Source and local-only changes invalidate pending searches immediately.
 

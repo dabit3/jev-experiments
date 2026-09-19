@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "34C127E4865169DC0BCBCA51"
-               BuildableName = "JevLauncher.app"
+               BuildableName = "Launcher.app"
                BlueprintName = "JevLauncher"
                ReferencedContainer = "container:JevLauncher.xcodeproj">
             </BuildableReference>
@@ -47,7 +47,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "34C127E4865169DC0BCBCA51"
-            BuildableName = "JevLauncher.app"
+            BuildableName = "Launcher.app"
             BlueprintName = "JevLauncher"
             ReferencedContainer = "container:JevLauncher.xcodeproj">
          </BuildableReference>
@@ -83,7 +83,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "34C127E4865169DC0BCBCA51"
-            BuildableName = "JevLauncher.app"
+            BuildableName = "Launcher.app"
             BlueprintName = "JevLauncher"
             ReferencedContainer = "container:JevLauncher.xcodeproj">
          </BuildableReference>
@@ -102,7 +102,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "34C127E4865169DC0BCBCA51"
-            BuildableName = "JevLauncher.app"
+            BuildableName = "Launcher.app"
             BlueprintName = "JevLauncher"
             ReferencedContainer = "container:JevLauncher.xcodeproj">
          </BuildableReference>

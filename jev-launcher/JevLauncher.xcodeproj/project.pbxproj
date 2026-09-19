@@ -48,7 +48,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		02A9FD28BE80F28E48D0EEF0 /* JevLauncher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JevLauncher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BFA2B0083CA208C66E94437 /* LatencyStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyStats.swift; sourceTree = "<group>"; };
 		1CA4F2A3387CD6B7EE692C12 /* JevLauncherApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevLauncherApp.swift; sourceTree = "<group>"; };
 		1E1EE11CC567F925116ACF1C /* JevLauncherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JevLauncherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -77,6 +76,7 @@
 		CAAC05428581023BC4B1D23D /* StatsAndIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsAndIndexTests.swift; sourceTree = "<group>"; };
 		CC5AE9F9DB8086F755633ACB /* JevQuestions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevQuestions.swift; sourceTree = "<group>"; };
 		E4E8EB4E2E96DEBC18B900C4 /* SearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScope.swift; sourceTree = "<group>"; };
+		F05BB9B525410201DDD348D7 /* Launcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Launcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherExperienceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -108,8 +108,8 @@
 		D4B3EFDD88CB850E55F52F69 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				02A9FD28BE80F28E48D0EEF0 /* JevLauncher.app */,
 				1E1EE11CC567F925116ACF1C /* JevLauncherTests.xctest */,
+				F05BB9B525410201DDD348D7 /* Launcher.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -158,7 +158,7 @@
 			packageProductDependencies = (
 			);
 			productName = JevLauncher;
-			productReference = 02A9FD28BE80F28E48D0EEF0 /* JevLauncher.app */;
+			productReference = F05BB9B525410201DDD348D7 /* Launcher.app */;
 			productType = "com.apple.product-type.application";
 		};
 		D8302BE84E4A12453739CC6D /* JevLauncherTests */ = {
@@ -339,16 +339,18 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "Jev Launcher";
+				INFOPLIST_KEY_CFBundleDisplayName = Launcher;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Jev Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.devin.typesafe.jev-launcher";
+				PRODUCT_MODULE_NAME = JevLauncher;
+				PRODUCT_NAME = Launcher;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -365,7 +367,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devin.typesafe.JevLauncherTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JevLauncher.app/Contents/MacOS/JevLauncher";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Launcher.app/Contents/MacOS/Launcher";
 			};
 			name = Release;
 		};
@@ -381,7 +383,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devin.typesafe.JevLauncherTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JevLauncher.app/Contents/MacOS/JevLauncher";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Launcher.app/Contents/MacOS/Launcher";
 			};
 			name = Debug;
 		};
@@ -459,16 +461,18 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "Jev Launcher";
+				INFOPLIST_KEY_CFBundleDisplayName = Launcher;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Jev Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.devin.typesafe.jev-launcher";
+				PRODUCT_MODULE_NAME = JevLauncher;
+				PRODUCT_NAME = Launcher;
 				SDKROOT = macosx;
 			};
 			name = Release;

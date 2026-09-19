@@ -400,8 +400,10 @@ final class LauncherModel: ObservableObject {
   private func captureContext() {
     let workspace = NSWorkspace.shared
     let recent = workspace.runningApplications
-      .filter { $0.activationPolicy == .regular }
-      .compactMap(\.localizedName).filter { $0 != "Jev Launcher" }.prefix(8)
+      .filter {
+        $0.activationPolicy == .regular && $0.bundleIdentifier != Bundle.main.bundleIdentifier
+      }
+      .compactMap(\.localizedName).prefix(8)
     let hour = Calendar.current.component(.hour, from: Date())
     context = LaunchContext(
       frontmostApp: workspace.frontmostApplication?.localizedName ?? "Finder",
@@ -513,7 +515,7 @@ final class LauncherModel: ObservableObject {
       Date() >= retryAfter
     else {
       if !isLocalOnly, Date() < retryAfter {
-        lastError = "Jev is busy. Using local search until the cooldown ends."
+        lastError = "Online ranking is busy. Using local search until the cooldown ends."
       }
       return
     }
@@ -534,7 +536,7 @@ final class LauncherModel: ObservableObject {
           return
         }
         guard let parsed = JevQuestions.parse(result.response, candidates: sent.candidates) else {
-          lastError = "Jev returned no usable ranking. Local results are available."
+          lastError = "No usable online ranking returned. Local results are available."
           return
         }
         judgment = parsed
@@ -562,9 +564,9 @@ final class LauncherModel: ObservableObject {
       switch failure {
       case .missingAPIKey: return "Add a TypeSafe key in Settings. Local search is available."
       case .rateLimited:
-        return "Jev is busy. Using local search until the cooldown ends."
-      case .http(let code): return "Jev returned HTTP \(code). Using local search."
-      case .transport: return "Jev is unreachable. Using local search."
+        return "Online ranking is busy. Using local search until the cooldown ends."
+      case .http(let code): return "Ranking service returned HTTP \(code). Using local search."
+      case .transport: return "Online ranking is unavailable. Using local search."
       }
     }
     return error.localizedDescription

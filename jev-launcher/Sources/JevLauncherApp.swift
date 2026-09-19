@@ -6,11 +6,11 @@ struct JevLauncherApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
   var body: some Scene {
-    MenuBarExtra("Jev Launcher", systemImage: "bolt.fill") {
+    MenuBarExtra("Launcher", systemImage: "bolt.fill") {
       Button("Toggle Launcher  ⌥Space") { delegate.togglePanel() }
       Divider()
       SettingsLink { Text("Settings…") }
-      Button("Quit Jev Launcher") { NSApplication.shared.terminate(nil) }
+      Button("Quit Launcher") { NSApplication.shared.terminate(nil) }
     }
     Settings {
       SettingsView(model: delegate.model)
@@ -62,7 +62,7 @@ struct SettingsView: View {
         Toggle("Include Chrome browsing history", isOn: $includeHistory)
         Toggle("Keep searches on this Mac", isOn: $localOnly)
         Text(
-          "Local mode makes no Jev requests. Otherwise only your query, context and a short list of candidate metadata are sent. File contents and clipboard text stay on this Mac."
+          "Local mode disables online ranking. Otherwise only your query, context and a short list of candidate metadata are sent. File contents and clipboard text stay on this Mac."
         )
         .font(.caption)
         .foregroundStyle(.secondary)

@@ -1,4 +1,4 @@
-# Testing Jev Launcher
+# Testing Launcher
 
 ## Setup
 
@@ -56,6 +56,8 @@ These probes print the query, selected result, round-trip latency and input-toke
 ## Desktop acceptance checklist
 
 This is a checklist for a UI pass, not a claim that every interaction has been exercised on the current revision. Run `./run.sh --show` with the key exported, or enable local-only mode in Settings.
+
+The built product is `build/Build/Products/Debug/Launcher.app`, with executable `Contents/MacOS/Launcher`. Verify the menu bar, Quit item and macOS permission copy use Launcher.
 
 ### Search and recency
 
