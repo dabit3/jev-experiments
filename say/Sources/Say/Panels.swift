@@ -130,15 +130,7 @@ struct QuickView: View {
         ScrollView { MessageView(message: reply, compact: true).padding(.trailing, 4) }
       } else if let notice = model.notice {
         Divider()
-        ScrollView {
-          Label {
-            Text(notice).textSelection(.enabled)
-          } icon: {
-            Image(systemName: "exclamationmark.triangle.fill").symbolRenderingMode(.multicolor)
-          }
-          .font(.callout)
-          .frame(maxWidth: .infinity, alignment: .leading)
-        }
+        ScrollView { NoticeBar(text: notice) { model.notice = nil } }
       } else if !model.connected {
         Button("Set Up Say…") { model.showSettings?() }.buttonStyle(.link)
       }

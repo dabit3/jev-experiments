@@ -30,6 +30,7 @@ public final class LiveTranscriptionClient {
   public var onTranscript: ((String) -> Void)?
   public var onFinal: ((String) -> Void)?
   public var onError: ((String) -> Void)?
+  public var onNothingHeard: (() -> Void)?
   private let makeSocket: (URLRequest) -> any TranscriptionSocket
   private let timeout: Duration
   private var socket: (any TranscriptionSocket)?
@@ -104,8 +105,7 @@ public final class LiveTranscriptionClient {
                 try Task.checkCancellation()
                 guard generation == token else { return }
                 guard sentBytes >= 4800 else {
-                  fail(
-                    "I did not catch enough audio. Hold the shortcut while speaking and try again.")
+                  nothingHeard()
                   return
                 }
                 commitSent = true
@@ -211,7 +211,7 @@ public final class LiveTranscriptionClient {
       guard finishing, commitSent, let id = committedID, event.itemID == id else { return }
       let text = (event.transcript ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
       guard !text.isEmpty else {
-        fail("I did not catch anything. Hold the shortcut while speaking and try again.")
+        nothingHeard()
         return
       }
       cancel()
@@ -245,5 +245,14 @@ public final class LiveTranscriptionClient {
   private func fail(_ message: String) {
     cancel()
     onError?(message)
+  }
+
+  private func nothingHeard() {
+    cancel()
+    if let onNothingHeard {
+      onNothingHeard()
+    } else {
+      onError?("I did not catch anything. Hold the shortcut while speaking and try again.")
+    }
   }
 }

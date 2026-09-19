@@ -143,14 +143,30 @@ final class LiveTranscriptionTests: XCTestCase {
     let socket = MockTranscriptionSocket()
     let client = LiveTranscriptionClient { _ in socket }
     var error: String?
+    var silent = false
+    client.onError = { error = $0 }
+    client.onNothingHeard = { silent = true }
+    try client.start(key: "test-key")
+    socket.emit(#"{"type":"session.updated"}"#)
+    client.append(Data(repeating: 0, count: 100))
+    client.finish()
+    await waitUntil { silent }
+    XCTAssertNil(error)
+    XCTAssertFalse(socket.sent.contains { $0.contains("input_audio_buffer.commit") })
+    XCTAssertTrue(socket.cancelled)
+  }
+
+  func testNothingHeardFallsBackToAnErrorMessage() async throws {
+    let socket = MockTranscriptionSocket()
+    let client = LiveTranscriptionClient { _ in socket }
+    var error: String?
     client.onError = { error = $0 }
     try client.start(key: "test-key")
     socket.emit(#"{"type":"session.updated"}"#)
     client.append(Data(repeating: 0, count: 100))
     client.finish()
     await waitUntil { error != nil }
-    XCTAssertFalse(socket.sent.contains { $0.contains("input_audio_buffer.commit") })
-    XCTAssertTrue(socket.cancelled)
+    XCTAssertTrue(error?.contains("did not catch anything") ?? false)
   }
 
   func testBackpressureStopsRatherThanDroppingAudio() throws {
@@ -238,8 +254,10 @@ final class LiveTranscriptionTests: XCTestCase {
     let socket = MockTranscriptionSocket()
     let client = LiveTranscriptionClient { _ in socket }
     var error: String?
+    var silent = false
     var finals: [String] = []
     client.onError = { error = $0 }
+    client.onNothingHeard = { silent = true }
     client.onFinal = { finals.append($0) }
     try client.start(key: "test-key")
     socket.emit(#"{"type":"session.updated"}"#)
@@ -250,7 +268,8 @@ final class LiveTranscriptionTests: XCTestCase {
     socket.emit(
       #"{"type":"conversation.item.input_audio_transcription.completed","item_id":"a","transcript":" "}"#
     )
-    await waitUntil { error != nil }
+    await waitUntil { silent }
+    XCTAssertNil(error)
     XCTAssertTrue(finals.isEmpty)
     XCTAssertTrue(socket.cancelled)
   }

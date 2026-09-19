@@ -11,7 +11,10 @@ final class VoiceInput: ObservableObject {
   @Published private(set) var finishing = false
   var onError: ((String) -> Void)?
   var onFinal: ((String) -> Void)?
+  var onIdle: (() -> Void)?
   private let client = LiveTranscriptionClient()
+  private var startedAt = Date()
+  private var held: TimeInterval = 0
   private var engine: AVAudioEngine?
   private var audio: MicrophoneAudio?
   private var audioTask: Task<Void, Never>?
@@ -31,6 +34,8 @@ final class VoiceInput: ObservableObject {
       return
     }
     let token = generation
+    startedAt = Date()
+    held = 0
     active = true
     startTask = Task { [weak self] in
       let granted = await AVCaptureDevice.requestAccess(for: .audio)
@@ -68,6 +73,15 @@ final class VoiceInput: ObservableObject {
         guard let self, generation == token else { return }
         fail(message)
       }
+      client.onNothingHeard = { [weak self] in
+        guard let self, generation == token else { return }
+        if held >= 3 {
+          fail("I did not catch anything. Hold the shortcut while speaking and try again.")
+        } else {
+          cancel()
+          onIdle?()
+        }
+      }
       try client.start(key: key)
       engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
         audio.append(buffer)
@@ -99,6 +113,7 @@ final class VoiceInput: ObservableObject {
       return
     }
     finishing = true
+    held = Date().timeIntervalSince(startedAt)
     stopEngine()
     level = 0
     audio.finish()

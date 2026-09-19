@@ -102,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         [weak self] _ in
         MainActor.assumeIsolated {
           guard let self, !self.model.busy, !self.model.listening else { return }
+          if self.commandPanel.isVisible { self.model.notice = nil }
           self.commandPanel.orderOut(nil)
           self.updateCompanion()
         }
@@ -216,6 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   private func dismissQuick() {
     model.stop()
+    if commandPanel.isVisible { model.notice = nil }
     completionTask?.cancel()
     showingCompletion = false
     commandPanel.orderOut(nil)

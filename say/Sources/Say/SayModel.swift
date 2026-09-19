@@ -69,6 +69,10 @@ final class SayModel: ObservableObject {
     voice.onFinal = { [weak self] text in
       self?.submitSpeech(text)
     }
+    voice.onIdle = { [weak self] in
+      self?.status = "Ready when you are"
+      self?.updateCompanion?()
+    }
     voice.onError = { [weak self] error in
       self?.status = "Ready when you are"
       self?.notice = error
