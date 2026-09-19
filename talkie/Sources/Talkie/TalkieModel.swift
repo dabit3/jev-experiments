@@ -78,11 +78,13 @@ final class TalkieModel: ObservableObject {
   var messages: [Message] { conversations.first(where: { $0.id == currentID })?.messages ?? [] }
   var listening: Bool { voice.active }
   var connected: Bool { !preferences.jevKey.isEmpty }
+  var quickWidth: CGFloat { 340 }
   var quickHeight: CGFloat {
-    if pending != nil { return 330 }
-    if quickReply != nil { return 390 }
-    if notice != nil { return 260 }
-    return 170
+    if pending != nil { return 300 }
+    if quickReply != nil { return 360 }
+    if notice != nil { return 200 }
+    if !connected { return 124 }
+    return 88
   }
 
   private func remember(_ app: NSRunningApplication?) {

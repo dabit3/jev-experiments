@@ -30,14 +30,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     model = TalkieModel()
     buildMenu()
     window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 840, height: 620),
-      styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+      contentRect: NSRect(x: 0, y: 0, width: 780, height: 600),
+      styleMask: [.titled, .closable, .miniaturizable, .resizable],
       backing: .buffered, defer: false)
     window.title = "Talkie"
-    window.titlebarAppearsTransparent = true
-    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = false
+    window.titleVisibility = .visible
     window.isReleasedWhenClosed = false
-    window.minSize = NSSize(width: 760, height: 560)
+    window.minSize = NSSize(width: 700, height: 550)
     window.delegate = self
     window.contentView = NSHostingView(rootView: RootView(model: model))
     window.setFrameAutosaveName("TalkieMain")
@@ -167,7 +167,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
       NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
     guard let bounds = screen?.visibleFrame else { return }
     commandPanel.setFrame(
-      NSRect(x: bounds.midX - 210, y: bounds.minY + 70, width: 420, height: model.quickHeight),
+      NSRect(
+        x: bounds.midX - model.quickWidth / 2, y: bounds.minY + 36,
+        width: model.quickWidth, height: model.quickHeight),
       display: true)
     commandPanel.makeKeyAndOrderFront(nil)
     updateCompanion()
@@ -222,9 +224,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let mouse = NSEvent.mouseLocation
     let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
     guard let bounds = screen?.visibleFrame else { return }
-    let x = bounds.midX - 117.5
+    let x = bounds.midX - 130
     let y = bounds.minY + 28
-    companion.setFrame(NSRect(x: x, y: y, width: 235, height: 58), display: true)
+    companion.setFrame(NSRect(x: x, y: y, width: 260, height: 60), display: true)
   }
 
   private func showHighlight(_ rect: CGRect, label: String) {
@@ -244,8 +246,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     panel.contentView = NSHostingView(
       rootView:
-        RoundedRectangle(cornerRadius: 9).stroke(Palette.orange, lineWidth: 3)
-        .background(Palette.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
+        RoundedRectangle(cornerRadius: 9).stroke(.white, lineWidth: 5)
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(.black, lineWidth: 2))
+        .background(.black.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
         .padding(2).accessibilityLabel(label)
     )
     panel.orderFrontRegardless()
