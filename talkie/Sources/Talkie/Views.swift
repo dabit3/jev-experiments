@@ -463,7 +463,7 @@ struct SettingsView: View {
             .onChange(of: model.preferences.keepHistory) { _, _ in model.historyPreferenceChanged()
             }
           Text(
-            "Live audio stays on your Mac. On-screen text goes to Jev and, for conversations, OpenAI only when requested. Screenshots are processed locally and never saved. Imported audio is sent to OpenAI."
+            "Live audio stays on your Mac. On-screen text goes to Jev and, for conversations, OpenAI only when requested. Screenshots are processed locally and never saved."
           )
           .font(.system(size: 11)).foregroundStyle(Palette.secondary).lineSpacing(4)
           Button("Delete all conversations") { deleting = true }.foregroundStyle(Palette.orange)
