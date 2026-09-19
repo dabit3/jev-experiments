@@ -1,5 +1,8 @@
 # Launcher
 
+> [!IMPORTANT]
+> **Archived:** this copy of Launcher is no longer maintained here. Development has moved to [dabit3/launcher](https://github.com/dabit3/launcher). Use the new repository for the latest code, releases and setup instructions.
+
 A native macOS launcher for things you remember by meaning: `the last pdf I opened`, `files I used in the last hour`, `open the devin ambassador links I visited today`. Press ⌥Space, describe what you need, and press Enter. Local search finds candidates, [Jev](https://docs.typesafe.ai) judges your intent on each keystroke, and the selected result opens. Pin frequent items, preview files, edit a matching group, or save it as a workspace you can reopen by name.
 
 ![Typing the five demo queries against the live Jev API](docs/demo.gif)
