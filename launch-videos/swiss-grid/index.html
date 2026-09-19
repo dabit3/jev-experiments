@@ -1,0 +1,450 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud, Swiss Grid</title>
+<script src="config.js"></script>
+<style>
+  @font-face { font-family: InterTight; src: url(assets/fonts/InterTight.ttf) format("truetype"); font-weight: 100 900; }
+  html, body { margin: 0; padding: 0; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--field); color: var(--ink);
+    font-family: var(--font); -webkit-font-smoothing: antialiased; }
+  #stage * { box-sizing: border-box; }
+  .abs { position: absolute; }
+  .hidden { display: none; }
+  .mask { overflow: hidden; }
+  .rule { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+
+  /* Headline */
+  .hl { font-weight: 600; font-size: 160px; line-height: 0.96; letter-spacing: -0.045em; white-space: nowrap; }
+
+  /* Narrow caption column */
+  .cap { position: absolute; font-size: 44px; line-height: 1.16; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); }
+
+  /* Light Devin UI */
+  .ui { background: var(--uiBg); color: var(--uiInk); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06); }
+  .ui-top { position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; padding: 0 28px; }
+  .wordmark { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; }
+  .wordmark img { height: 26px; }
+  .seg { margin-left: auto; display: flex; background: var(--uiSoft); border-radius: 999px; padding: 3px; font-size: 14px; }
+  .seg span { padding: 6px 14px; border-radius: 999px; color: var(--uiMuted); }
+  .seg span.on { background: #fff; color: var(--uiInk); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+  .composer { position: absolute; left: 142px; width: 860px; top: 300px; border: 1px solid var(--uiLine); border-radius: 22px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06); padding: 26px 28px 20px; background: #fff; }
+  .composer .text { font-size: 31px; line-height: 1.32; letter-spacing: -0.012em; min-height: 72px; color: var(--uiInk); }
+  .composer .text .ph { color: #A6A6AC; }
+  .caret { display: inline-block; width: 2px; height: 34px; background: var(--uiInk); vertical-align: -5px; margin-left: 2px; }
+  .composer .row { display: flex; align-items: center; gap: 20px; margin-top: 26px; color: var(--uiMuted); font-size: 18px; }
+  .composer .row .grow { flex: 1; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--uiInk); }
+  .send { width: 40px; height: 40px; border-radius: 50%; background: var(--uiInk); display: flex; align-items: center; justify-content: center; }
+
+  .pop { position: absolute; background: #fff; border: 1px solid var(--uiLine); border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+    padding: 8px; font-size: 20px; color: var(--uiInk); }
+  .pop .r { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 10px; white-space: nowrap; }
+  .pop .r .v { margin-left: auto; color: var(--uiMuted); padding-left: 40px; }
+  .pop .r.hover { background: var(--uiSoft); }
+  .pop .hd { padding: 10px 14px 6px; color: var(--uiMuted); font-size: 16px; }
+  .tag { background: var(--uiBlueSoft); color: var(--uiBlue); font-size: 12px; padding: 2px 7px; border-radius: 6px; margin-left: 8px; }
+
+  /* Code editor */
+  .editor { position: absolute; inset: 0; background: var(--editorBg); color: #fff; font-family: var(--mono); font-size: 28px; line-height: 46px; }
+  .editor .tabs { height: 56px; border-bottom: 1px solid var(--editorLine); display: flex; align-items: center; padding: 0 20px; gap: 24px;
+    font-family: var(--font); font-size: 16px; color: #8B8B93; }
+  .editor .tabs .on { color: #fff; }
+  .editor .body { position: absolute; top: 88px; left: 0; right: 0; bottom: 0; padding-left: 40px; white-space: pre; }
+  .editor .gutter { position: absolute; left: 0; top: 80px; width: 64px; text-align: right; color: #55555E; white-space: pre; }
+  .kw { color: #FC5FA3; } .ty { color: #5DD8FF; } .fn { color: #67B7A4; } .pr { color: #A167E6; } .nu { color: #D0BF69; } .pl { color: #FFFFFF; }
+  .build { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; border-top: 1px solid var(--editorLine); display: flex; align-items: center;
+    gap: 22px; padding: 0 28px; font-family: var(--font); font-size: 17px; color: #B8B8C0; }
+  .build .ok { color: #fff; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* Session UI */
+  .chat { position: absolute; left: 0; top: 0; bottom: 0; overflow: hidden; border-right: 1px solid var(--uiLine); }
+  .chat-in { position: absolute; left: 0; top: 0; bottom: 0; width: 560px; }
+  .hdr { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .hdr .mac { background: var(--uiBlueSoft); color: var(--uiBlue); font-weight: 500; font-size: 14px; padding: 3px 9px; border-radius: 7px; display: flex; gap: 5px; align-items: center; }
+  .msgs { position: absolute; top: 76px; left: 24px; right: 24px; font-size: 18px; line-height: 1.38; letter-spacing: -0.005em; }
+  .bubble { margin-left: 60px; background: var(--uiSoft); border-radius: 18px; padding: 12px 16px; }
+  .devin { display: flex; gap: 12px; margin-top: 26px; }
+  .devin img { width: 34px; height: 34px; border-radius: 8px; flex: none; margin-top: 2px; }
+  .devin .name { font-weight: 600; }
+  .devin .time { color: var(--uiMuted); margin-left: 8px; font-weight: 400; }
+  .status { display: flex; align-items: center; gap: 10px; color: var(--uiMuted); font-size: 16px; margin-top: 24px; }
+  .mini-composer { position: absolute; left: 20px; right: 20px; bottom: 20px; border: 1px solid var(--uiLine); border-radius: 18px; padding: 16px 18px; color: #A6A6AC; font-size: 16px; }
+  .mini-composer .row { display: flex; align-items: center; gap: 14px; margin-top: 16px; color: var(--uiMuted); }
+  .mini-composer .send { width: 34px; height: 34px; margin-left: auto; background: var(--uiMuted); }
+
+  .pane { position: absolute; top: 0; right: 0; bottom: 0; overflow: hidden; }
+  .tabsrow { height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 16px; color: var(--uiMuted); }
+  .tabsrow .t { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; }
+  .tabsrow .t.on { background: var(--uiSoft); color: var(--uiInk); }
+  .shot { position: absolute; overflow: hidden; border-radius: 10px; background: #0a0a0a; }
+  .shot img { position: absolute; left: 0; top: 0; display: block; }
+  .bar { position: absolute; left: 16px; right: 16px; bottom: 0; height: 56px; display: flex; align-items: center; gap: 18px; color: var(--uiMuted); font-size: 15px; }
+  .bar .track { position: absolute; left: 0; right: 0; top: 0; height: 6px; background: rgba(59,110,246,0.18); border-radius: 3px; }
+  .bar .track i { display: block; height: 100%; width: 42%; background: var(--uiBlue); border-radius: 3px; }
+  .live { border: 1px solid var(--uiLine); border-radius: 999px; padding: 5px 12px; display: flex; gap: 8px; align-items: center; color: var(--uiInk); }
+
+  /* iPhone frame */
+  .phone { position: absolute; border-radius: 48px; background: #101012; padding: 8px; box-shadow: 0 30px 70px rgba(0,0,0,0.45), inset 0 0 0 2px #3a3a3e; }
+  .phone .screen { position: relative; width: 100%; height: 100%; border-radius: 40px; overflow: hidden; background: #000; }
+  .phone .screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .phone .btn { position: absolute; width: 3px; background: #2a2a2e; border-radius: 2px; }
+
+  .cursor { position: absolute; width: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid" class="abs" style="inset:0"></div>
+
+  <!-- Scene 1: opening -->
+  <div id="s1" class="abs" style="inset:0">
+    <div id="lockup1" class="abs mask" style="left:96px;top:392px;height:200px;"><img src="assets/logos/devin-lockup-white.png" style="height:200px;display:block"></div>
+    <div id="hl0" class="abs mask hl" style="left:96px;top:704px;"><div></div></div>
+    <div id="hl1" class="abs mask hl" style="left:96px;top:858px;"><div></div></div>
+  </div>
+
+  <!-- Narrow caption column -->
+  <div id="capcol" class="abs" style="left:1410px;top:84px;width:414px;height:912px;"></div>
+
+  <!-- Scene 2 and 3 panel (cols 1..8) -->
+  <div id="panelA" class="abs ui" style="left:96px;top:84px;width:1144px;height:912px;">
+    <div id="composerView" class="abs" style="inset:0;">
+      <div id="composerZoom" class="abs" style="inset:0;">
+        <div class="ui-top">
+          <div class="wordmark"><img src="assets/logos/devin-avatar-black.png">Devin</div>
+          <div class="seg"><span class="on">Agent</span><span>Ask</span></div>
+        </div>
+        <div class="composer">
+          <div class="text"><span id="typed"></span><span id="caret" class="caret"></span></div>
+          <div class="row">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>
+            <div id="fusionBtn" class="chip" style="color:#7A7A80">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M6 3v14M14 3v14"/><circle cx="6" cy="8" r="2.2" fill="#fff"/><circle cx="14" cy="13" r="2.2" fill="#fff"/></svg>Fusion
+            </div>
+            <div id="macChip" class="chip" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="#1C1C1E"><path d="M11.2 8.5c0-1.6 1.3-2.3 1.4-2.4-.8-1.1-2-1.3-2.4-1.3-1-.1-2 .6-2.5.6s-1.3-.6-2.2-.6C4 4.8 2.4 6.2 2.4 8.9c0 .8.2 1.7.5 2.5.4 1.1 1.8 3.7 3.3 3.7.7 0 1.2-.5 2.1-.5.9 0 1.3.5 2.1.5 1.5 0 2.8-2.4 3.2-3.5-1.7-.8-2.4-2.1-2.4-3.1zM9.6 3.6c.7-.8.6-1.6.6-1.9-.6 0-1.4.4-1.8.9-.4.5-.7 1.2-.6 1.9.7.1 1.3-.3 1.8-.9z"/></svg>macOS</div>
+            <div class="grow"></div>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4 9.5a6 6 0 0 0 12 0M10 15.5v2.5"/></svg>
+            <div class="send"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="2"><path d="M9 15V3M4 8l5-5 5 5"/></svg></div>
+          </div>
+        </div>
+        <div id="pop1" class="pop hidden" style="left:170px;top:478px;">
+          <div id="pop1r" class="r">Virtual environment <span class="v">Ubuntu &#8250;</span></div>
+          <div class="r">Security profile <span class="v">Default &#8250;</span></div>
+          <div class="r">Notable repositories <span class="v">15 &#8250;</span></div>
+          <div class="r">Manage MCP connectors</div>
+        </div>
+        <div id="pop2" class="pop hidden" style="left:540px;top:478px;">
+          <div class="hd">Hosted</div>
+          <div id="rowUbuntu" class="r"><span class="dot" style="background:#E95420"></span>Ubuntu <span id="chkU" class="v">&#10003;</span></div>
+          <div id="rowMac" class="r"><svg width="16" height="16" viewBox="0 0 16 16" fill="#1C1C1E"><path d="M11.2 8.5c0-1.6 1.3-2.3 1.4-2.4-.8-1.1-2-1.3-2.4-1.3-1-.1-2 .6-2.5.6s-1.3-.6-2.2-.6C4 4.8 2.4 6.2 2.4 8.9c0 .8.2 1.7.5 2.5.4 1.1 1.8 3.7 3.3 3.7.7 0 1.2-.5 2.1-.5.9 0 1.3.5 2.1.5 1.5 0 2.8-2.4 3.2-3.5-1.7-.8-2.4-2.1-2.4-3.1zM9.6 3.6c.7-.8.6-1.6.6-1.9-.6 0-1.4.4-1.8.9-.4.5-.7 1.2-.6 1.9.7.1 1.3-.3 1.8-.9z"/></svg>macOS<span class="tag">New</span><span id="chkM" class="v hidden">&#10003;</span></div>
+          <div class="r"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="1" width="6.5" height="6.5" fill="#F25022"/><rect x="8.5" y="1" width="6.5" height="6.5" fill="#7FBA00"/><rect x="1" y="8.5" width="6.5" height="6.5" fill="#00A4EF"/><rect x="8.5" y="8.5" width="6.5" height="6.5" fill="#FFB900"/></svg>Windows</div>
+        </div>
+        <svg id="cursor" class="cursor" viewBox="0 0 24 24" style="left:700px;top:600px"><path d="M5 3l14 9-6 1.5L9.5 20 5 3z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+    <div id="codeView" class="abs" style="inset:0;">
+      <div class="editor">
+        <div class="tabs"><span class="on">Game.swift</span><span>Renderer.swift</span><span>Session.swift</span><span>Voxel.metal</span></div>
+        <div id="code" class="body"></div>
+        <div id="buildBar" class="build mask">
+          <div class="ok"><span class="dot" style="background:#34C759"></span><span id="bs0"></span></div><span id="bs1"></span><span id="bs2"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4 and 5: session UI (full width) -->
+  <div id="session" class="abs ui" style="left:96px;top:84px;width:1728px;height:816px;">
+    <div id="chat" class="chat" style="width:560px;">
+      <div class="chat-in">
+        <div class="hdr">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13"/></svg>
+          <span id="sessTitle"></span>
+          <span class="mac"><svg width="13" height="13" viewBox="0 0 16 16" fill="#3B6EF6"><path d="M11.2 8.5c0-1.6 1.3-2.3 1.4-2.4-.8-1.1-2-1.3-2.4-1.3-1-.1-2 .6-2.5.6s-1.3-.6-2.2-.6C4 4.8 2.4 6.2 2.4 8.9c0 .8.2 1.7.5 2.5.4 1.1 1.8 3.7 3.3 3.7.7 0 1.2-.5 2.1-.5.9 0 1.3.5 2.1.5 1.5 0 2.8-2.4 3.2-3.5-1.7-.8-2.4-2.1-2.4-3.1zM9.6 3.6c.7-.8.6-1.6.6-1.9-.6 0-1.4.4-1.8.9-.4.5-.7 1.2-.6 1.9.7.1 1.3-.3 1.8-.9z"/></svg>macOS</span>
+        </div>
+        <div class="msgs">
+          <div id="bubble" class="bubble"></div>
+          <div class="devin"><img src="assets/logos/devin-avatar-black.png" style="background:#111;padding:6px"><div><div><span class="name">Devin</span><span class="time">Now</span></div><div id="reply" style="margin-top:4px"></div></div></div>
+          <div id="testMsg" class="devin hidden"><img src="assets/logos/devin-avatar-black.png" style="background:#111;padding:6px"><div><div><span class="name">Devin</span><span class="time">Now</span></div><div id="testText" style="margin-top:4px"></div></div></div>
+          <div class="status"><span id="statusDot" class="dot" style="background:#E8862B"></span><span id="statusText"></span></div>
+        </div>
+        <div class="mini-composer">Ask Devin to build features, fix bugs, or work on your code
+          <div class="row"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4 9.5a6 6 0 0 0 12 0M10 15.5v2.5"/></svg>
+            <div class="send"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="2"><path d="M9 15V3M4 8l5-5 5 5"/></svg></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="pane" class="pane" style="left:560px;">
+      <div class="tabsrow">
+        <span class="t"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 11h4"/></svg>Progress</span>
+        <span class="t"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M8 5v6M5 8h6"/></svg>Changes</span>
+        <span class="t on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="3" width="13" height="9" rx="2"/><path d="M5 14h6"/></svg>Computer</span>
+        <span style="margin-left:auto;display:flex;gap:16px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7A7A80" stroke-width="1.6"><path d="M11 3h4v4M7 15H3v-4M15 3l-5 5M3 15l5-5"/></svg><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7A7A80" stroke-width="1.6"><rect x="2" y="3" width="14" height="12" rx="2.5"/><path d="M11 3v12"/></svg></span>
+      </div>
+      <div id="shot" class="shot"><img id="macImg"></div>
+      <div id="phone" class="phone"><div class="screen"><img id="iosImg"></div><span class="btn" style="left:-3px;top:110px;height:34px"></span><span class="btn" style="left:-3px;top:160px;height:64px"></span><span class="btn" style="left:-3px;top:236px;height:64px"></span><span class="btn" style="right:-3px;top:180px;height:96px"></span></div>
+      <div class="bar"><div class="track"><i></i></div>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M13 4l-6 6 6 6"/></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M7 4l6 6-6 6"/></svg>
+        <span class="live"><span class="dot" style="background:#E5484D"></span>Live</span>
+        <span style="margin-left:auto">Auto</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom caption for session scenes -->
+  <div id="capbot" class="abs" style="left:96px;top:924px;width:1400px;height:72px;"></div>
+
+  <!-- Scene 6: result -->
+  <div id="s6" class="abs" style="inset:0">
+    <div id="r0" class="abs mask hl" style="left:96px;top:412px;font-size:116px;"><div></div></div>
+    <div id="r1" class="abs mask hl" style="left:96px;top:526px;font-size:116px;"><div></div></div>
+  </div>
+
+  <!-- Scene 7: end -->
+  <div id="s7" class="abs" style="inset:0">
+    <div id="endLogo" class="abs mask" style="left:600px;top:400px;width:720px;height:216px;"><img src="assets/logos/devin-lockup-white.png" style="width:720px;display:block"></div>
+    <div id="endCta" class="abs mask" style="left:600px;top:660px;font-size:52px;font-weight:500;letter-spacing:-0.02em;line-height:1"><div></div></div>
+  </div>
+</div>
+
+<script>
+const C = window.CONFIG;
+const root = document.documentElement.style;
+root.setProperty("--field", C.color.field); root.setProperty("--ink", C.color.ink); root.setProperty("--rule", C.color.rule);
+root.setProperty("--uiBg", C.color.uiBg); root.setProperty("--uiInk", C.color.uiInk); root.setProperty("--uiMuted", C.color.uiMuted);
+root.setProperty("--uiLine", C.color.uiLine); root.setProperty("--uiSoft", C.color.uiSoft); root.setProperty("--uiBlue", C.color.uiBlue);
+root.setProperty("--uiBlueSoft", C.color.uiBlueSoft); root.setProperty("--editorBg", C.color.editorBg); root.setProperty("--editorLine", C.color.editorLine);
+root.setProperty("--font", C.font.family); root.setProperty("--mono", C.font.mono);
+
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const io = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;     // cubic in-out
+const out = (x) => 1 - Math.pow(1 - x, 3);
+const seg = (t, a, d, fn = io) => fn(clamp((t - a) / d, 0, 1));
+const lerp = (a, b, p) => a + (b - a) * p;
+const px = (v) => v.toFixed(2) + "px";
+// Rectangular mask: p in [0,1] reveal from the left, q in [0,1] conceal toward the right.
+const wipe = (el, p, q = 0) => { el.style.clipPath = `inset(0 ${(100 - p * 100).toFixed(3)}% 0 ${(q * 100).toFixed(3)}%)`; el.classList.remove("hidden"); el.style.display = (p <= 0 || q >= 1) ? "none" : ""; };
+const wipeY = (el, p, q = 0) => { el.style.clipPath = `inset(${(q * 100).toFixed(3)}% 0 ${(100 - p * 100).toFixed(3)}% 0)`; el.classList.remove("hidden"); el.style.display = (p <= 0 || q >= 1) ? "none" : ""; };
+const show = (el, on) => { el.classList.remove("hidden"); el.style.display = on ? "" : "none"; };
+
+// Grid rules
+const g = C.grid; const step = g.col + g.gutter;
+for (let i = 0; i <= 12; i++) { const r = document.createElement("div"); r.className = "rule"; r.style.left = px(g.margin + i * step - (i === 12 ? g.gutter : 0)); $("grid").appendChild(r); }
+
+// Static copy
+document.querySelector("#composerZoom .ui-top").style.display = "none";
+$("hl0").firstChild.textContent = C.copy.headline[0]; $("hl1").firstChild.textContent = C.copy.headline[1];
+$("r0").firstChild.textContent = C.copy.result[0]; $("r1").firstChild.textContent = C.copy.result[1];
+$("endCta").firstChild.textContent = C.copy.cta;
+$("sessTitle").textContent = C.copy.sessionTitle; $("bubble").textContent = C.copy.prompt; $("reply").textContent = C.copy.devinReply; $("testText").textContent = C.copy.devinTest;
+[$("bs0"), $("bs1"), $("bs2")].forEach((e, i) => e.textContent = C.copy.buildStatus[i]);
+
+// Captions in the narrow column: each is its own masked block
+const capDefs = [
+  { id: "composer", a: C.t.composer + 0.5, b: C.t.composer + 2.9 },
+  { id: "environment", a: C.t.composer + 3.0, b: C.t.code - 0.1 },
+  { id: "code", a: C.t.code + 0.3, b: C.t.session - 0.95 },
+];
+const caps = capDefs.map(d => { const e = document.createElement("div"); e.className = "cap mask"; e.style.left = "0"; e.style.top = "0"; e.style.width = "414px"; e.textContent = C.copy.captions[d.id]; $("capcol").appendChild(e); return { ...d, el: e }; });
+const botDefs = [
+  { id: "session", a: C.t.session + 0.5, b: C.t.both - 0.1 },
+  { id: "both", a: C.t.both + 0.4, b: C.t.test - 0.1 },
+  { id: "test", a: C.t.test + 0.3, b: C.t.result - 0.1 },
+];
+const bots = botDefs.map(d => { const e = document.createElement("div"); e.className = "cap mask"; e.style.left = "0"; e.style.top = "0"; e.style.fontSize = "44px"; e.textContent = C.copy.captions[d.id]; $("capbot").appendChild(e); return { ...d, el: e }; });
+
+// Swift code (from VoxelHearth Game.swift, block placement)
+const CODE = [
+  [["kw","func"],["pl"," "],["fn","use"],["pl","() {"]],
+  [["pl","    "],["kw","guard"],["pl"," !blocked, "],["kw","let"],["pl"," target "],["kw","else"],["pl"," { "],["kw","return"],["pl"," }"]],
+  [["pl","    "],["kw","let"],["pl"," held = session.inventory[session.selected]"]],
+  [["pl","    "],["kw","guard"],["pl"," !held.isEmpty, held.id <= "],["nu","33"],["pl"," "],["kw","else"],["pl"," { "],["kw","return"],["pl"," }"]],
+  [["pl","    "],["kw","let"],["pl"," replace = "],["ty","Registry"],["pl","."],["pr","shared"],["pl","."],["fn","block"],["pl","(target.id).replaceable"]],
+  [["pl","    "],["kw","let"],["pl"," x = target.x + (replace ? "],["nu","0"],["pl"," : target.nx)"]],
+  [["pl","    "],["kw","let"],["pl"," y = target.y + (replace ? "],["nu","0"],["pl"," : target.ny)"]],
+  [["pl","    "],["kw","let"],["pl"," z = target.z + (replace ? "],["nu","0"],["pl"," : target.nz)"]],
+  [["pl","    "],["kw","guard"],["pl"," ("],["nu","0"],["pl","..<"],["nu","64"],["pl",").contains(y) "],["kw","else"],["pl"," { "],["kw","return"],["pl"," }"]],
+  [["pl","    "],["kw","var"],["pl"," message = "],["ty","ClientMessage"],["pl","."],["fn","block"],["pl","(."],["pr","place"],["pl",", x, y, z)"]],
+  [["pl","    message.nx = target.nx"]],
+  [["pl","    message.ny = target.ny"]],
+  [["pl","    message.nz = target.nz"]],
+  [["pl","    session."],["fn","send"],["pl","(message)"]],
+  [["pl","}"]],
+];
+const codeChars = CODE.map(l => l.reduce((n, s) => n + s[1].length, 0));
+const codeTotal = codeChars.reduce((a, b) => a + b, 0);
+function renderCode(n) {
+  let html = "", left = n;
+  for (const line of CODE) {
+    if (left <= 0) break;
+    for (const [cls, txt] of line) { if (left <= 0) break; const take = txt.slice(0, left); left -= take.length; html += `<span class="${cls}">${take.replace(/</g, "&lt;")}</span>`; }
+    html += "\n";
+  }
+  $("code").innerHTML = html;
+}
+
+const macImg = $("macImg"), iosImg = $("iosImg");
+const pad = (n) => String(n).padStart(4, "0");
+
+// Layout constants for the session UI
+const SESSION = { x: 96, y: 84, w: 1728, h: 816, chatW: 560, tabsH: 56, padX: 16, padY: 16, barH: 56 };
+const SHOT_H = SESSION.h - SESSION.tabsH - SESSION.padY - SESSION.barH - SESSION.padY; // 672
+const PHONE = { w: 300, x: 1410 + (414 - 300) / 2 - SESSION.x, y: SESSION.tabsH + SESSION.padY + (SHOT_H - 300 * 2.16) / 2 };
+
+window.seek = function (t) {
+  const T = C.t;
+  // grid
+  $("grid").style.opacity = seg(t, 0, 0.9) * (1 - seg(t, T.end, 0.8));
+
+  // ---- Scene 1
+  const s1on = t < T.composer + 0.2;
+  show($("s1"), s1on);
+  if (s1on) {
+    wipe($("lockup1"), seg(t, 0.15, 0.7), seg(t, T.composer - 0.5, 0.5));
+    wipe($("hl0"), seg(t, 0.45, 0.8), seg(t, T.composer - 0.75, 0.55));
+    wipe($("hl1"), seg(t, 0.65, 0.8), seg(t, T.composer - 0.65, 0.55));
+  }
+
+  // ---- Panel A (composer + code), cols 1..8, then expands to full width into the session UI
+  const pA = $("panelA");
+  const aIn = seg(t, T.composer - 0.25, 0.75);
+  const aExpand = seg(t, T.session - 0.7, 0.6);
+  const aOn = aIn > 0 && t < T.session + 0.1;
+  show(pA, aOn);
+  if (aOn) {
+    pA.style.clipPath = `inset(0 0 ${((1 - aIn) * 100).toFixed(3)}% 0)`;
+    pA.style.width = px(lerp(1144, 1728, aExpand));
+    pA.style.height = px(lerp(912, SESSION.h, aExpand));
+    // content slide: composer view slides up slightly on entry
+    const cz = $("composerZoom");
+    const toCode = seg(t, T.code - 0.25, 0.6);
+    const cv = $("composerView"), kv = $("codeView");
+    wipe(cv, 1, toCode); wipe(kv, toCode, 0);
+    pA.style.background = toCode > 0.5 ? C.color.editorBg : C.color.uiBg;
+    // composer typing
+    const typedN = Math.floor(seg(t, T.composer + 0.45, 2.2, (x) => x) * C.copy.prompt.length);
+    $("typed").textContent = C.copy.prompt.slice(0, typedN);
+    $("caret").style.opacity = (typedN < C.copy.prompt.length || Math.floor(t * 2) % 2 === 0) ? 1 : 0;
+    // popover choreography
+    const tPop = T.composer + 2.75;
+    const cur = $("cursor");
+    const c1 = seg(t, tPop, 0.45);            // move to Fusion button
+    const c2 = seg(t, tPop + 0.55, 0.4);      // move to Virtual environment row
+    const c3 = seg(t, tPop + 1.05, 0.45);     // move to macOS row
+    let cx = lerp(760, 278, c1), cy = lerp(660, 492, c1);
+    cx = lerp(cx, 370, c2); cy = lerp(cy, 514, c2);
+    cx = lerp(cx, 670, c3); cy = lerp(cy, 578, c3);
+    cur.style.left = px(cx); cur.style.top = px(cy);
+    show(cur, t > tPop - 0.4);
+    cur.style.opacity = seg(t, tPop - 0.4, 0.3);
+    show($("pop1"), t >= tPop + 0.5); show($("pop2"), t >= tPop + 1.0);
+    $("pop1").style.opacity = seg(t, tPop + 0.5, 0.25, out); $("pop2").style.opacity = seg(t, tPop + 1.0, 0.25, out);
+    $("pop1r").classList.toggle("hover", t >= tPop + 0.9);
+    $("rowMac").classList.toggle("hover", t >= tPop + 1.45);
+    const clicked = t >= tPop + 2.15;
+    show($("chkU"), !clicked); show($("chkM"), clicked);
+    $("macChip").style.display = clicked ? "inline-flex" : "none";
+    // zoom into the macOS row
+    const z = seg(t, tPop + 1.5, 0.75);
+    const zs = lerp(1.28, 1.75, z);
+    const fx = lerp(572, 670, z), fy = lerp(395, 580, z);   // focus point in composer coordinates
+    const qx = 572, qy = 520;                 // where it lands in the panel
+    cz.style.transformOrigin = "0 0";
+    cz.style.transform = `translate(${px(qx - zs * fx)}, ${px(qy - zs * fy + (1 - aIn) * 60)}) scale(${zs.toFixed(4)})`;
+    // code typing
+    const n = Math.floor(seg(t, T.code + 0.35, 2.2, (x) => x) * codeTotal);
+    renderCode(n);
+    const bb = seg(t, T.code + 2.55, 0.5);
+    wipe($("buildBar"), bb, 0);
+  }
+
+  // narrow captions
+  const capOn = t > T.composer && t < T.session;
+  show($("capcol"), capOn);
+  if (capOn) for (const c of caps) wipe(c.el, seg(t, c.a, 0.5), seg(t, c.b, 0.4));
+
+  // ---- Session UI (scenes 4 and 5)
+  const sess = $("session");
+  const sOn = t >= T.session - 0.55 && t < T.result + 0.5;
+  show(sess, sOn);
+  if (sOn) {
+    const sIn = seg(t, T.session - 0.55, 0.6), sOut = seg(t, T.result - 0.05, 0.55);
+    sess.style.clipPath = `inset(0 ${((1 - sIn) * 100).toFixed(3)}% ${(sOut * 100).toFixed(3)}% 0)`;
+    const collapse = seg(t, T.both - 0.7, 0.7);          // chat slides out
+    const back = seg(t, T.test - 0.1, 0.7);              // chat slides back in
+    const chatW = lerp(lerp(SESSION.chatW, 0, collapse), SESSION.chatW, back);
+    $("chat").style.width = px(chatW);
+    $("chat").style.borderRightWidth = chatW < 2 ? "0" : "1px";
+    $("chat").querySelector(".chat-in").style.left = px(chatW - SESSION.chatW);
+    $("pane").style.left = px(chatW);
+    const paneW = SESSION.w - chatW;
+    // footage box: contain (centered) -> cover (left aligned, full width)
+    const cover = collapse;
+    const containW = Math.round(SHOT_H * 4 / 3);
+    const boxW = lerp(containW, paneW - 2 * SESSION.padX, cover);
+    const boxX = lerp((paneW - containW) / 2, SESSION.padX, cover);
+    const shot = $("shot");
+    shot.style.left = px(boxX); shot.style.top = px(SESSION.tabsH + SESSION.padY); shot.style.width = px(boxW); shot.style.height = px(SHOT_H);
+    const imgW = lerp(containW, C.macCrop.coverWidth, cover);
+    const imgY = lerp(0, C.macCrop.offsetY, cover);
+    const shiftX = lerp(0, -300, back);
+    macImg.style.width = px(imgW); macImg.style.top = px(imgY); macImg.style.left = px(shiftX);
+    // zoom into the Mac window while blocks are placed
+    const zin = seg(t, T.session + 3.2, 0.9), zout = seg(t, T.both - 0.9, 0.8);
+    const zs = lerp(1, C.macCrop.zoomScale, zin * (1 - zout));
+    macImg.style.transformOrigin = `${C.macCrop.zoomOriginX} ${C.macCrop.zoomOriginY}`;
+    macImg.style.transform = `scale(${zs.toFixed(4)})`;
+    // frames
+    const mf = clamp(Math.floor((t - T.session) * C.fps) + 1, 1, C.media.macFrameCount);
+    macImg.src = C.media.macFrames + pad(mf) + ".jpg";
+    // phone
+    const ph = $("phone");
+    const pin = seg(t, T.both - 0.1, 0.7);
+    show(ph, pin > 0);
+    ph.style.width = px(PHONE.w); ph.style.height = px(PHONE.w * 2.16);
+    ph.style.left = px(PHONE.x - chatW); ph.style.top = px(PHONE.y);
+    ph.style.clipPath = `inset(0 0 0 ${((1 - pin) * 100).toFixed(3)}%)`;
+    const iff = clamp(Math.floor((t - T.both) * C.fps) + 1, 1, C.media.iosFrameCount);
+    iosImg.src = C.media.iosFrames + pad(iff) + ".jpg";
+    // messages
+    const testing = t >= T.test + 0.35;
+    show($("testMsg"), testing);
+    $("statusText").textContent = testing ? C.copy.awaiting : C.copy.working;
+    $("statusDot").style.background = testing ? "#34C759" : C.color.uiOrange;
+  }
+  const botOn = t > T.session && t < T.result;
+  show($("capbot"), botOn);
+  if (botOn) for (const c of bots) wipe(c.el, seg(t, c.a, 0.5), seg(t, c.b, 0.4));
+
+  // ---- Scene 6 result
+  const s6on = t >= T.result && t < T.end + 0.3;
+  show($("s6"), s6on);
+  if (s6on) {
+    wipe($("r0"), seg(t, T.result + 0.25, 0.6), seg(t, T.end - 0.45, 0.45));
+    wipe($("r1"), seg(t, T.result + 0.4, 0.6), seg(t, T.end - 0.35, 0.45));
+  }
+
+  // ---- Scene 7 end
+  const s7on = t >= T.end;
+  show($("s7"), s7on);
+  if (s7on) {
+    wipe($("endLogo"), seg(t, T.end + 0.15, 0.75), 0);
+    wipe($("endCta"), seg(t, T.end + 0.6, 0.55), 0);
+  }
+};
+
+window.ready = () => Promise.all([document.fonts.ready, ...[macImg, iosImg].map(i => i.complete ? Promise.resolve() : new Promise(r => { i.onload = r; i.onerror = r; }))]);
+const q = new URLSearchParams(location.search);
+window.seek(parseFloat(q.get("t") || "0"));
+</script>
+</body>
+</html>
