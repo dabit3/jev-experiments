@@ -1,0 +1,253 @@
+:root {
+  --field: #0f0f10;
+  --text: #f4f4f5;
+  --muted: #8b8b90;
+  --accent: #2200ff;
+  --accent-soft: #6b74ff;
+  --ui: #191919;
+  --ui-raised: #222224;
+  --ui-line: rgba(255, 255, 255, 0.08);
+  --ui-text: #ececec;
+  --ui-muted: #9a9a9f;
+  --green: #3ddc84;
+  --sans: "NB International Pro", "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--field);
+  font-family: var(--sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.02em;
+}
+
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+.layer { position: absolute; inset: 0; }
+
+/* Title and end card */
+#title, #end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 56px;
+  will-change: transform, opacity;
+}
+#title .lockup { width: 300px; }
+#headline {
+  font-size: 132px;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+#end .lockup { width: 640px; }
+#end .url { font-size: 60px; font-weight: 500; letter-spacing: -0.03em; color: var(--text); }
+
+/* Panels */
+.panel {
+  position: absolute;
+  overflow: hidden;
+  background: var(--ui);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  will-change: transform, opacity, clip-path;
+}
+.panel .content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Captions */
+.caption {
+  position: absolute;
+  top: 984px;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* ---------- Composer (panel 1) ---------- */
+.composer-wrap {
+  width: 1000px;
+  height: 430px;
+  background: var(--ui);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 44px;
+  gap: 26px;
+}
+.composer-brand { display: flex; align-items: center; justify-content: space-between; }
+.composer-brand img { height: 44px; }
+.seg { display: flex; background: var(--ui-raised); border-radius: 999px; padding: 4px; font-size: 22px; color: var(--ui-muted); }
+.seg span { padding: 8px 24px; border-radius: 999px; }
+.seg span.on { background: #f4f4f5; color: #111; font-weight: 500; }
+.composer {
+  background: var(--ui-raised);
+  border-radius: 28px;
+  padding: 30px 34px 26px;
+  box-shadow: 0 0 0 1px var(--ui-line), 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.composer .input {
+  font-size: 38px;
+  line-height: 1.25;
+  color: var(--ui-text);
+  min-height: 96px;
+  letter-spacing: -0.025em;
+}
+.composer .input .caret {
+  display: inline-block; width: 3px; height: 38px; background: var(--ui-text);
+  vertical-align: -7px; margin-left: 3px;
+}
+.composer .input .placeholder { color: var(--ui-muted); }
+.composer .row { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+.composer .left, .composer .right { display: flex; align-items: center; gap: 22px; color: var(--ui-muted); font-size: 26px; }
+.composer .plus { font-size: 38px; line-height: 1; color: var(--ui-muted); }
+.chip {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 18px; border-radius: 999px;
+  background: rgba(107, 116, 255, 0.16); color: var(--accent-soft);
+  font-size: 26px; font-weight: 500; letter-spacing: -0.01em;
+}
+.chip svg { width: 26px; height: 26px; fill: currentColor; }
+.chip.dim { background: transparent; color: var(--ui-muted); }
+.send {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--ui-text);
+  display: flex; align-items: center; justify-content: center;
+}
+.send svg { width: 24px; height: 24px; stroke: #111; fill: none; stroke-width: 2.4; }
+
+/* ---------- Editor (panel 2) ---------- */
+.editor {
+  width: 1052px; height: 520px; background: var(--ui);
+  display: flex; flex-direction: column;
+}
+.editor .tabs {
+  height: 58px; display: flex; align-items: center; gap: 12px; padding: 0 22px;
+  border-bottom: 1px solid var(--ui-line); font-size: 20px; color: var(--ui-muted);
+}
+.editor .tabs .tab { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 10px; }
+.editor .tabs .tab.on { background: var(--ui-raised); color: var(--ui-text); }
+.editor .tabs .crumb { margin-left: auto; letter-spacing: -0.01em; }
+.editor pre {
+  flex: 1; padding: 18px 26px; font-family: var(--mono); font-size: 20.5px; line-height: 27.5px;
+  color: #d8d8dc; letter-spacing: 0; white-space: pre; overflow: hidden;
+}
+.editor .ln { display: inline-block; width: 46px; color: #55555b; }
+.k { color: #ff7ab2; }   /* keywords */
+.t { color: #9ad1ff; }   /* types */
+.f { color: #c3a6ff; }   /* functions */
+.s { color: #ffd68a; }   /* strings, numbers */
+.c { color: #6b6b72; }   /* comments */
+.p { color: #d8d8dc; }
+.editor .caret { display: inline-block; width: 2px; height: 22px; background: #d8d8dc; vertical-align: -4px; }
+
+/* ---------- Reconstructed Devin session (panels 3, 4, 6) ---------- */
+.session {
+  width: 1920px; height: 1080px; background: var(--ui); display: flex; color: var(--ui-text);
+}
+.session .chat {
+  width: 700px; flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--ui-line);
+}
+.session .topbar {
+  height: 68px; display: flex; align-items: center; gap: 18px; padding: 0 26px; font-size: 21px;
+  border-bottom: 1px solid var(--ui-line);
+}
+.session .topbar .title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session .topbar .chip { font-size: 19px; padding: 5px 13px; }
+.session .topbar .chip svg { width: 19px; height: 19px; }
+.session .composer .chip { font-size: 19px; padding: 5px 13px; }
+.session .composer .chip svg { width: 19px; height: 19px; }
+.session .composer .plus { font-size: 30px; }
+.session .topbar .icon { width: 24px; height: 24px; stroke: var(--ui-muted); fill: none; stroke-width: 2; flex: none; }
+.session .messages { flex: 1; padding: 34px 32px; display: flex; flex-direction: column; gap: 26px; font-size: 22px; line-height: 1.4; }
+.session .user {
+  align-self: flex-end; max-width: 560px; background: var(--ui-raised); border-radius: 20px; padding: 18px 22px;
+}
+.session .devin { display: flex; gap: 16px; align-items: flex-start; }
+.session .devin img { width: 34px; height: 34px; margin-top: 2px; flex: none; }
+.session .devin p { color: var(--ui-text); }
+.session .worked { color: var(--ui-muted); font-size: 20px; display: flex; gap: 12px; align-items: center; }
+.session .status { color: var(--ui-muted); font-size: 20px; display: flex; gap: 12px; align-items: center; margin-top: auto; }
+.session .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-soft); }
+.session .composer { margin: 0 24px 24px; padding: 22px 26px 20px; border-radius: 24px; }
+.session .composer .input { font-size: 22px; min-height: 0; }
+.session .composer .row { margin-top: 16px; }
+.session .composer .left, .session .composer .right { font-size: 19px; }
+.session .composer .send { width: 40px; height: 40px; }
+
+.session .computer { flex: 1; display: flex; flex-direction: column; }
+.session .computer .body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 26px; }
+.session .tabs {
+  height: 68px; display: flex; align-items: center; gap: 10px; padding: 0 22px; font-size: 21px; color: var(--ui-muted);
+  border-bottom: 1px solid var(--ui-line);
+}
+.session .tabs .tab { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 12px; }
+.session .tabs .tab.on { background: var(--ui-raised); color: var(--ui-text); }
+.session .tabs .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.session .tabs .spacer { flex: 1; }
+.session .screen {
+  position: relative; width: 1168px; height: 730px; border-radius: 14px; overflow: hidden;
+  background: #0b0d12;
+  box-shadow: 0 0 0 1px var(--ui-line);
+}
+.session .screen img.mac { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.session .controls { height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 6px; color: var(--ui-muted); font-size: 21px; }
+.session .controls .bar { flex: 1; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.session .controls .bar i { display: block; height: 100%; width: 60%; background: var(--accent-soft); border-radius: 4px; }
+.session .controls .live { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 999px; background: var(--ui-raised); color: var(--ui-text); }
+.session .controls .live i { width: 10px; height: 10px; border-radius: 50%; background: #ff4d4d; }
+.session .controls svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* Simulator scene inside the Computer pane */
+.simscene {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(1200px 700px at 30% 0%, #274a6b 0%, transparent 60%),
+    radial-gradient(900px 600px at 90% 100%, #2b5c60 0%, transparent 60%),
+    linear-gradient(180deg, #16263a 0%, #0f1a29 100%);
+}
+.simscene .menubar {
+  position: absolute; left: 0; right: 0; top: 0; height: 30px; background: rgba(20, 24, 32, 0.6);
+  display: flex; align-items: center; gap: 22px; padding: 0 18px; font-size: 15px; color: #e6e6e6;
+}
+.simscene .menubar b { font-weight: 600; }
+.simscene .simtitle {
+  position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+  width: 360px; height: 38px; border-radius: 11px; background: #2a2a2e;
+  display: flex; align-items: center; gap: 12px; padding: 0 14px; color: #ddd; font-size: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+.simscene .lights { display: flex; gap: 8px; }
+.simscene .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.simscene .simtitle .name { margin-left: 10px; }
+.simscene .simtitle .name small { color: #9a9a9f; font-size: 13px; margin-left: 8px; }
+.phone {
+  position: absolute; left: 50%; top: 50px; transform: translateX(-50%);
+  width: 309px; height: 670px; border-radius: 52px; background: #101114;
+  box-shadow: 0 0 0 3px #2c2d31, 0 0 0 5px #0a0a0c, 0 40px 80px rgba(0, 0, 0, 0.6);
+  padding: 10px;
+}
+.phone .glass { width: 100%; height: 100%; border-radius: 44px; overflow: hidden; background: #000; position: relative; }
+.phone .glass img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- Verified card (panel 5) ---------- */
+
+/* Final panel: Mac desktop and Simulator side by side inside the Computer pane. */
+.session .split { position: absolute; inset: 0; display: flex; }
+.session .split .half { position: relative; flex: 1; overflow: hidden; }
+.session .split .half:first-child { flex: 0 0 720px; }
+.session .split .half img.mac { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 50%; }
+.session .split .half .simscene { position: absolute; inset: 0; }
+.session .split .half .phone { top: 42px; }

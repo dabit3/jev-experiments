@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>macOS in Devin Cloud: Graphic Storyboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+</head>
+<body>
+<div id="stage">
+  <!-- Opening title -->
+  <div id="title" class="layer">
+    <img class="lockup" src="../assets/devin-lockup-white.png" alt="Devin">
+    <h1 id="headline"></h1>
+  </div>
+
+  <!-- Storyboard panels (positioned by storyboard.js) -->
+  <div id="panels" class="layer"></div>
+
+  <!-- Margin captions -->
+  <div id="captions" class="layer"></div>
+
+  <!-- End card -->
+  <div id="end" class="layer">
+    <img class="lockup" src="../assets/devin-lockup-white.png" alt="Devin">
+    <div class="url"></div>
+  </div>
+</div>
+<script src="ui.js"></script>
+<script src="storyboard.js"></script>
+</body>
+</html>
