@@ -108,8 +108,8 @@ final class SpotlightSearch {
     ]
     if !types.isEmpty {
       predicates.append(
-        NSCompoundPredicate(
-          orPredicateWithSubpredicates: types.sorted().map {
+        anyOf(
+          types.sorted().map {
             NSPredicate(format: "kMDItemContentTypeTree == %@", $0)
           }))
     }
@@ -117,11 +117,17 @@ final class SpotlightSearch {
       let names = words.prefix(6).map {
         NSPredicate(format: "kMDItemFSName CONTAINS[cd] %@", $0)
       }
-      predicates.append(NSCompoundPredicate(orPredicateWithSubpredicates: names))
+      predicates.append(anyOf(names))
     }
     if FileRecency(query: text) == .opened {
       predicates.append(NSPredicate(format: "kMDItemLastUsedDate != nil"))
     }
-    return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    return predicates.count == 1
+      ? predicates[0] : NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+  }
+
+  private static func anyOf(_ predicates: [NSPredicate]) -> NSPredicate {
+    if predicates.count == 1 { return predicates[0] }
+    return NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
   }
 }

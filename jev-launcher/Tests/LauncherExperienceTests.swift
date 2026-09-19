@@ -95,6 +95,15 @@ final class RetrievalTests: XCTestCase {
     XCTAssertFalse(SpotlightSearch.allowed(path: "/Users/test2/report.pdf", home: "/Users/test"))
   }
 
+  @MainActor
+  func testSpotlightPredicatesAreAcceptedByMetadataQuery() {
+    for text in ["pdf", "nebula", "the last pdf I opened", "folder", "pdf image nebula", "files"] {
+      let query = NSMetadataQuery()
+      query.predicate = SpotlightSearch.predicate(for: text)
+      XCTAssertNotNil(query.predicate)
+    }
+  }
+
   func testValidationRejectsUnsafeAndMissingWorkspaceMembersBeforeOpening() {
     let unsafe = Candidate(
       id: "unsafe", title: "Script", subtitle: "", kind: .openURL,
