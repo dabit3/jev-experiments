@@ -1,0 +1,34 @@
+name: Say macOS
+
+on:
+  pull_request:
+    paths:
+      - "say/**"
+      - ".github/workflows/say.yml"
+  push:
+    branches: [main]
+    paths:
+      - "say/**"
+      - ".github/workflows/say.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: say
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint Swift
+        run: swift format lint --strict --recursive Sources Tests Resources/GenerateIcon.swift Package.swift
+      - name: Unit tests
+        run: swift test
+      - name: Build macOS installer
+        run: bash run.sh --dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Say-macOS
+          path: say/build/Say-*.dmg

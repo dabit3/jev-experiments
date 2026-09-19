@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>Say</string>
+<key>CFBundleIdentifier</key><string>ai.jev.talkie</string>
+<key>CFBundleName</key><string>Say</string>
+<key>CFBundleDisplayName</key><string>Say</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>1.0.0</string>
+<key>CFBundleVersion</key><string>3</string>
+<key>CFBundleIconFile</key><string>AppIcon</string>
+<key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>LSUIElement</key><true/>
+<key>NSHighResolutionCapable</key><true/>
+<key>NSMicrophoneUsageDescription</key><string>Say sends microphone audio to OpenAI for transcription only when you hold the shortcut or press the microphone.</string>
+<key>NSAccessibilityUsageDescription</key><string>Say reads the current app and operates its controls when you ask.</string>
+<key>NSScreenCaptureUsageDescription</key><string>Say reads on-screen text on request. Screenshots stay in memory on this Mac.</string>
+<key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
+</dict></plist>
