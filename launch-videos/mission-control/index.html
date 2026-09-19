@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud. Mission Control</title>
+<script src="config.js"></script>
+<style>
+  @font-face {
+    font-family: "Inter Tight";
+    src: url("assets/fonts/InterTight.ttf") format("truetype");
+    font-weight: 100 900;
+  }
+  :root {
+    --font: "NB International Pro", "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+  html, body { margin: 0; padding: 0; background: #000; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--field); }
+  #glow { position: absolute; inset: 0; background: radial-gradient(1200px 700px at 50% 45%, var(--fieldGlow) 0%, var(--field) 70%); }
+
+  /* Title and end card */
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; will-change: transform, opacity; }
+  .card img.lockup { width: 420px; display: block; }
+  .card h1 { margin: 0; font-size: 104px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.02; color: var(--text); text-align: center; }
+  #endcard img.lockup { width: 640px; }
+  #endcard .url { font-size: 48px; font-weight: 500; letter-spacing: -0.02em; color: var(--muted); }
+
+  /* Mission control layer (camera) */
+  #mc { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform, opacity; }
+  #caption { position: absolute; left: 60px; top: 1004px; height: 56px; width: 1400px; font-size: 44px; font-weight: 600; letter-spacing: -0.03em; line-height: 56px; color: var(--text); white-space: nowrap; }
+  #caption span { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+
+  /* Reconstructed Devin web app */
+  .viewer { position: absolute; background: var(--panel); border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px var(--panelEdge); will-change: transform, opacity; }
+  .viewer > .home, .viewer > .session { position: absolute; inset: 0; }
+
+  /* Home view: one large composer, the way a new Devin session starts */
+  .home { display: flex; align-items: center; justify-content: center; will-change: transform, opacity; }
+  .home .composer { width: 1100px; min-height: 236px; padding: 30px 34px 26px; gap: 26px; font-size: 34px; line-height: 1.3; border-radius: 24px; }
+  .home .caret { height: 36px; }
+  .home .crow { font-size: 24px; gap: 18px; }
+  .home .crow .plus { font-size: 40px; line-height: 26px; }
+  .home .crow .send { width: 52px; height: 52px; font-size: 28px; }
+  .home .pop { left: 34px; bottom: 100px; padding: 10px; font-size: 26px; width: 300px; }
+  .home .pop .row { padding: 12px 16px; gap: 14px; }
+  .home .cursor svg { width: 36px; height: 36px; }
+
+  /* Session view: chat and timeline on the left, Computer pane on the right */
+  .session { display: flex; will-change: transform, opacity; }
+  .side { position: relative; background: var(--side); display: flex; flex-direction: column; flex: 0 0 auto; border-right: 1px solid var(--panelEdge); width: 420px; padding: 22px 24px 24px; gap: 22px; }
+  .main { position: relative; flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar { display: flex; align-items: center; gap: 12px; color: var(--text); height: 30px; font-size: 21px; }
+  .topbar .ico { width: 20px; height: 16px; border: 2px solid var(--muted); border-radius: 4px; position: relative; flex: 0 0 auto; }
+  .topbar .ico::after { content: ""; position: absolute; left: 5px; top: -2px; bottom: -2px; border-left: 2px solid var(--muted); }
+  .topbar .ttl { font-weight: 500; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar .chip { background: var(--chip); color: var(--chipText); border-radius: 7px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-size: 17px; padding: 3px 10px; will-change: transform; }
+  .topbar .chip i { width: 1em; height: 0.8em; border: 1.5px solid currentColor; border-radius: 3px; display: inline-block; }
+
+  .chat { flex: 1 1 auto; overflow: hidden; font-size: 20px; line-height: 1.36; }
+  .chatin { display: flex; flex-direction: column; gap: 20px; will-change: transform; }
+  .umsg { background: var(--bubble); border-radius: 16px; color: var(--text); align-self: flex-end; padding: 14px 18px; max-width: 356px; will-change: transform, opacity; }
+  .dmsg { display: flex; gap: 12px; will-change: transform, opacity; }
+  .dmsg .av { width: 32px; height: 32px; border-radius: 8px; background: #fff; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+  .dmsg .av img { width: 70%; height: 70%; filter: invert(1); }
+  .dmsg .who { font-weight: 600; color: var(--text); }
+  .dmsg p { margin: 4px 0 0; color: var(--text); }
+  .steps { display: flex; flex-direction: column; gap: 11px; font-size: 18px; padding-left: 44px; color: var(--muted); }
+  .step { display: flex; gap: 10px; align-items: baseline; will-change: transform, opacity; }
+  .step .diff { color: var(--green); }
+  .step::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: 0 0 auto; transform: translateY(-2px); }
+  .step.done::before { background: var(--green); }
+
+  .composer { position: relative; background: var(--bubble); border-radius: 18px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 0 0 1px var(--panelEdge); }
+  .side .composer { padding: 16px 18px 14px; min-height: 104px; gap: 14px; font-size: 18px; line-height: 1.36; }
+  .side .crow { font-size: 17px; }
+  .side .crow .plus { font-size: 28px; line-height: 18px; }
+  .side .crow .send { width: 32px; height: 32px; font-size: 18px; }
+  .crow .env { display: inline-flex; align-items: center; gap: 0.4em; border-radius: 0.5em; padding: 0.15em 0.55em; background: rgba(255,255,255,0.06); color: var(--text); white-space: nowrap; will-change: transform; }
+  .crow .env.mac { background: var(--chip); color: var(--chipText); }
+  .crow .env i { width: 1em; height: 0.78em; border: 1.5px solid currentColor; border-radius: 3px; display: inline-block; }
+  .crow .env small { font-size: 0.7em; opacity: 0.7; }
+  .pop { position: absolute; background: #23242a; border-radius: 0.7em; box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08); color: var(--text); display: flex; flex-direction: column; will-change: transform, opacity; }
+  .pop .row { display: flex; align-items: center; gap: 0.55em; border-radius: 0.45em; white-space: nowrap; }
+  .pop .row i { width: 1em; height: 0.78em; border: 1.5px solid var(--muted); border-radius: 3px; display: inline-block; }
+  .pop .row .tick { margin-left: auto; opacity: 0; color: var(--text); }
+  .pop .row.on .tick { opacity: 1; }
+  .pop .row.hot { background: rgba(255,255,255,0.1); }
+  .cursor { position: absolute; left: 0; top: 0; will-change: transform, opacity; pointer-events: none; z-index: 5; }
+  .cursor svg { display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+  .composer .ctext { color: var(--text); word-break: break-word; }
+  .composer .ctext .ph { color: var(--faint); }
+  .composer .caret { display: inline-block; width: 2px; background: var(--text); vertical-align: -0.15em; margin-left: 1px; }
+  .crow { display: flex; align-items: center; gap: 14px; color: var(--muted); }
+  .crow .plus { font-weight: 300; }
+  .crow .spacer { flex: 1; }
+  .crow .send { border-radius: 50%; background: var(--muted); color: var(--side); display: flex; align-items: center; justify-content: center; font-weight: 600; flex: 0 0 auto; }
+  .crow .send.on { background: var(--text); }
+
+  .tabs { display: flex; align-items: center; color: var(--muted); height: 56px; padding: 0 20px; gap: 8px; font-size: 20px; }
+  .tabs span { border-radius: 10px; white-space: nowrap; padding: 7px 16px; }
+  .tabs span.on { background: var(--bubble); color: var(--text); }
+
+  .content { position: relative; flex: 1 1 auto; overflow: hidden; margin: 0 20px 20px; border-radius: 12px; }
+  .content > div { position: absolute; inset: 0; will-change: transform, opacity; }
+
+  .code { background: var(--codeBg); display: flex; flex-direction: column; }
+  .codehead { color: var(--muted); font-weight: 500; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--panelEdge); height: 50px; padding: 0 22px; font-size: 19px; }
+  .codehead i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .code pre { margin: 0; font-family: var(--mono); color: var(--codePlain); overflow: hidden; padding: 16px 22px; font-size: 26px; line-height: 1.45; }
+  .code pre .ln { display: inline-block; text-align: right; color: var(--lineNo); user-select: none; width: 34px; margin-right: 26px; }
+  .k { color: var(--kw); } .ty { color: var(--type); } .fn { color: var(--fnc); } .s { color: var(--str); } .c { color: var(--cmt); }
+
+  .desktop { background: linear-gradient(180deg, var(--desktopTop) 0%, var(--desktopBottom) 100%); overflow: hidden; }
+  .desktop::before { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 45% at 50% 20%, rgba(96,120,220,0.25) 0%, rgba(0,0,0,0) 70%); }
+  .menubar { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; color: rgba(255,255,255,0.86); background: rgba(10,12,20,0.55); backdrop-filter: blur(20px); height: 32px; padding: 0 18px; gap: 20px; font-size: 16px; }
+  .menubar .apple { font-size: 1.15em; margin-right: 0.2em; }
+  .menubar span { white-space: nowrap; }
+  .menubar span:first-of-type { font-weight: 600; }
+  .menubar .clock { margin-left: auto; }
+  .devicewrap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); will-change: transform, opacity; }
+  .phone { position: relative; background: #0a0a0c; box-shadow: 0 30px 70px rgba(0,0,0,0.6), inset 0 0 0 2px #2b2c31; }
+  .phone .screen { position: absolute; overflow: hidden; background: #000; }
+  .phone .screen img, .macwin img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .macwin { position: relative; overflow: hidden; background: #000; box-shadow: 0 30px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.12); }
+  .primary .phone { width: 680px; height: 338px; border-radius: 54px; }
+  .primary .phone .screen { left: 20px; top: 20px; width: 640px; height: 298px; border-radius: 38px; }
+
+  /* Bays: app name, stage word, and the artifact. Nothing else. */
+  .bay { border-radius: 14px; }
+  .bayrow { position: absolute; left: 22px; right: 22px; top: 0; height: 64px; display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; color: var(--text); }
+  .bayrow .status { position: relative; width: 140px; height: 32px; color: var(--muted); }
+  .bayrow .status span { position: absolute; right: 0; top: 0; line-height: 32px; will-change: transform, opacity; }
+  .bay .blurb { position: absolute; left: 22px; top: 60px; font-size: 20px; color: var(--muted); letter-spacing: -0.01em; will-change: opacity; }
+  .bay .baycontent { position: absolute; left: 16px; right: 16px; top: 64px; bottom: 16px; border-radius: 10px; overflow: hidden; will-change: opacity; }
+  .bay .baycontent > div { position: absolute; inset: 0; will-change: transform, opacity; }
+  .bay .codehead { height: 40px; padding: 0 16px; font-size: 16px; }
+  .bay .code pre { padding: 12px 16px; font-size: 18px; line-height: 1.45; }
+  .bay .code pre .ln { width: 20px; margin-right: 16px; }
+  .bay .menubar { display: none; }
+  .bay .phone { width: 142px; height: 300px; border-radius: 24px; }
+  .bay .phone .screen { left: 6px; top: 6px; width: 130px; height: 288px; border-radius: 19px; }
+  .bay .macwin { width: 460px; height: 296px; border-radius: 9px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow"></div>
+  <div id="mc"></div>
+  <div id="caption"><span id="capA"></span><span id="capB"></span></div>
+  <div id="title" class="card">
+    <img class="lockup" src="assets/devin-lockup-white.png" alt="" />
+    <h1 id="headline"></h1>
+  </div>
+  <div id="endcard" class="card">
+    <img class="lockup" src="assets/devin-lockup-white.png" alt="" />
+    <div class="url" id="endurl"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const C = window.CONFIG;
+  const T = C.t;
+  const L = C.layout;
+  const root = document.documentElement.style;
+  const col = C.colors;
+  root.setProperty("--field", col.field); root.setProperty("--fieldGlow", col.fieldGlow);
+  root.setProperty("--text", col.text); root.setProperty("--muted", col.muted); root.setProperty("--faint", col.faint);
+  root.setProperty("--panel", col.panel); root.setProperty("--panelEdge", col.panelEdge); root.setProperty("--side", col.side);
+  root.setProperty("--bubble", col.bubble); root.setProperty("--chip", col.chip); root.setProperty("--chipText", col.chipText);
+  root.setProperty("--accent", col.accent); root.setProperty("--green", col.green);
+  root.setProperty("--desktopTop", col.desktopTop); root.setProperty("--desktopBottom", col.desktopBottom);
+  root.setProperty("--codeBg", col.code.bg); root.setProperty("--codePlain", col.code.plain); root.setProperty("--lineNo", col.code.lineNo);
+  root.setProperty("--kw", col.code.keyword); root.setProperty("--type", col.code.type); root.setProperty("--fnc", col.code.fn);
+  root.setProperty("--str", col.code.string); root.setProperty("--cmt", col.code.comment);
+
+  document.getElementById("headline").textContent = C.headline;
+  document.getElementById("endurl").textContent = C.endUrl;
+
+  // Easing helpers
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+  const seg = (t, a, b, fn = easeInOut) => fn(clamp01((t - a) / (b - a)));
+  const lerp = (a, b, p) => a + (b - a) * p;
+
+  // Swift highlighter (tiny, deterministic)
+  const KW = /\b(final|class|struct|func|var|let|private|guard|else|return|import|if|in|to|max|min)\b/g;
+  function highlight(line) {
+    let out = line
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/"[^"]*"/g, (m) => `\u0001s${m}\u0002`)
+      .replace(/@\w+/g, (m) => `\u0001k${m}\u0002`)
+      .replace(KW, (m) => `\u0001k${m}\u0002`)
+      .replace(/\b([A-Z][A-Za-z]+)\b/g, (m) => `\u0001t${m}\u0002`)
+      .replace(/\.(\w+)(?=\()/g, (m, n) => `.\u0001f${n}\u0002`)
+      .replace(/\b(\w+)(?=\()/g, (m) => (/\u0001/.test(m) ? m : `\u0001f${m}\u0002`));
+    out = out.replace(/\u0001s([^\u0002]*)\u0002/g, '<span class="s">$1</span>')
+      .replace(/\u0001k([^\u0002]*)\u0002/g, '<span class="k">$1</span>')
+      .replace(/\u0001t([^\u0002]*)\u0002/g, '<span class="ty">$1</span>')
+      .replace(/\u0001f([^\u0002]*)\u0002/g, '<span class="fn">$1</span>');
+    return out;
+  }
+
+  function el(tag, cls, html) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html !== undefined) e.innerHTML = html;
+    return e;
+  }
+  function place(node, g) {
+    node.style.left = g.x + "px"; node.style.top = g.y + "px";
+    node.style.width = g.w + "px"; node.style.height = g.h + "px";
+  }
+  function lerpGeom(a, b, p) {
+    return { x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p), w: lerp(a.w, b.w, p), h: lerp(a.h, b.h, p) };
+  }
+
+  const SVG_UP = "&#8593;";
+  const SVG_CURSOR = '<svg viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.2 1.6L9.6 19z" fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  const PLACEHOLDER = '<span class="ph">Ask Devin to build features, fix bugs, or work on your code</span>';
+  const mcRoot = document.getElementById("mc");
+
+  function buildComposer(withEnv) {
+    const composer = el("div", "composer");
+    const ctext = el("div", "ctext");
+    ctext.append(el("span", "typed"), el("span", "caret"));
+    const envHtml = withEnv ? `<span class="env"><i></i><b>${C.environments[0]}</b><small>&#8964;</small></span>` : "";
+    const crow = el("div", "crow", `<span class="plus">+</span>${envHtml}<span class="spacer"></span><span class="send">${SVG_UP}</span>`);
+    composer.append(ctext, crow);
+    const out = { composer, typed: ctext.querySelector(".typed"), caret: ctext.querySelector(".caret"), send: crow.querySelector(".send") };
+    if (withEnv) {
+      const pop = el("div", "pop", C.environments.map((e) => `<span class="row"><i></i>${e}<span class="tick">&#10003;</span></span>`).join(""));
+      composer.append(pop);
+      Object.assign(out, { pop, rows: [...pop.children], env: crow.querySelector(".env"), envLabel: crow.querySelector(".env b") });
+    }
+    return out;
+  }
+
+  function buildDesktop(s) {
+    const desktop = el("div", "desktop");
+    const menubar = el("div", "menubar");
+    const setMenu = (items) => { menubar.innerHTML = `<span class="apple">&#63743;</span>` + items.map((m) => `<span>${m}</span>`).join("") + `<span class="clock">${C.mac.clock}</span>`; };
+    setMenu(C.mac.finderMenu);
+    menubar.dataset.app = "finder";
+    const wrap = el("div", "devicewrap");
+    const img = el("img");
+    let device;
+    if (s.device === "mac") {
+      device = el("div", "macwin"); device.append(img);
+    } else {
+      device = el("div", "phone");
+      const screen = el("div", "screen"); screen.append(img); device.append(screen);
+    }
+    wrap.append(device);
+    desktop.append(menubar, wrap);
+    return { desktop, menubar, setMenu, wrap, img, device };
+  }
+
+  function buildCode(s) {
+    const code = el("div", "code");
+    code.append(el("div", "codehead", `<i></i>${s.file}`), el("pre"));
+    return { code, pre: code.querySelector("pre") };
+  }
+
+  // Primary display: a full Devin session. Starts as the new-session home with one
+  // big composer, then becomes the chat + Computer pane once the request is sent.
+  function buildPrimary(key, s) {
+    const v = el("div", "viewer primary");
+    v.id = `v-${key}`;
+    place(v, L.primary);
+
+    const home = el("div", "home");
+    const hc = buildComposer(true);
+    const cursor = el("div", "cursor", SVG_CURSOR);
+    home.append(hc.composer, cursor);
+
+    const session = el("div", "session");
+    const side = el("div", "side");
+    const topbar = el("div", "topbar");
+    topbar.append(el("span", "ico"), el("span", "ttl", s.app), el("span", "chip", "<i></i>macOS"));
+    const chat = el("div", "chat");
+    const chatin = el("div", "chatin");
+    chat.append(chatin);
+    const umsg = el("div", "umsg", s.prompt);
+    const mkD = (text, cls) => {
+      const d = el("div", "dmsg" + (cls ? " " + cls : ""));
+      const av = el("div", "av"); av.append(Object.assign(el("img"), { src: "assets/devin-avatar-white.png" }));
+      const body = el("div"); body.append(el("span", "who", "Devin"), el("p", "reply", text));
+      d.append(av, body);
+      return d;
+    };
+    const dmsg = mkD(s.reply);
+    const steps = el("div", "steps");
+    s.steps.forEach((st) => steps.append(el("div", "step", `<span>${st.text}</span>` + (st.diff ? `<span class="diff">${st.diff}</span>` : ""))));
+    const fmsg = mkD(s.finalReply, "final");
+    chatin.append(umsg, dmsg, steps, fmsg);
+    const sc = buildComposer(false);
+    sc.typed.innerHTML = PLACEHOLDER;
+    sc.caret.style.opacity = 0;
+    side.append(topbar, chat, sc.composer);
+
+    const main = el("div", "main");
+    const tabs = el("div", "tabs", '<span data-tab="progress">Progress</span><span data-tab="changes">Changes</span><span data-tab="computer">Computer</span>');
+    const content = el("div", "content");
+    const cd = buildCode(s);
+    const dk = buildDesktop(s);
+    content.append(cd.code, dk.desktop);
+    main.append(tabs, content);
+    session.append(side, main);
+    v.append(home, session);
+    mcRoot.append(v);
+
+    return { key, s, v, home, session, hc, cursor, side, chip: topbar.querySelector(".chip"), chat, chatin, umsg, dmsg, fmsg,
+      stepEls: [...steps.children], tabs, main, ...cd, ...dk };
+  }
+
+  // Bay: app name and stage word on top, the artifact below.
+  function buildBay(key, s, i) {
+    const v = el("div", "viewer bay");
+    v.id = `v-${key}`;
+    place(v, L.bayTile[i]);
+    const row = el("div", "bayrow");
+    row.append(el("span", "app", s.app), el("span", "status", "<span></span><span></span>"));
+    const blurb = el("div", "blurb", s.blurb);
+    const content = el("div", "baycontent");
+    const cd = buildCode(s);
+    const dk = buildDesktop(s);
+    content.append(cd.code, dk.desktop);
+    v.append(row, blurb, content);
+    mcRoot.append(v);
+    return { key, s, v, i, row, statusSpans: [...row.querySelectorAll(".status span")], blurb, content, ...cd, ...dk };
+  }
+
+  const P = buildPrimary("rtx", C.sessions.rtx);
+  const B = [buildBay("lumen", C.sessions.lumen, 0), buildBay("aster", C.sessions.aster, 1)];
+
+  function framePath(clipKey, i) {
+    const c = C.clips[clipKey];
+    const n = Math.max(1, Math.min(c.frames, i));
+    return `${c.dir}/${String(n).padStart(4, "0")}.jpg`;
+  }
+
+  function typedText(text, t, t0, cps) {
+    const n = Math.floor(Math.max(0, t - t0) * cps);
+    return text.slice(0, Math.min(text.length, n));
+  }
+
+  // Label switching: the old label leaves completely before the new one enters,
+  // so two labels never share the screen.
+  function setSwitcher(spans, list, t, dur, dy) {
+    let idx = -1;
+    for (let i = 0; i < list.length; i++) if (t >= list[i].t) idx = i;
+    const cur = idx >= 0 ? list[idx] : null;
+    const prev = idx > 0 ? list[idx - 1] : null;
+    const p = cur ? clamp01((t - cur.t) / dur) : 0;
+    const outP = idx === 0 ? 1 : easeInOut(clamp01(p / 0.4));
+    const inP = easeOut(clamp01((p - 0.42) / 0.58));
+    const a = spans[idx % 2 === 0 ? 0 : 1];
+    const b = spans[idx % 2 === 0 ? 1 : 0];
+    a.textContent = cur ? cur.text : "";
+    a.style.opacity = cur ? inP : 0;
+    a.style.transform = `translateY(${(1 - inP) * dy}px)`;
+    b.textContent = prev ? prev.text : "";
+    b.style.opacity = prev ? 1 - outP : 0;
+    b.style.transform = `translateY(${-outP * dy}px)`;
+  }
+
+  function fade(node, o, y = 0, s = 1) {
+    node.style.opacity = o;
+    node.style.transform = `translateY(${y}px) scale(${s})`;
+  }
+
+  function typeCode(pre, lines, t, start, cps) {
+    let budget = Math.floor(Math.max(0, t - start) * cps);
+    const html = [];
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i];
+      const take = Math.min(ln.length, budget);
+      if (budget <= 0 && i > 0) break;
+      budget -= Math.max(1, ln.length);
+      const partial = take < ln.length;
+      html.push(`<span class="ln">${i + 1}</span>${highlight(ln.slice(0, take))}${partial ? '<span class="caret"></span>' : ""}`);
+      if (partial) break;
+    }
+    pre.innerHTML = html.join("\n");
+  }
+
+  function showFrame(view, clipKey, clipT) {
+    if (clipT >= 0) {
+      view.img.src = framePath(clipKey, Math.floor(clipT * C.fps) + 1);
+      view.img.style.visibility = "visible";
+    } else {
+      view.img.style.visibility = "hidden";
+    }
+  }
+
+  // Code <-> desktop crossfade shared by the primary and the bays
+  function renderContent(view, t) {
+    const toBuild = seg(t, T.building, T.building + 0.6);
+    const toRun = seg(t, T.running - 0.1, T.running + 0.5);
+    const codeO = toBuild * (1 - toRun);
+    view.code.style.opacity = codeO;
+    view.code.style.transform = `translateY(${(1 - toBuild) * 24}px)`;
+    view.desktop.style.opacity = Math.max(1 - toBuild, toRun);
+    view.desktop.style.transform = `scale(${lerp(1.02, 1, toRun)})`;
+    const menuApp = t >= T.running - 0.1 ? "app" : "finder";
+    if (view.menubar.dataset.app !== menuApp) {
+      view.setMenu(menuApp === "app" ? C.mac.simulatorMenu : C.mac.finderMenu);
+      view.menubar.dataset.app = menuApp;
+    }
+    view.wrap.style.opacity = toRun;
+    return { codeO, toRun };
+  }
+
+  function renderPrimary(t, clipT) {
+    const s = P.s;
+    const hc = P.hc;
+
+    // Environment menu: opens, cursor moves to macOS, clicks, closes
+    const popIn = seg(t, T.envOpen, T.envOpen + 0.3, easeOut);
+    const popOut = seg(t, T.envPick + 0.18, T.envPick + 0.45);
+    const popO = popIn * (1 - popOut);
+    hc.pop.style.opacity = popO;
+    hc.pop.style.transform = `translateY(${(1 - popIn) * 10 + popOut * 6}px) scale(${lerp(0.96, 1, popIn)})`;
+    hc.pop.style.display = popO > 0 ? "flex" : "none";
+    const picked = t >= T.envPick;
+    hc.rows.forEach((r, i) => {
+      r.classList.toggle("on", picked ? i === 1 : i === 0);
+      r.classList.toggle("hot", i === 1 && t >= T.envPick - 0.12 && t < T.envPick + 0.3);
+    });
+    hc.envLabel.textContent = picked ? C.environments[1] : C.environments[0];
+    hc.env.classList.toggle("mac", picked);
+    const envPulse = Math.sin(seg(t, T.envPick, T.envPick + 0.5) * Math.PI);
+    hc.env.style.transform = `scale(${1 + 0.08 * envPulse})`;
+    const cursorIn = seg(t, T.envOpen - 0.15, T.envOpen + 0.15, easeOut);
+    const cursorOut = seg(t, T.envPick + 0.2, T.envPick + 0.42);
+    const move = seg(t, T.envOpen + 0.1, T.envPick - 0.05);
+    const homeRect = P.home.getBoundingClientRect();
+    const vscale = homeRect.width / L.primary.w || 1;
+    const from = hc.env.getBoundingClientRect();
+    const to = hc.rows[1].getBoundingClientRect();
+    const fx = (from.left + from.width * 0.6 - homeRect.left) / vscale, fy = (from.top + from.height * 0.7 - homeRect.top) / vscale;
+    const tx = (to.left + to.width * 0.42 - homeRect.left) / vscale, ty = (to.top + to.height * 0.6 - homeRect.top) / vscale;
+    const click = Math.sin(seg(t, T.envPick - 0.06, T.envPick + 0.12) * Math.PI);
+    P.cursor.style.opacity = cursorIn * (1 - cursorOut);
+    P.cursor.style.transform = `translate(${lerp(fx, tx, move)}px, ${lerp(fy + 14 * (1 - cursorIn), ty, move)}px) scale(${1 - 0.15 * click})`;
+
+    // Typing into the home composer, then send
+    const typed = t >= T.send ? "" : typedText(s.prompt, t, T.typeStart, 48);
+    const fullyTyped = typed.length >= s.prompt.length;
+    if (t < T.typeStart || t >= T.send) {
+      hc.typed.innerHTML = PLACEHOLDER;
+      hc.caret.style.opacity = 0;
+    } else {
+      hc.typed.textContent = typed;
+      const blink = Math.floor(t * 2.4) % 2 === 0;
+      hc.caret.style.opacity = !fullyTyped || blink ? 1 : 0;
+    }
+    hc.send.classList.toggle("on", typed.length > 0);
+
+    // Home becomes the session view
+    const hp = seg(t, T.send, T.send + 0.7);
+    P.home.style.opacity = 1 - hp;
+    P.home.style.transform = `scale(${lerp(1, 1.04, hp)})`;
+    P.home.style.display = hp >= 1 ? "none" : "flex";
+    P.session.style.opacity = hp;
+    P.session.style.transform = `scale(${lerp(0.985, 1, hp)})`;
+    P.session.style.display = hp <= 0 ? "none" : "flex";
+
+    const sendP = seg(t, T.send + 0.15, T.send + 0.65);
+    fade(P.umsg, sendP, (1 - sendP) * 30);
+    const rp = seg(t, T.send + 0.6, T.send + 1.1);
+    fade(P.dmsg, rp, (1 - rp) * 16);
+    P.stepEls.forEach((elm, i) => {
+      const st = s.steps[i];
+      const p = seg(t, st.t, st.t + 0.45, easeOut);
+      fade(elm, p, (1 - p) * 12);
+      elm.classList.toggle("done", t >= st.t + 0.45);
+    });
+    const fp = seg(t, T.result, T.result + 0.6);
+    fade(P.fmsg, fp, (1 - fp) * 16);
+    const overflow = Math.max(0, P.chatin.scrollHeight - P.chat.clientHeight);
+    P.chatin.style.transform = `translateY(${-overflow * fp}px)`;
+    const chipP = seg(t, T.send + 0.4, T.send + 0.9, easeOut);
+    P.chip.style.opacity = chipP;
+    P.chip.style.transform = `scale(${lerp(0.9, 1, chipP)})`;
+
+    const stage = t < T.building ? "request" : t < T.running ? "building" : "running";
+    const active = stage === "request" ? "progress" : stage === "building" ? "changes" : "computer";
+    [...P.tabs.children].forEach((tab) => tab.classList.toggle("on", tab.dataset.tab === active));
+
+    const { codeO } = renderContent(P, t);
+    if (codeO > 0) typeCode(P.pre, s.code, t, T.building + 0.35, 150);
+    showFrame(P, s.clip, clipT);
+  }
+
+  function renderBay(bay, t, clipT) {
+    const s = bay.s;
+    const grow = seg(t, T.send, T.send + 0.9);
+    place(bay.v, lerpGeom(L.bayTile[bay.i], L.bayFull[bay.i], grow));
+    bay.blurb.style.opacity = 1 - seg(t, T.send, T.send + 0.35);
+    bay.content.style.opacity = seg(t, T.send + 0.45, T.send + 0.9);
+    setSwitcher(bay.statusSpans, C.bayStatus, t, 0.45, 10);
+    const { codeO } = renderContent(bay, t);
+    if (codeO > 0) typeCode(bay.pre, s.code, t, T.building + 0.35, 75);
+    showFrame(bay, s.clip, clipT);
+  }
+
+  window.render = function render(tIn) {
+    const t = Math.max(0, Math.min(C.duration, tIn));
+
+    // Title card
+    const title = document.getElementById("title");
+    const tIn1 = seg(t, T.titleIn, T.titleIn + 0.9, easeOut);
+    const tOut = seg(t, T.titleOut, T.titleOut + 0.7);
+    const drift = 1 + 0.02 * clamp01((t - T.titleIn) / (T.titleOut - T.titleIn));
+    title.style.opacity = tIn1 * (1 - tOut);
+    title.style.transform = `translateY(${(1 - tIn1) * 40}px) scale(${drift * lerp(1, 1.06, tOut)})`;
+    title.style.display = t > T.titleOut + 0.75 ? "none" : "flex";
+
+    // Mission control layer
+    const lin = seg(t, T.layoutIn, T.layoutIn + 0.9, easeOut);
+    const heroP = seg(t, T.hero, T.hero + 1.1);
+    const endP = seg(t, T.endIn, T.endIn + 0.8);
+    mcRoot.style.opacity = lin * (1 - endP);
+    mcRoot.style.display = t < T.layoutIn ? "none" : "block";
+
+    // Panels ease in with a stagger, bays slide out for the hero
+    const pP = seg(t, T.layoutIn, T.layoutIn + 0.9, easeOut);
+    const heroX = lerp(0, (C.width / 2) - (L.primary.x + L.primary.w / 2), heroP);
+    const heroY = lerp(0, -8, heroP);
+    P.v.style.opacity = pP;
+    P.v.style.transform = `translate(${heroX}px, ${(1 - pP) * 40 + heroY}px) scale(${lerp(0.98, 1, pP) * lerp(1, 1.03, heroP)})`;
+    B.forEach((bay, i) => {
+      const bp = seg(t, T.layoutIn + 0.15 * (i + 1), T.layoutIn + 0.9 + 0.1 * (i + 1), easeOut);
+      bay.v.style.opacity = bp * (1 - heroP);
+      bay.v.style.transform = `translate(${heroP * 80}px, ${(1 - bp) * 40}px)`;
+    });
+
+    // Caption
+    const cap = document.getElementById("caption");
+    cap.style.opacity = lin * (1 - endP);
+    cap.style.display = t < T.layoutIn ? "none" : "block";
+    cap.style.transform = `translateX(${heroX}px)`;
+    setSwitcher([document.getElementById("capA"), document.getElementById("capB")], C.captions, t, 0.6, 18);
+
+    // Recording playback offsets (all three start when the Computer tab appears)
+    const clipT = t >= T.running ? t - T.running : -1;
+    mcRoot.style.transform = "none";
+    P.wrap.style.transform = "translate(-50%, -50%)";
+    renderPrimary(t, clipT);
+    B.forEach((bay) => renderBay(bay, t, clipT));
+
+    // Camera push-in on the primary Simulator. Measured at identity so the phone
+    // lands at a fixed frame width with the session tabs kept at the top edge.
+    let zoomP = 0;
+    for (const [a, b, c, d] of T.zooms) zoomP = Math.max(zoomP, seg(t, a, b) * (1 - seg(t, c, d)));
+    let camScale = 1, camX = 0, camY = 0;
+    if (zoomP > 0) {
+      const ph = P.device.getBoundingClientRect();
+      const tabs = P.tabs.getBoundingClientRect();
+      const menu = P.menubar.getBoundingClientRect();
+      const main = P.main.getBoundingClientRect();
+      const lift = ph.top - (menu.bottom + 16);
+      let s = (C.width * L.zoomPhoneWidth) / ph.width;
+      s = Math.min(s, (L.zoomBottomLimit - L.zoomTopInset) / (ph.bottom - lift - tabs.top));
+      const shift = (C.width / 2) / s - ((ph.left + ph.width / 2) - main.left);
+      P.wrap.style.transform = `translate(-50%, -50%) translate(${shift * zoomP}px, ${-lift * zoomP}px)`;
+      camScale = lerp(1, s, zoomP);
+      camX = lerp(0, -main.left * s, zoomP);
+      camY = lerp(0, L.zoomTopInset - tabs.top * s, zoomP);
+    }
+    const shrink = lerp(1, 0.96, endP);
+    mcRoot.style.transform = `translate(${(1 - shrink) * C.width / 2}px, ${(1 - shrink) * C.height / 2}px) scale(${shrink}) translate(${camX}px, ${camY}px) scale(${camScale})`;
+
+    // End card
+    const end = document.getElementById("endcard");
+    end.style.display = t < T.endIn ? "none" : "flex";
+    const eIn = seg(t, T.endIn + 0.1, T.endIn + 1.0, easeOut);
+    const eDrift = 1 + 0.015 * clamp01((t - T.endIn) / (T.end - T.endIn));
+    end.style.opacity = eIn;
+    end.style.transform = `translateY(${(1 - eIn) * 24}px) scale(${lerp(0.97, 1, eIn) * eDrift})`;
+
+    const imgs = [P.img, B[0].img, B[1].img].filter((i) => i.src && i.style.visibility !== "hidden");
+    return Promise.all(imgs.map((i) => i.decode().catch(() => {})));
+  };
+
+  // Preview mode in a browser: ?t=12.3 renders a single time, otherwise plays the timeline.
+  const q = new URLSearchParams(location.search);
+  if (q.has("t")) {
+    render(parseFloat(q.get("t")));
+  } else if (!q.has("headless")) {
+    const start = performance.now();
+    const tick = () => { render(((performance.now() - start) / 1000) % C.duration); requestAnimationFrame(tick); };
+    tick();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "mission-control-launch-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mission Control launch video for macOS in Devin Cloud",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
