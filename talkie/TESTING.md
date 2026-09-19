@@ -37,6 +37,17 @@ Use an unsaved TextEdit document and Calculator as local fixtures.
 
 Microphone hardware, Apple speech-model availability, and macOS privacy permission limitations must be reported separately. Provider tests establish API behavior, not end-to-end speech or Accessibility behavior.
 
+## Voice-only interface evidence
+
+Native acceptance at `ecea283` used accessibility inspection and recorded visual interactions:
+
+- Quiet startup, compact menu-bar invocation, explicit History/Settings, and close-to-quiet passed.
+- Both request surfaces have microphone/read-only status controls, with no editable command field, Send, or audio import. Welcome examples are static.
+- Credential fields accepted and cleared masked scratch text with provider variables unset for that process. Nothing was saved or removed; environment credentials were restored on relaunch.
+- Microphone click, shortcut, retry, Escape, and optional companion controls handled the missing-device notice without a typed/import fallback.
+- Release build, strict Swift lint, and 19 deterministic tests passed. The opt-in provider suite was not rerun for these UI changes.
+- Genuine speech recognition, live transcript, finish-to-submit, spoken execution, active-speech cancellation, busy Stop, and audible responses remain **unverified** on this revision: the VM has no audio devices.
+
 ## Prior engine and compact-interface evidence
 
 These runs predate the voice-only interface. Typed requests and imported audio were used to exercise the engine; those entry points have since been removed. They do not establish end-to-end microphone acceptance for the current build.
