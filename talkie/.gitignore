@@ -1,0 +1,6 @@
+.build/
+build/
+.swiftpm/
+.devin/
+*.xcuserstate
+.DS_Store
