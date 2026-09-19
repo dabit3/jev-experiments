@@ -4,7 +4,7 @@ A little voice. A lot less clicking.
 
 Talkie is a native macOS companion built with SwiftUI, AppKit, and **Jev**. Hold **Control–Option–Space**, ask for something, and release. Talkie can operate accessible Mac apps, point to controls, explain the current screen, dictate into a focused field, and research the web with citations.
 
-Talkie stays in the menu bar, with no window or floating widget on launch. A small indicator appears while listening or working and disappears after completion. Click the menu-bar waveform to type in a compact command panel; answers, errors, and approvals appear there. Open **History & activity** or **Settings** explicitly when you need the full window.
+Talkie stays in the menu bar, with no window or floating widget on launch. A small indicator appears while listening or working and disappears after completion. Click the menu-bar waveform for a compact voice panel; answers, errors, and approvals appear there. Requests are voice-only: hold the shortcut, or click the microphone to start and **Finish recording** to send. Live transcripts are read-only. Open **History & activity** or **Settings** explicitly when you need the full window.
 
 ## Run
 
@@ -17,7 +17,7 @@ bash run.sh
 
 The script builds `build/Talkie.app`, generates its icon, signs it for local development, and starts it. `bash run.sh --build-only` produces the bundle without launching. Copy the app to Applications to launch from Finder.
 
-Click the menu-bar waveform, then **Set up Talkie** or the gear to open **Settings** and add your Jev key. Add an optional OpenAI key for conversation, web search, generated drafts, and imported audio transcription. Keys are stored in macOS Keychain, never the conversation file.
+Click the menu-bar waveform, then **Set up Talkie** or the gear to open **Settings** and add your Jev key. Add an optional OpenAI key for conversation, web search, and generated drafts. Keys are stored in macOS Keychain, never the conversation file.
 
 Developers can instead export `TYPESAFE_API_KEY` and `OPENAI_API_KEY` before running the script. `JEV_API_KEY` is also accepted when `TYPESAFE_API_KEY` is absent. Environment credentials take precedence over Keychain and are only inherited when launching from that shell.
 
@@ -31,7 +31,7 @@ Ad-hoc signing is for development: this build is not notarized for public distri
 
 ## Try it
 
-| Say or type | What happens |
+| Say | What happens |
 | --- | --- |
 | “Open Calculator” | Jev chooses an installed app and verifies it opened. |
 | “Type ‘Hello from Talkie’ in this document” | Jev focuses a visible editor and types the supplied words. |
@@ -39,14 +39,13 @@ Ad-hoc signing is for development: this build is not notarized for public distri
 | “Explain what’s on my screen” | A concise answer using current Accessibility text or local OCR. |
 | “Research Apple's latest accessibility features” | Web research with clickable sources. |
 | Select **Dictate**, then speak | Your exact words go into the previously focused app. |
-| Import a short audio file | OpenAI transcribes it into the composer for review before sending. |
 
-Auto mode lets Jev choose the route. Talk, Act, Research, and Dictate let you choose explicitly. The command panel includes audio import; transcription always waits for review and explicit Send. Closing the full window leaves Talkie running quietly in the menu bar. **Escape** dismisses the command panel and cancels work; **Stop** cancels work; **Command–N** starts a new conversation; **Command–comma** opens Settings. An always-visible companion is optional in Settings and off by default.
+Auto mode lets Jev choose the route. Talk, Act, Research, and Dictate let you choose explicitly. There is no typed command entry or audio-file import. Closing the full window leaves Talkie running quietly in the menu bar. **Escape** dismisses the voice panel and cancels recording or work; **Stop task** cancels work; **Command–N** starts a new conversation; **Command–comma** opens Settings. An always-visible companion is optional in Settings and off by default.
 
 ## How Jev controls the Mac
 
 ```text
-speech / typed request
+microphone → on-device speech recognition
   → Jev route + draft-needed judgments
   → snapshot active app's Accessibility tree
   → generate a closed set of available actions in Swift
@@ -62,7 +61,7 @@ A low-probability choice requires an independent Jev judgment before execution; 
 ## Privacy and limitations
 
 - No always-on listening or continuous screen recording.
-- Live audio is processed on-device. Imported audio is explicitly uploaded to OpenAI.
+- Live audio is processed on-device.
 - On-screen text is sent to Jev for actions/pointing and OpenAI for conversation only when requested. Screen images stay in memory and are not uploaded or saved.
 - Conversation history is off by default. Enabling it stores a local JSON file in `~/Library/Application Support/Talkie`; turning it off deletes that file.
 - Actions run in the foreground and should not be combined with simultaneous manual input.

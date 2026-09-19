@@ -2,7 +2,6 @@ import AppKit
 import Combine
 import SwiftUI
 import TalkieCore
-import UniformTypeIdentifiers
 
 struct PendingAction {
   var action: MacAction
@@ -18,7 +17,6 @@ final class TalkieModel: ObservableObject {
   private let historyStore = HistoryStore()
   @Published var conversations: [Conversation] = []
   @Published var currentID = UUID()
-  @Published var input = ""
   @Published var mode = Mode.auto
   @Published var busy = false
   @Published var status = "Ready when you are"
@@ -68,9 +66,7 @@ final class TalkieModel: ObservableObject {
     speaker.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(
       in: &subscriptions)
     voice.onFinal = { [weak self] text in
-      guard let self else { return }
-      self.input = text
-      self.submit()
+      self?.submitSpeech(text)
     }
     voice.onError = { [weak self] error in
       self?.status = "Ready when you are"
@@ -107,7 +103,6 @@ final class TalkieModel: ObservableObject {
       conversations.insert(conversation, at: 0)
       currentID = conversation.id
     }
-    input = ""
     notice = nil
     quickReply = nil
   }
@@ -185,11 +180,10 @@ final class TalkieModel: ObservableObject {
     confirmation = nil
   }
 
-  func submit(_ text: String? = nil) {
-    let goal = (text ?? input).trimmingCharacters(in: .whitespacesAndNewlines)
+  private func submitSpeech(_ text: String) {
+    let goal = text.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !goal.isEmpty, !busy else { return }
     stop()
-    input = ""
     notice = nil
     quickReply = nil
     showingSettings = false
@@ -430,39 +424,6 @@ final class TalkieModel: ObservableObject {
     }
     try requireCurrent(token)
     try await desktop.perform(action)
-  }
-
-  func importAudio() {
-    guard !busy else { return }
-    let panel = NSOpenPanel()
-    panel.allowedContentTypes = [.audio]
-    panel.message = "Audio is sent to OpenAI for transcription. Review the words before sending."
-    panel.prompt = "Transcribe"
-    NSApplication.shared.activate(ignoringOtherApps: true)
-    panel.makeKeyAndOrderFront(nil)
-    guard panel.runModal() == .OK, let url = panel.url else { return }
-    stop()
-    notice = nil
-    quickReply = nil
-    busy = true
-    status = "Transcribing audio…"
-    let token = UUID()
-    runID = token
-    job = Task {
-      do {
-        let transcript = try await AssistantClient(key: preferences.openAIKey).transcribe(file: url)
-        try requireCurrent(token)
-        input = transcript
-        notice = "Audio transcribed. Review the words, then send."
-      } catch {
-        guard token == runID else { return }
-        notice = error.localizedDescription
-      }
-      guard token == runID else { return }
-      busy = false
-      status = "Ready when you are"
-      showWindow?()
-    }
   }
 
   private func requireCurrent(_ token: UUID) throws {

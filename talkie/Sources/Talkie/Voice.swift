@@ -22,7 +22,7 @@ final class VoiceInput: ObservableObject {
   func start() async {
     cancel()
     guard AVCaptureDevice.default(for: .audio) != nil else {
-      fail("No microphone is connected. Connect one, type a request, or import an audio file.")
+      fail("No microphone is connected. Connect one, then try speaking again.")
       return
     }
     let token = UUID()
@@ -40,23 +40,23 @@ final class VoiceInput: ObservableObject {
     }
     guard generation == token else { return }
     guard authorization == .authorized else {
-      fail("Allow Speech Recognition in System Settings, or import an audio file.")
+      fail("Allow Speech Recognition in System Settings → Privacy & Security, then try again.")
       return
     }
     guard let recognizer = SFSpeechRecognizer(locale: Locale.current), recognizer.isAvailable else {
-      fail("Apple speech recognition is unavailable. Try again later or import an audio file.")
+      fail("Apple speech recognition is unavailable. Try again later.")
       return
     }
     guard recognizer.supportsOnDeviceRecognition else {
       fail(
-        "On-device speech is unavailable for your system language. Enable Dictation in macOS Keyboard settings, or import audio."
+        "On-device speech is unavailable for your system language. Enable Dictation in macOS Keyboard settings, then try again."
       )
       return
     }
     let engine = AVAudioEngine()
     let format = engine.inputNode.outputFormat(forBus: 0)
     guard format.sampleRate > 0, format.channelCount > 0 else {
-      fail("No microphone is connected. Connect one, type a request, or import an audio file.")
+      fail("No microphone is connected. Connect one, then try speaking again.")
       return
     }
     let request = SFSpeechAudioBufferRecognitionRequest()

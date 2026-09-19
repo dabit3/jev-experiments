@@ -24,20 +24,22 @@ It requires `TYPESAFE_API_KEY` (or `JEV_API_KEY`) and, for the optional provider
 
 Use an unsaved TextEdit document and Calculator as local fixtures.
 
-1. Build and launch with default preferences; verify no full window, Dock icon, or idle companion appears. Click the menu-bar waveform to open the compact command panel. Open History & activity and Settings explicitly, then close the full window and reopen the compact panel.
+1. Build and launch with default preferences; verify no full window, Dock icon, or idle companion appears. Click the menu-bar waveform to open the compact voice panel. Verify no editable command field, Send button, or audio-import control exists in either the compact panel or full history window; credential fields belong only in Settings. Welcome examples are read-only. Open History & activity and Settings explicitly, then close the full window and reopen the compact panel.
 2. Configure credentials; grant Accessibility using macOS Settings. Do not modify the TCC database.
-3. Ask to open Calculator and verify the actual app opens.
+3. Hold Control–Option–Space, say “Open Calculator,” and release; verify the actual app opens.
 4. Ask to type a literal sentence into the unsaved document; verify exact text and no repetition.
 5. Ask where a visible control is; verify the target outline.
 6. Ask about the screen, then run a web research request and open its source link.
 7. Cancel a task and reject a pending sensitive action in the compact panel; verify no later action executes and the full window stays closed. Successful actions briefly show a completion indicator, then leave the screen clear.
 8. Toggle conversation persistence, restart, and verify history; turn it off and verify the file is removed.
-9. Exercise microphone permission, press/release the global shortcut, dictated words, spoken responses, and imported audio review.
-10. Verify compact replies, source links, errors, audio import, and approvals fit without clipping. Toggle the optional idle companion, then turn it off; progress must still appear during a task. Repeat the history/settings flows at the minimum window size.
+9. Exercise microphone permission, press/release the global shortcut, dictated words, and spoken responses. Verify clicking the microphone starts listening, shows a read-only live transcript, and clicking Finish recording submits it once. Escape must discard the recording without submitting. Repeat from the compact panel, history window, and optional companion.
+10. Verify compact replies, source links, errors, and approvals fit without clipping. Without a microphone, verify a clear notice with no typing/import fallback, no task submission, and a working dismiss/retry flow. Toggle the optional idle companion, then turn it off; progress must still appear during a task. Repeat the history/settings flows at the minimum window size.
 
 Microphone hardware, Apple speech-model availability, and macOS privacy permission limitations must be reported separately. Provider tests establish API behavior, not end-to-end speech or Accessibility behavior.
 
-## Current evidence
+## Prior engine and compact-interface evidence
+
+These runs predate the voice-only interface. Typed requests and imported audio were used to exercise the engine; those entry points have since been removed. They do not establish end-to-end microphone acceptance for the current build.
 
 Verification used macOS ARM64 with Xcode 26.6 / Swift 6.3.3:
 

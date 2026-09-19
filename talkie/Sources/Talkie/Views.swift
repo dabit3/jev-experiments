@@ -55,7 +55,6 @@ struct QuietButtonStyle: ButtonStyle {
 
 struct RootView: View {
   @ObservedObject var model: TalkieModel
-  @FocusState private var composerFocused: Bool
   var body: some View {
     HStack(spacing: 0) {
       sidebar
@@ -83,7 +82,7 @@ struct RootView: View {
             .padding(.horizontal, 32).padding(.bottom, 8)
           }
           if let pending = model.pending { approval(pending) }
-          composer
+          voiceControls
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -93,7 +92,6 @@ struct RootView: View {
     .font(.system(size: 13))
     .preferredColorScheme(.light)
     .frame(minWidth: 760, minHeight: 560)
-    .onAppear { composerFocused = true }
     .onExitCommand { model.stop() }
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
     { _ in model.refreshPermissions() }
@@ -224,12 +222,11 @@ struct RootView: View {
             .font(.system(size: 13)).foregroundStyle(Palette.secondary)
             .lineSpacing(6).multilineTextAlignment(.center).padding(.top, compact ? 8 : 15)
             .fixedSize(horizontal: false, vertical: true)
-          HStack(spacing: 9) {
-            suggestion(
-              "Explain my screen", icon: "viewfinder", mode: .talk,
-              prompt: "Explain what’s on my screen")
-            suggestion("Do something", icon: "cursorarrow", mode: .act, prompt: "Open Calculator")
-            suggestion("Look it up", icon: "globe", mode: .research, prompt: "Research ")
+          VStack(spacing: 8) {
+            Text("TRY SAYING").font(.system(size: 9, weight: .medium)).tracking(1.4)
+              .foregroundStyle(Palette.secondary)
+            Text("“Explain my screen” · “Open Calculator”")
+              .font(.system(size: 12)).multilineTextAlignment(.center)
           }.padding(.top, compact ? 18 : 28)
           if !model.connected || !model.accessGranted {
             Button {
@@ -248,19 +245,6 @@ struct RootView: View {
         }.frame(maxWidth: .infinity, minHeight: geometry.size.height)
       }.scrollIndicators(.hidden)
     }
-  }
-
-  private func suggestion(_ label: String, icon: String, mode: Mode, prompt: String) -> some View {
-    Button {
-      model.mode = mode
-      model.input = prompt
-      composerFocused = true
-    } label: {
-      Label(label, systemImage: icon).font(.system(size: 11))
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(.white.opacity(0.6), in: Capsule())
-        .overlay(Capsule().stroke(Palette.line))
-    }.buttonStyle(.plain)
   }
 
   private var conversation: some View {
@@ -290,46 +274,10 @@ struct RootView: View {
     }
   }
 
-  private var composer: some View {
+  private var voiceControls: some View {
     VStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 13) {
-        HStack(alignment: .center, spacing: 12) {
-          TextField(
-            model.listening ? "Listening…" : "What can I do for you?", text: $model.input,
-            axis: .vertical
-          )
-          .textFieldStyle(.plain).font(.system(size: 14)).lineLimit(1...5)
-          .focused($composerFocused).onSubmit { model.submit() }
-          .disabled(model.busy || model.listening)
-          .accessibilityLabel("Your request")
-          if model.listening {
-            Text(
-              model.voice.transcript.isEmpty ? "Go ahead, I’m listening" : model.voice.transcript
-            )
-            .font(.system(size: 12)).lineLimit(2).foregroundStyle(Palette.orange)
-          }
-          Button {
-            model.busy ? model.stop() : model.toggleMicrophone()
-          } label: {
-            Image(systemName: model.busy ? "stop.fill" : model.listening ? "stop.fill" : "mic.fill")
-              .font(.system(size: 16)).foregroundStyle(.white)
-              .frame(width: 38, height: 38)
-              .background(model.listening ? Palette.orange : Palette.ink, in: Circle())
-          }.buttonStyle(.plain)
-            .accessibilityLabel(
-              model.busy ? "Stop task" : model.listening ? "Finish recording" : "Start microphone")
-          if !model.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !model.listening
-          {
-            Button {
-              model.submit()
-            } label: {
-              Image(systemName: "arrow.up").font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white).frame(width: 34, height: 34).background(
-                  Palette.orange, in: Circle())
-            }.buttonStyle(.plain).disabled(model.busy).accessibilityLabel("Send request")
-              .keyboardShortcut(.return, modifiers: .command)
-          }
-        }
+        VoiceControlView(model: model)
         HStack(spacing: 10) {
           Menu {
             ForEach(Mode.allCases, id: \.self) { mode in
@@ -341,7 +289,7 @@ struct RootView: View {
               Text(model.mode.rawValue)
               Image(systemName: "chevron.down").font(.system(size: 8))
             }.font(.system(size: 10)).foregroundStyle(Palette.secondary)
-          }.menuStyle(.borderlessButton).fixedSize().disabled(model.busy)
+          }.menuStyle(.borderlessButton).fixedSize().disabled(model.busy || model.listening)
             .accessibilityLabel("Request mode")
           Rectangle().fill(Palette.line).frame(width: 1, height: 12)
           Label(
@@ -349,14 +297,6 @@ struct RootView: View {
             systemImage: model.preferences.screenContext ? "macwindow" : "eye.slash"
           )
           .font(.system(size: 10)).foregroundStyle(Palette.secondary).lineLimit(1)
-          Spacer()
-          Button {
-            model.importAudio()
-          } label: {
-            Image(systemName: "paperclip")
-          }
-          .buttonStyle(.plain).foregroundStyle(Palette.secondary).disabled(model.busy)
-          .help("Transcribe an audio file with OpenAI").accessibilityLabel("Import audio file")
         }
       }
       .padding(16)
@@ -475,7 +415,7 @@ struct SettingsView: View {
           keyField(.jev, value: $jev, detail: "Understands requests and chooses Mac actions.")
           Divider().overlay(Palette.line)
           keyField(
-            .openAI, value: $openAI, detail: "Optional · conversation, web research, audio files.")
+            .openAI, value: $openAI, detail: "Optional · conversation, web research, drafts.")
           if !saveMessage.isEmpty {
             Text(saveMessage).font(.system(size: 11)).foregroundStyle(Palette.secondary)
           }
@@ -621,9 +561,46 @@ struct SettingsView: View {
   }
 }
 
+struct VoiceControlView: View {
+  @ObservedObject var model: TalkieModel
+
+  var body: some View {
+    HStack(spacing: 12) {
+      Button {
+        model.busy ? model.stop() : model.toggleMicrophone()
+      } label: {
+        Image(systemName: model.busy || model.listening ? "stop.fill" : "mic.fill")
+          .font(.system(size: 16, weight: .medium))
+          .foregroundStyle(.white).frame(width: 40, height: 40)
+          .background(model.listening ? Palette.orange : Palette.ink, in: Circle())
+      }
+      .buttonStyle(.plain).disabled(model.pending != nil)
+      .accessibilityLabel(
+        model.busy ? "Stop task" : model.listening ? "Finish recording" : "Start microphone")
+      VStack(alignment: .leading, spacing: 5) {
+        Text(model.listening ? "Listening…" : model.busy ? model.status : "Speak to Talkie")
+          .font(.system(size: 14, weight: .medium)).lineLimit(1)
+        if model.listening, !model.voice.transcript.isEmpty {
+          Text(model.voice.transcript).font(.system(size: 11))
+            .foregroundStyle(Palette.secondary).lineLimit(2)
+            .accessibilityLabel("Live transcript")
+            .accessibilityValue(model.voice.transcript)
+        } else {
+          Text(
+            model.listening
+              ? "Finish recording to send · Esc to cancel"
+              : model.busy ? "Esc to cancel" : "Click the mic or hold ⌃ ⌥ space"
+          )
+          .font(.system(size: 11)).foregroundStyle(Palette.secondary).lineLimit(1)
+        }
+      }
+      Spacer(minLength: 0)
+    }.frame(height: 56)
+  }
+}
+
 struct QuickView: View {
   @ObservedObject var model: TalkieModel
-  @FocusState private var focused: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -674,35 +651,7 @@ struct QuickView: View {
               .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
           }
         }
-        HStack(spacing: 10) {
-          TextField("Ask anything, or hold ⌃ ⌥ space…", text: $model.input, axis: .vertical)
-            .textFieldStyle(.plain).font(.system(size: 14)).lineLimit(1...3)
-            .focused($focused).disabled(model.busy || model.listening)
-            .onSubmit { model.submit() }.accessibilityLabel("Ask Talkie")
-          Button {
-            if model.busy || model.listening {
-              model.stop()
-            } else if !model.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-              model.submit()
-            } else {
-              model.startListening()
-            }
-          } label: {
-            Image(
-              systemName: model.busy || model.listening
-                ? "stop.fill" : model.input.isEmpty ? "mic" : "arrow.up"
-            )
-            .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(.white).frame(width: 32, height: 32)
-            .background(Palette.ink, in: Circle())
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel(
-            model.busy || model.listening
-              ? "Stop" : model.input.isEmpty ? "Start microphone" : "Send")
-        }
-        .padding(.horizontal, 12).frame(height: 54)
-        .background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+        VoiceControlView(model: model)
       }
 
       HStack(spacing: 12) {
@@ -715,11 +664,6 @@ struct QuickView: View {
         }
         Spacer()
         if model.pending == nil {
-          Button {
-            model.importAudio()
-          } label: {
-            Image(systemName: "paperclip")
-          }.disabled(model.busy || model.listening).accessibilityLabel("Import audio")
           Picker("Mode", selection: $model.mode) {
             ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
           }
@@ -739,7 +683,6 @@ struct QuickView: View {
     .background(Palette.paper, in: RoundedRectangle(cornerRadius: 20))
     .overlay(RoundedRectangle(cornerRadius: 20).stroke(Palette.line))
     .preferredColorScheme(.light)
-    .onAppear { focused = true }
     .onExitCommand { model.dismissQuick?() }
   }
 }
@@ -771,13 +714,13 @@ struct CompanionView: View {
       }
       Spacer(minLength: 0)
       Button {
-        model.busy || model.listening ? model.stop() : model.startListening()
+        model.busy ? model.stop() : model.toggleMicrophone()
       } label: {
         Image(systemName: model.busy || model.listening ? "stop.fill" : "mic")
           .font(.system(size: 12)).foregroundStyle(.white.opacity(0.85))
           .frame(width: 28, height: 28).background(.white.opacity(0.08), in: Circle())
       }.buttonStyle(.plain).accessibilityLabel(
-        model.busy || model.listening ? "Stop" : "Start microphone")
+        model.busy ? "Stop task" : model.listening ? "Finish recording" : "Start microphone")
     }
     .padding(.horizontal, 15).frame(width: 235, height: 58)
     .background(Palette.ink, in: RoundedRectangle(cornerRadius: 19))
