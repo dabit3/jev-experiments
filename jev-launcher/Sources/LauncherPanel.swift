@@ -129,6 +129,7 @@ final class LauncherPanelController: NSObject, NSWindowDelegate {
     window.center()
     previewWindow?.close()
     previewWindow = window
+    NSApplication.shared.activate()
     window.makeKeyAndOrderFront(nil)
   }
 
