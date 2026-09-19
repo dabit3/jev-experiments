@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud: Luxury Editorial</title>
+<link rel="stylesheet" href="assets/fonts/intertight.css" />
+<link rel="stylesheet" href="assets/fonts/jb.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. Cover -->
+  <section id="s-cover" class="scene">
+    <img class="lockup" src="assets/devin-lockup-white.png" alt="" />
+    <div class="cover-img"><img class="rec" alt="" /></div>
+    <h1 class="headline"></h1>
+  </section>
+
+  <!-- 2. Prompt -->
+  <section id="s-prompt" class="scene">
+    <div class="copy copy-left" id="prompt-copy">
+      <div class="lede"><span class="rise"></span></div>
+    </div>
+    <div class="composer-wrap" id="composer-wrap">
+      <div class="composer-zoom" id="composer-zoom">
+        <div class="composer-head">
+          <div class="brand"><img src="assets/devin-avatar-white.png" alt="" /><span>Devin</span></div>
+          <div class="seg"><span class="on">Agent</span><span>Ask</span></div>
+        </div>
+        <div class="composer">
+          <div class="composer-text"><span id="prompt-text"></span><span class="caret" id="prompt-caret"></span></div>
+          <div class="composer-row">
+            <div class="left">
+              <span class="ico plus"></span>
+              <span class="ico tune"></span>
+              <span class="chip">Normal</span>
+              <span class="chip env" id="env-chip"><span class="env-label">Linux</span><span class="chev"></span></span>
+            </div>
+            <div class="right">
+              <span class="ico mic"></span>
+              <span class="send" id="send-btn"><span class="arrow"></span></span>
+            </div>
+          </div>
+          <div class="popover" id="env-pop">
+            <div class="pop-title">Environment</div>
+            <div class="pop-item" data-v="Linux">Linux<span class="check"></span></div>
+            <div class="pop-item" data-v="Windows">Windows<span class="check"></span></div>
+            <div class="pop-item" data-v="macOS">macOS<span class="check"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cursor" id="prompt-cursor"></div>
+  </section>
+
+  <!-- 3. Code -->
+  <section id="s-code" class="scene">
+    <div class="editor" id="editor">
+      <div class="editor-bar">
+        <span class="tab">Orbit.swift</span>
+        <span class="path">aster / Sources / AsterCore / Orbit.swift</span>
+      </div>
+      <div class="editor-body"><ol id="code-lines"></ol></div>
+    </div>
+    <div class="copy copy-right" id="code-copy">
+      <div class="lede"><span class="rise"></span></div>
+    </div>
+  </section>
+
+  <!-- 4. Session -->
+  <section id="s-session" class="scene">
+    <div class="devin-app" id="devin-app">
+      <div class="rail">
+        <img class="rail-avatar" src="assets/devin-avatar-white.png" alt="" />
+        <span class="rail-ico r1"></span><span class="rail-ico r2"></span><span class="rail-ico r3"></span>
+      </div>
+      <div class="chat">
+        <div class="chat-head"><span class="title" id="session-title"></span><span class="status"><i></i>Working</span></div>
+        <div class="msg user"><div class="bubble" id="session-prompt"></div></div>
+        <div class="msg devin">
+          <img class="av" src="assets/devin-avatar-white.png" alt="" />
+          <ul class="steps" id="steps"></ul>
+        </div>
+      </div>
+      <div class="computer">
+        <div class="computer-head">
+          <div class="tabs"><span class="on">Computer</span><span>Editor</span><span>Browser</span></div>
+          <div class="env-tag">macOS</div>
+          <div class="take">Take control</div>
+        </div>
+        <div class="computer-body"><div class="mac-desktop" id="session-mac"><img class="rec" alt="" /></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Full-frame demo -->
+  <section id="s-demo" class="scene">
+    <div class="demo-frame" id="demo-frame">
+      <div class="computer-head wide">
+        <div class="tabs"><span class="on">Computer</span><span>Editor</span><span>Browser</span></div>
+        <div class="env-tag">macOS</div>
+        <div class="take">Take control</div>
+      </div>
+      <div class="demo-body"><img class="rec" id="demo-rec" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 6. Result -->
+  <section id="s-result" class="scene">
+    <div class="copy copy-left" id="result-copy">
+      <div class="lede big"><span class="rise"></span></div>
+    </div>
+    <div class="result-img" id="result-img"><img class="rec" alt="" /></div>
+  </section>
+
+  <!-- 7. Close -->
+  <section id="s-close" class="scene">
+    <img class="lockup-big" src="assets/devin-lockup-white.png" alt="" />
+    <div class="cta"></div>
+  </section>
+
+</div>
+<script type="module" src="composition.js"></script>
+</body>
+</html>

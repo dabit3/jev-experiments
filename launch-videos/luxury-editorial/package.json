@@ -1,0 +1,15 @@
+{
+  "name": "launch-video-luxury-editorial",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "frames": "bash extract-frames.sh",
+    "render": "node render.mjs --out out/final.mp4",
+    "stills": "node render.mjs --stills",
+    "sheet": "ffmpeg -v error -y -i out/final.mp4 -vf fps=1,scale=320:-1,tile=6x5 out/final-contact-sheet.png"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
