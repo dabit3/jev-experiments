@@ -1,0 +1,13 @@
+{
+  "name": "optical-laboratory-render",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "frames": "node render.mjs frames",
+    "still": "node render.mjs still",
+    "video": "node render.mjs video"
+  },
+  "dependencies": {
+    "playwright": "1.52.0"
+  }
+}

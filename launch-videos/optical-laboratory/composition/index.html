@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Optical Laboratory: macOS in Devin Cloud</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="stage">
+  <div id="field"></div>
+
+  <!-- Opening title -->
+  <section id="title" class="card">
+    <img id="titleMark" alt="" />
+    <h1 id="headline"></h1>
+  </section>
+
+  <!-- Reconstructed Devin session -->
+  <div id="devin">
+    <aside id="chat">
+      <header class="chat-header">
+        <span class="icon-sidebar"></span>
+        <span id="sessionTitle" class="session-title"></span>
+        <span class="chip chip-mac">macOS</span>
+      </header>
+      <div id="messages" class="messages"></div>
+      <div class="composer" id="composer">
+        <div class="composer-text"><span id="composerText"></span><span id="caret" class="caret"></span><span id="composerPlaceholder" class="placeholder"></span></div>
+        <div class="composer-row">
+          <span class="plus"></span>
+          <span id="composerModel" class="model"></span>
+          <span class="spacer"></span>
+          <span id="sendBtn" class="send"><span class="arrow-up"></span></span>
+        </div>
+      </div>
+    </aside>
+
+    <main id="pane">
+      <header class="pane-header">
+        <nav id="tabs" class="tabs"></nav>
+        <span class="spacer"></span>
+        <span class="live"><span class="dot"></span>Live</span>
+      </header>
+
+      <!-- Code editor (Changes) -->
+      <section id="codeView" class="pane-view">
+        <div class="code-file"><span id="codeFile"></span></div>
+        <pre id="code" class="code"></pre>
+      </section>
+
+      <!-- Mac desktop with the Simulator (Computer) -->
+      <section id="computerView" class="pane-view">
+        <div id="macScreen" class="mac-screen">
+          <div class="menubar">
+            <span class="apple"></span>
+            <span id="menuItems"></span>
+            <span class="spacer"></span>
+            <span id="menuClock"></span>
+          </div>
+          <div id="simToolbar" class="sim-toolbar">
+            <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+            <span class="sim-label"><b id="simDevice"></b><small id="simOS"></small></span>
+          </div>
+          <div id="phone" class="phone">
+            <div class="phone-screen"><img id="phoneHome" alt="" /><img id="phoneImg" alt="" /></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <img id="cursor" alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpath d='M2 1.5 L2 24 L8 18.5 L12 27.5 L15.5 26 L11.5 17 L19.5 17 Z' fill='%23fff' stroke='%23111' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  </div>
+
+  <!-- Inspection window and margin captions -->
+  <div id="inspection">
+    <div id="window" class="window"><img id="windowImg" alt="" /></div>
+    <div id="caption" class="caption"></div>
+  </div>
+  <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- End card -->
+  <section id="end" class="card">
+    <img id="endLockup" alt="" />
+    <div id="endUrl"></div>
+  </section>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>
