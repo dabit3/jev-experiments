@@ -1,0 +1,14 @@
+{
+  "name": "typesafe-blueprint-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "frames": "bash scripts/extract-frames.sh",
+    "render": "node scripts/render.mjs",
+    "stills": "node scripts/render.mjs --stills",
+    "encode": "bash scripts/encode.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}
