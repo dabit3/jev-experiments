@@ -24,7 +24,7 @@ It requires `TYPESAFE_API_KEY` (or `JEV_API_KEY`) and, for the optional provider
 
 Use an unsaved TextEdit document and Calculator as local fixtures.
 
-1. Build and launch with default preferences; verify no full window, Dock icon, or idle companion appears. Click the menu-bar waveform to open the compact voice panel. Verify no editable command field, Send button, or audio-import control exists in either the compact panel or full history window; credential fields belong only in Settings. Welcome examples are read-only. Open History & activity and Settings explicitly, then close the full window and reopen the compact panel.
+1. Build and launch with default preferences; verify no full window, Dock icon, or idle companion appears. Click the menu-bar waveform to open the compact voice panel. Verify no editable command field, Send button, or audio-import control exists in either the compact panel or full history window; credential fields belong only in Settings. Welcome examples are read-only. Open History & Activity and Settings from the ellipsis menu, then close the full window and reopen the compact panel.
 2. Configure credentials; grant Accessibility using macOS Settings. Do not modify the TCC database.
 3. Hold Control–Option–Space, say “Open Calculator,” and release; verify the actual app opens.
 4. Ask to type a literal sentence into the unsaved document; verify exact text and no repetition.
@@ -34,8 +34,20 @@ Use an unsaved TextEdit document and Calculator as local fixtures.
 8. Toggle conversation persistence, restart, and verify history; turn it off and verify the file is removed.
 9. Exercise microphone permission, press/release the global shortcut, dictated words, and spoken responses. Verify clicking the microphone starts listening, shows a read-only live transcript, and clicking Finish recording submits it once. Escape must discard the recording without submitting. Repeat from the compact panel, history window, and optional companion.
 10. Verify compact replies, source links, errors, and approvals fit without clipping. Without a microphone, verify a clear notice with no typing/import fallback, no task submission, and a working dismiss/retry flow. Toggle the optional idle companion, then turn it off; progress must still appear during a task. Repeat the history/settings flows at the minimum window size.
+11. Switch Light/Dark appearance without relaunching. Verify readable text, monochrome controls, and native materials across the compact panel, menus, History, and Settings. Verify Reduce Transparency produces opaque panels and Increase Contrast strengthens panel boundaries. Restore the original OS settings. Check mode selection in the menu and the visible non-Auto mode label.
 
 Microphone hardware, Apple speech-model availability, and macOS privacy permission limitations must be reported separately. Provider tests establish API behavior, not end-to-end speech or Accessibility behavior.
+
+## Monochrome interface evidence
+
+Native acceptance at `622d9a5` used recorded interactions, Accessibility inspection, and native window-size read-back:
+
+- Quiet startup, a 340×88 ready panel, menu/mode switching, explicit History/Settings, and close-to-quiet passed. Finder remained the external context during compact invocation.
+- Light/Dark appearance updated in the same process. Reduce Transparency and Increase Contrast changed the panel as expected; both options and the starting appearance were restored.
+- Settings remained readable at the enforced 700×552 native minimum and scrolled through all sections without horizontal clipping. Native switches and the optional companion were exercised, then restored.
+- Both command surfaces remained voice-only. Microphone click, retry, shortcut, expanded-panel menu, and Escape handled the missing-device notice.
+- Release build/signature verification, strict Swift lint, and 19 deterministic tests passed. Eight opt-in provider tests were skipped. Credentials were unchanged; masked editing was not repeated after the earlier acceptance below.
+- The VM still has no audio devices. Genuine speech, transcript updates, finish-to-submit, speech-driven replies/approvals, pointing, action targeting, and audible responses remain **unverified** on this revision. No simulated speech or typed/import fallback was used as acceptance evidence.
 
 ## Voice-only interface evidence
 
