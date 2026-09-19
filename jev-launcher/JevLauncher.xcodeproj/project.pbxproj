@@ -11,13 +11,16 @@
 		1CEBFF657F1C9BD8042BE33B /* StatsAndIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAAC05428581023BC4B1D23D /* StatsAndIndexTests.swift */; };
 		2D901C733F4096D81B04C883 /* TimeWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2AC71663AC83731AF4D5D1E /* TimeWindow.swift */; };
 		2F25A06D065A6FC73ABD5DF5 /* Ranker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7FD548C3DCCAAD3B79F785 /* Ranker.swift */; };
+		33E630203EDC907D2D37958C /* LauncherExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */; };
 		5152F52E9FF4C8C1AC4735D1 /* Fuzzy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364AB77D4E5E2C84224EF6D8 /* Fuzzy.swift */; };
 		5C278B0DA6719F02D2F14713 /* SetsAndHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B956AE5A913ECE64ED1A37 /* SetsAndHistoryTests.swift */; };
+		64B5652FF6A815AF962530FD /* ActionList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AFBF3FC2CCEA1432A15BF0B /* ActionList.swift */; };
 		7422E3AACC95E38E9CAD294C /* JevQuestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85AC05631A30C27624B4F7A5 /* JevQuestionsTests.swift */; };
 		7624E1801292443844BA082F /* JevQuestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5AE9F9DB8086F755633ACB /* JevQuestions.swift */; };
 		7AEE5718C424116E00571207 /* JevLauncherApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA4F2A3387CD6B7EE692C12 /* JevLauncherApp.swift */; };
 		84AA30C3BBE5B1D2AD7F48BA /* Candidate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D5C1AB51EC9E299A063CF0 /* Candidate.swift */; };
 		8C8263B1CF8EB2DDB286D370 /* JevClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781D7E1A1227797B76B6AB81 /* JevClient.swift */; };
+		9332E9D2806DDCD1714E368A /* SpotlightSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DDBE0FC9D0F4E7530FC686 /* SpotlightSearch.swift */; };
 		B47E380FA12909D19DD56F72 /* LatencyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFA2B0083CA208C66E94437 /* LatencyStats.swift */; };
 		C2F425CB423982628531693B /* LauncherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E414ABBE8C4B65435AF1DEE /* LauncherView.swift */; };
 		CB3BB6FF7D58AD799523CD12 /* ChromeHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6AE5CA94C19B94A7654FA7B /* ChromeHistory.swift */; };
@@ -26,9 +29,12 @@
 		D8B05EF6F16144F72EAFBA2A /* Calculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11F9739CE18CF22459CEF03 /* Calculator.swift */; };
 		D9B426A897460853DD0863F9 /* LauncherModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8691C35182559D9EA1BF1175 /* LauncherModel.swift */; };
 		DFFD9F58A57B977DB52D3D0D /* LocalIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3611FA2E6B7D612B0B19F1 /* LocalIndex.swift */; };
+		E767F8E4091D4C2FB7FAA063 /* PersonalLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B92E2272AF964BE3B60EFE9 /* PersonalLibrary.swift */; };
+		F1B115CE4C79C1612426BC73 /* SearchScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E8EB4E2E96DEBC18B900C4 /* SearchScope.swift */; };
 		F50F6EA6FB53D29F0769E9DF /* LiveJevTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA6C961165670773398F6A1 /* LiveJevTests.swift */; };
 		F7788AB8E529DF9AC18D6B7D /* RankingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BB9E7EFC5892AB34F485E34 /* RankingTests.swift */; };
 		F9198A994AC8E40D74BACD3B /* Executor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6FAB00F4D64BADE280B59A3 /* Executor.swift */; };
+		FEA2AEFA7E97FFF31D00DC79 /* LiveExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885628A00329CE133F328AF5 /* LiveExperienceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,18 +48,21 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		02A9FD28BE80F28E48D0EEF0 /* JevLauncher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JevLauncher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BFA2B0083CA208C66E94437 /* LatencyStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyStats.swift; sourceTree = "<group>"; };
 		1CA4F2A3387CD6B7EE692C12 /* JevLauncherApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevLauncherApp.swift; sourceTree = "<group>"; };
 		1E1EE11CC567F925116ACF1C /* JevLauncherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JevLauncherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		29D5C1AB51EC9E299A063CF0 /* Candidate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Candidate.swift; sourceTree = "<group>"; };
 		2EC611D803571AD8C3726794 /* LauncherPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherPanel.swift; sourceTree = "<group>"; };
 		364AB77D4E5E2C84224EF6D8 /* Fuzzy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fuzzy.swift; sourceTree = "<group>"; };
+		4B92E2272AF964BE3B60EFE9 /* PersonalLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLibrary.swift; sourceTree = "<group>"; };
 		4BB9E7EFC5892AB34F485E34 /* RankingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingTests.swift; sourceTree = "<group>"; };
 		781D7E1A1227797B76B6AB81 /* JevClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevClient.swift; sourceTree = "<group>"; };
 		7E414ABBE8C4B65435AF1DEE /* LauncherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherView.swift; sourceTree = "<group>"; };
 		85AC05631A30C27624B4F7A5 /* JevQuestionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevQuestionsTests.swift; sourceTree = "<group>"; };
 		8691C35182559D9EA1BF1175 /* LauncherModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherModel.swift; sourceTree = "<group>"; };
+		885628A00329CE133F328AF5 /* LiveExperienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveExperienceTests.swift; sourceTree = "<group>"; };
+		89DDBE0FC9D0F4E7530FC686 /* SpotlightSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightSearch.swift; sourceTree = "<group>"; };
+		9AFBF3FC2CCEA1432A15BF0B /* ActionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionList.swift; sourceTree = "<group>"; };
 		9C3611FA2E6B7D612B0B19F1 /* LocalIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalIndex.swift; sourceTree = "<group>"; };
 		9E7FD548C3DCCAAD3B79F785 /* Ranker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ranker.swift; sourceTree = "<group>"; };
 		9EC08356D4BB9015E71450EC /* CalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorTests.swift; sourceTree = "<group>"; };
@@ -66,6 +75,9 @@
 		C2AC71663AC83731AF4D5D1E /* TimeWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeWindow.swift; sourceTree = "<group>"; };
 		CAAC05428581023BC4B1D23D /* StatsAndIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsAndIndexTests.swift; sourceTree = "<group>"; };
 		CC5AE9F9DB8086F755633ACB /* JevQuestions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevQuestions.swift; sourceTree = "<group>"; };
+		E4E8EB4E2E96DEBC18B900C4 /* SearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScope.swift; sourceTree = "<group>"; };
+		F05BB9B525410201DDD348D7 /* Launcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Launcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherExperienceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -74,6 +86,8 @@
 			children = (
 				9EC08356D4BB9015E71450EC /* CalculatorTests.swift */,
 				85AC05631A30C27624B4F7A5 /* JevQuestionsTests.swift */,
+				FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */,
+				885628A00329CE133F328AF5 /* LiveExperienceTests.swift */,
 				ADA6C961165670773398F6A1 /* LiveJevTests.swift */,
 				4BB9E7EFC5892AB34F485E34 /* RankingTests.swift */,
 				A7B956AE5A913ECE64ED1A37 /* SetsAndHistoryTests.swift */,
@@ -94,8 +108,8 @@
 		D4B3EFDD88CB850E55F52F69 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				02A9FD28BE80F28E48D0EEF0 /* JevLauncher.app */,
 				1E1EE11CC567F925116ACF1C /* JevLauncherTests.xctest */,
+				F05BB9B525410201DDD348D7 /* Launcher.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -103,6 +117,7 @@
 		EBCB00B73FEE13EE1BFC2029 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				9AFBF3FC2CCEA1432A15BF0B /* ActionList.swift */,
 				B11F9739CE18CF22459CEF03 /* Calculator.swift */,
 				29D5C1AB51EC9E299A063CF0 /* Candidate.swift */,
 				B6AE5CA94C19B94A7654FA7B /* ChromeHistory.swift */,
@@ -117,7 +132,10 @@
 				2EC611D803571AD8C3726794 /* LauncherPanel.swift */,
 				7E414ABBE8C4B65435AF1DEE /* LauncherView.swift */,
 				9C3611FA2E6B7D612B0B19F1 /* LocalIndex.swift */,
+				4B92E2272AF964BE3B60EFE9 /* PersonalLibrary.swift */,
 				9E7FD548C3DCCAAD3B79F785 /* Ranker.swift */,
+				E4E8EB4E2E96DEBC18B900C4 /* SearchScope.swift */,
+				89DDBE0FC9D0F4E7530FC686 /* SpotlightSearch.swift */,
 				C2AC71663AC83731AF4D5D1E /* TimeWindow.swift */,
 			);
 			path = Sources;
@@ -140,7 +158,7 @@
 			packageProductDependencies = (
 			);
 			productName = JevLauncher;
-			productReference = 02A9FD28BE80F28E48D0EEF0 /* JevLauncher.app */;
+			productReference = F05BB9B525410201DDD348D7 /* Launcher.app */;
 			productType = "com.apple.product-type.application";
 		};
 		D8302BE84E4A12453739CC6D /* JevLauncherTests */ = {
@@ -207,6 +225,8 @@
 			files = (
 				0A3131FD056A9BB77AE2531C /* CalculatorTests.swift in Sources */,
 				7422E3AACC95E38E9CAD294C /* JevQuestionsTests.swift in Sources */,
+				33E630203EDC907D2D37958C /* LauncherExperienceTests.swift in Sources */,
+				FEA2AEFA7E97FFF31D00DC79 /* LiveExperienceTests.swift in Sources */,
 				F50F6EA6FB53D29F0769E9DF /* LiveJevTests.swift in Sources */,
 				F7788AB8E529DF9AC18D6B7D /* RankingTests.swift in Sources */,
 				5C278B0DA6719F02D2F14713 /* SetsAndHistoryTests.swift in Sources */,
@@ -218,6 +238,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64B5652FF6A815AF962530FD /* ActionList.swift in Sources */,
 				D8B05EF6F16144F72EAFBA2A /* Calculator.swift in Sources */,
 				84AA30C3BBE5B1D2AD7F48BA /* Candidate.swift in Sources */,
 				CB3BB6FF7D58AD799523CD12 /* ChromeHistory.swift in Sources */,
@@ -232,7 +253,10 @@
 				CD888953163671058C582738 /* LauncherPanel.swift in Sources */,
 				C2F425CB423982628531693B /* LauncherView.swift in Sources */,
 				DFFD9F58A57B977DB52D3D0D /* LocalIndex.swift in Sources */,
+				E767F8E4091D4C2FB7FAA063 /* PersonalLibrary.swift in Sources */,
 				2F25A06D065A6FC73ABD5DF5 /* Ranker.swift in Sources */,
+				F1B115CE4C79C1612426BC73 /* SearchScope.swift in Sources */,
+				9332E9D2806DDCD1714E368A /* SpotlightSearch.swift in Sources */,
 				2D901C733F4096D81B04C883 /* TimeWindow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -315,16 +339,18 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "Jev Launcher";
+				INFOPLIST_KEY_CFBundleDisplayName = Launcher;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Jev Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.devin.typesafe.jev-launcher";
+				PRODUCT_MODULE_NAME = JevLauncher;
+				PRODUCT_NAME = Launcher;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -341,7 +367,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devin.typesafe.JevLauncherTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JevLauncher.app/Contents/MacOS/JevLauncher";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Launcher.app/Contents/MacOS/Launcher";
 			};
 			name = Release;
 		};
@@ -357,7 +383,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devin.typesafe.JevLauncherTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JevLauncher.app/Contents/MacOS/JevLauncher";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Launcher.app/Contents/MacOS/Launcher";
 			};
 			name = Debug;
 		};
@@ -435,16 +461,18 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "Jev Launcher";
+				INFOPLIST_KEY_CFBundleDisplayName = Launcher;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Jev Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.devin.typesafe.jev-launcher";
+				PRODUCT_MODULE_NAME = JevLauncher;
+				PRODUCT_NAME = Launcher;
 				SDKROOT = macosx;
 			};
 			name = Release;

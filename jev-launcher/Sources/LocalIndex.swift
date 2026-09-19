@@ -12,22 +12,28 @@ struct LocalIndex: Sendable {
   static let fileDirectories = ["Downloads", "Desktop", "Documents"]
   static let maxFilesPerDirectory = 400
 
-  static func build(fileManager: FileManager = .default, now: Date = Date()) -> LocalIndex {
+  static func build(
+    fileManager: FileManager = .default, now: Date = Date(), includeHistory: Bool = true
+  ) -> LocalIndex {
     var candidates: [Candidate] = []
     candidates.append(contentsOf: scanApps(fileManager: fileManager))
     candidates.append(contentsOf: scanFiles(fileManager: fileManager, now: now))
     candidates.append(contentsOf: SystemToggle.allCases.map(\.candidate))
     candidates.append(contentsOf: scanShortcuts())
-    candidates.append(
-      contentsOf: ChromeHistory.candidates(
-        from: ChromeHistory.load(fileManager: fileManager, now: now), now: now))
+    if includeHistory {
+      candidates.append(
+        contentsOf: ChromeHistory.candidates(
+          from: ChromeHistory.load(fileManager: fileManager, now: now), now: now))
+    }
     return LocalIndex(candidates: candidates)
   }
 
   static func scanApps(fileManager: FileManager) -> [Candidate] {
     var seen = Set<String>()
     var apps: [Candidate] = []
-    for directory in appDirectories {
+    for directory in appDirectories + [
+      fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path
+    ] {
       guard let names = try? fileManager.contentsOfDirectory(atPath: directory) else { continue }
       for name in names where name.hasSuffix(".app") {
         let title = String(name.dropLast(4))
@@ -63,6 +69,12 @@ struct LocalIndex: Sendable {
           urls.append(contentsOf: children)
         }
       }
+      urls.sort {
+        let lhs = try? $0.resourceValues(forKeys: [.contentModificationDateKey])
+        let rhs = try? $1.resourceValues(forKeys: [.contentModificationDateKey])
+        return (lhs?.contentModificationDate ?? .distantPast)
+          > (rhs?.contentModificationDate ?? .distantPast)
+      }
       for url in urls.prefix(maxFilesPerDirectory) {
         files.append(fileCandidate(url: url, folder: folder, now: now))
       }
@@ -70,10 +82,15 @@ struct LocalIndex: Sendable {
     return files
   }
 
-  static func fileCandidate(url: URL, folder: String, now: Date) -> Candidate {
+  static func fileCandidate(
+    url: URL, folder: String, now: Date, metadata: NSMetadataItem? = nil
+  ) -> Candidate {
     let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .contentModificationDateKey])
     let isDirectory = values?.isDirectory ?? false
-    let modified = values?.contentModificationDate ?? now
+    let modified = values?.contentModificationDate ?? .distantPast
+    let item = metadata ?? NSMetadataItem(url: url)
+    let lastOpened = item?.value(forAttribute: "kMDItemLastUsedDate") as? Date
+    let added = item?.value(forAttribute: "kMDItemDateAdded") as? Date
     let ageDays = max(0, now.timeIntervalSince(modified)) / 86_400
     let ext = url.pathExtension.lowercased()
     var keywords = [folder.lowercased(), "file"]
@@ -87,11 +104,24 @@ struct LocalIndex: Sendable {
     if ageDays < 1 { keywords.append(contentsOf: ["recent", "latest", "new", "today"]) }
     let location = url.deletingLastPathComponent().path.replacingOccurrences(
       of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~")
-    let subtitle =
-      "\(isDirectory ? "Folder" : fileTypeLabel(ext)) in \(location) · \(recency(ageDays))"
+    var subtitle = "\(isDirectory ? "Folder" : fileTypeLabel(ext)) in \(location)"
+    if let lastOpened {
+      subtitle +=
+        " · "
+        + recency(max(0, now.timeIntervalSince(lastOpened)) / 86_400)
+        .replacingOccurrences(of: "modified", with: "opened")
+    }
+    if let added {
+      subtitle +=
+        " · "
+        + recency(max(0, now.timeIntervalSince(added)) / 86_400)
+        .replacingOccurrences(of: "modified", with: "added")
+    }
+    subtitle += " · \(recency(ageDays))"
     return Candidate(
       id: "file:\(url.path)", title: url.lastPathComponent, subtitle: subtitle, kind: .openFile,
-      keywords: keywords, payload: .file(url), ageDays: ageDays)
+      keywords: keywords, payload: .file(url), ageDays: ageDays, modifiedAt: modified,
+      lastOpenedAt: lastOpened, addedAt: added)
   }
 
   static func fileTypeWords(_ ext: String) -> [String] {
