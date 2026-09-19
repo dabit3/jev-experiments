@@ -14,16 +14,19 @@ settings:
 targets:
   JevLauncher:
     type: application
+    productName: Launcher
     platform: macOS
     sources:
       - Sources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.devin.typesafe.jev-launcher
-        INFOPLIST_KEY_CFBundleDisplayName: Jev Launcher
+        PRODUCT_NAME: Launcher
+        PRODUCT_MODULE_NAME: JevLauncher
+        INFOPLIST_KEY_CFBundleDisplayName: Launcher
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_LSUIElement: YES
-        INFOPLIST_KEY_NSAppleEventsUsageDescription: Jev Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO

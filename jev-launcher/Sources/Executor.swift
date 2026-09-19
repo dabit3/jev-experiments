@@ -3,100 +3,163 @@ import Foundation
 
 /// Runs the chosen candidate. All execution is code; Jev only picks.
 enum Executor {
+  struct Outcome: Sendable {
+    let succeeded: Bool
+    let message: String
+  }
+
   @MainActor
-  static func execute(_ candidate: Candidate) -> String {
+  static func perform(_ candidate: Candidate) async -> Outcome {
+    if let problem = validationError(candidate) {
+      return Outcome(succeeded: false, message: problem)
+    }
     switch candidate.payload {
     case .app(let url):
-      NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, _ in }
-      return "Opened \(candidate.title)"
+      return await withCheckedContinuation { continuation in
+        NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, error in
+          continuation.resume(
+            returning: Outcome(
+              succeeded: error == nil,
+              message: error?.localizedDescription ?? "Opened \(candidate.title)"))
+        }
+      }
     case .file(let url):
-      NSWorkspace.shared.open(url)
-      return "Opened \(candidate.title)"
+      return await open([url], application: NSWorkspace.shared.urlForApplication(toOpen: url))
     case .url(let url):
-      openInBrowser([url])
-      return "Opened \(candidate.title)"
+      return await open([url], application: browser(for: url))
     case .group(let members):
-      return executeGroup(members)
+      var urls: [URL] = []
+      var failures: [String] = []
+      for member in members {
+        if case .url(let url) = member.payload {
+          urls.append(url)
+        } else {
+          let outcome = await perform(member)
+          if !outcome.succeeded { failures.append(outcome.message) }
+        }
+      }
+      if let first = urls.first {
+        let outcome = await open(urls, application: browser(for: first))
+        if !outcome.succeeded { failures.append(outcome.message) }
+      }
+      return Outcome(
+        succeeded: failures.isEmpty,
+        message: failures.isEmpty
+          ? "Opened \(members.count) items" : failures.joined(separator: "; "))
     case .webSearch(let query):
       var components = URLComponents(string: "https://www.google.com/search")!
       components.queryItems = [URLQueryItem(name: "q", value: query)]
-      if let url = components.url { NSWorkspace.shared.open(url) }
-      return "Searching the web for “\(query)”"
+      guard let url = components.url else {
+        return Outcome(succeeded: false, message: "Could not build the search URL.")
+      }
+      return await open([url], application: NSWorkspace.shared.urlForApplication(toOpen: url))
     case .calculation(_, let result):
       NSPasteboard.general.clearContents()
-      NSPasteboard.general.setString(result, forType: .string)
-      return "Copied \(result)"
+      let copied = NSPasteboard.general.setString(result, forType: .string)
+      return Outcome(
+        succeeded: copied, message: copied ? "Copied \(result)" : "Could not copy result.")
     case .shortcut(let name):
-      run("/usr/bin/shortcuts", ["run", name])
-      return "Running shortcut \(name)"
+      return await Task.detached {
+        command("/usr/bin/shortcuts", ["run", name], success: "Ran shortcut \(name)")
+      }.value
+    case .toggle(.doNotDisturb):
+      let url = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension")!
+      let opened = NSWorkspace.shared.open(url)
+      return Outcome(
+        succeeded: opened,
+        message: opened ? "Opened Focus settings" : "Could not open Focus settings.")
     case .toggle(let toggle):
-      return performToggle(toggle)
+      return await Task.detached { performToggle(toggle) }.value
     }
   }
 
-  /// Opens every member. Web pages go to the browser in one call so they land as tabs of one
-  /// window; everything else runs through the normal single-item path.
-  @MainActor
-  static func executeGroup(_ members: [Candidate]) -> String {
-    var urls: [URL] = []
-    var others: [Candidate] = []
-    for member in members {
-      if case .url(let url) = member.payload { urls.append(url) } else { others.append(member) }
+  static func validationError(_ candidate: Candidate) -> String? {
+    switch candidate.payload {
+    case .file(let url), .app(let url):
+      return url.isFileURL && FileManager.default.fileExists(atPath: url.path)
+        ? nil : "\(candidate.title) is no longer at its saved location."
+    case .url(let url):
+      return ["https", "http"].contains(url.scheme?.lowercased() ?? "")
+        && url.host != nil ? nil : "Only HTTP and HTTPS links can be opened."
+    case .group(let members):
+      guard !members.isEmpty, members.count <= Ranker.maximumSetSize,
+        members.allSatisfy(\.isOpenable)
+      else { return "This group does not contain a valid set of files, apps or links." }
+      return members.compactMap(validationError).first
+    default: return nil
     }
-    if !urls.isEmpty { openInBrowser(urls) }
-    for other in others { _ = execute(other) }
-    return "Opened \(members.count) items"
   }
 
-  static let chromeBundleID = "com.google.Chrome"
+  static func copyText(_ candidate: Candidate) -> String? {
+    switch candidate.payload {
+    case .file(let url), .app(let url): return url.path
+    case .url(let url): return url.absoluteString
+    case .calculation(_, let result): return result
+    case .group(let members): return members.compactMap(copyText).joined(separator: "\n")
+    default: return nil
+    }
+  }
 
-  /// History comes from Chrome, so pages reopen there when it is installed; otherwise the
-  /// default browser. URLs are passed as values, never through a shell.
   @MainActor
-  static func openInBrowser(_ urls: [URL]) {
-    if let chrome = NSWorkspace.shared.urlForApplication(withBundleIdentifier: chromeBundleID) {
-      NSWorkspace.shared.open(urls, withApplicationAt: chrome, configuration: .init()) {
-        _, _ in
+  private static func browser(for url: URL) -> URL? {
+    NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.google.Chrome")
+      ?? NSWorkspace.shared.urlForApplication(toOpen: url)
+  }
+
+  @MainActor
+  private static func open(_ urls: [URL], application: URL?) async -> Outcome {
+    guard let application else {
+      return Outcome(succeeded: false, message: "No application is available to open this item.")
+    }
+    return await withCheckedContinuation { continuation in
+      NSWorkspace.shared.open(urls, withApplicationAt: application, configuration: .init()) {
+        _, error in
+        continuation.resume(
+          returning: Outcome(
+            succeeded: error == nil, message: error?.localizedDescription ?? "Opened"))
       }
-    } else {
-      for url in urls { NSWorkspace.shared.open(url) }
     }
   }
 
-  static func performToggle(_ toggle: SystemToggle) -> String {
+  private static func performToggle(_ toggle: SystemToggle) -> Outcome {
     switch toggle {
     case .toggleDarkMode:
-      osascript(
-        "tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode"
-      )
-      return "Toggled Dark Mode"
+      return command(
+        "/usr/bin/osascript",
+        [
+          "-e",
+          "tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode",
+        ], success: "Toggled Dark Mode")
     case .wifiOn, .wifiOff:
       guard let device = wifiDevice() else {
-        return "No Wi-Fi interface found on this Mac"
+        return Outcome(succeeded: false, message: "No Wi-Fi interface found on this Mac")
       }
-      run("/usr/sbin/networksetup", ["-setairportpower", device, toggle == .wifiOn ? "on" : "off"])
-      return toggle == .wifiOn ? "Wi-Fi on" : "Wi-Fi off"
+      return command(
+        "/usr/sbin/networksetup", ["-setairportpower", device, toggle == .wifiOn ? "on" : "off"],
+        success: toggle == .wifiOn ? "Wi-Fi on" : "Wi-Fi off")
     case .doNotDisturb:
-      if let url = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension") {
-        NSWorkspace.shared.open(url)
-      }
-      return "Opened Focus settings"
+      return Outcome(succeeded: false, message: "Open Focus settings from the launcher.")
     case .sleep:
-      osascript("tell application \"System Events\" to sleep")
-      return "Sleeping"
+      return command(
+        "/usr/bin/osascript", ["-e", "tell application \"System Events\" to sleep"],
+        success: "Sleeping")
     case .lockScreen:
-      run(
+      return command(
         "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession",
-        ["-suspend"])
-      return "Locking screen"
+        ["-suspend"], success: "Locking screen")
     case .emptyTrash:
-      osascript("tell application \"Finder\" to empty trash")
-      return "Emptied Trash"
+      return command(
+        "/usr/bin/osascript", ["-e", "tell application \"Finder\" to empty trash"],
+        success: "Emptied Trash")
     case .showHiddenFiles, .hideHiddenFiles:
       let value = toggle == .showHiddenFiles ? "true" : "false"
-      run("/usr/bin/defaults", ["write", "com.apple.finder", "AppleShowAllFiles", "-bool", value])
-      run("/usr/bin/killall", ["Finder"])
-      return toggle == .showHiddenFiles ? "Showing hidden files" : "Hiding hidden files"
+      let result = command(
+        "/usr/bin/defaults", ["write", "com.apple.finder", "AppleShowAllFiles", "-bool", value],
+        success: "Updated Finder")
+      guard result.succeeded else { return result }
+      return command(
+        "/usr/bin/killall", ["Finder"],
+        success: toggle == .showHiddenFiles ? "Showing hidden files" : "Hiding hidden files")
     }
   }
 
@@ -119,11 +182,6 @@ enum Executor {
   }
 
   @discardableResult
-  static func osascript(_ script: String) -> String? {
-    run("/usr/bin/osascript", ["-e", script])
-  }
-
-  @discardableResult
   static func run(_ executable: String, _ arguments: [String]) -> String? {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: executable)
@@ -132,8 +190,21 @@ enum Executor {
     process.standardOutput = pipe
     process.standardError = FileHandle.nullDevice
     do { try process.run() } catch { return nil }
+    let timeout = DispatchWorkItem { if process.isRunning { process.terminate() } }
+    DispatchQueue.global().asyncAfter(deadline: .now() + 30, execute: timeout)
+    defer { timeout.cancel() }
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
     process.waitUntilExit()
+    guard process.terminationStatus == 0 else { return nil }
     return String(data: data, encoding: .utf8)
+  }
+
+  private static func command(_ executable: String, _ arguments: [String], success: String)
+    -> Outcome
+  {
+    let output = run(executable, arguments)
+    return Outcome(
+      succeeded: output != nil,
+      message: output != nil ? success : "Could not complete the action. Check macOS permissions.")
   }
 }

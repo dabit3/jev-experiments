@@ -56,7 +56,10 @@ enum Ranker {
   /// Fuzzy-scores the whole index and keeps the top-k, then appends synthetic candidates
   /// (a calculation when the query parses, and a web search for any non-empty query).
   /// A time window in the query is applied here, in code: items outside it are never sent.
-  static func prefilter(query: String, index: [Candidate], now: Date = Date()) -> Prefiltered {
+  static func prefilter(
+    query: String, index: [Candidate], now: Date = Date(), scope: SearchScope = .all,
+    boosts: [String: Double] = [:]
+  ) -> Prefiltered {
     let trimmed = query.trimmingCharacters(in: .whitespaces)
     guard !trimmed.isEmpty else { return Prefiltered(candidates: [], fuzzy: [:]) }
     let window = TimeWindow.parse(trimmed, now: now)
@@ -68,31 +71,38 @@ enum Ranker {
     let floor = window == nil ? minimumFuzzy : windowedMinimumFuzzy
 
     var scored: [(Candidate, Double)] = []
+    let recency = FileRecency(query: trimmed)
     scored.reserveCapacity(index.count)
-    for candidate in index {
+    for candidate in index where scope.includes(candidate) {
+      let age = candidate.age(for: recency, now: now)
+      if recency == .opened, candidate.kind == .openFile, candidate.fileURL != nil, age == nil {
+        continue
+      }
       if let window {
         // Timeless items (apps, toggles) stay eligible; dated items must fall in the window.
-        if let age = candidate.ageDays, !window.contains(ageDays: age, now: now) { continue }
+        if let age, !window.contains(ageDays: age, now: now) { continue }
       }
       let score: Double
       if windowOnly {
-        guard candidate.ageDays != nil else { continue }
+        guard age != nil else { continue }
         score = 0.5
       } else {
-        score = Fuzzy.score(query: matchQuery, candidate: candidate)
+        score = max(
+          Fuzzy.score(query: matchQuery, candidate: candidate),
+          (boosts[candidate.id] ?? 0) >= 0.3 ? 0.7 : 0)
       }
-      if score >= floor { scored.append((candidate, score)) }
+      if score >= floor { scored.append((candidate, min(1, score + (boosts[candidate.id] ?? 0)))) }
     }
     scored.sort { lhs, rhs in
       if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
-      let lhsAge = lhs.0.ageDays ?? .infinity
-      let rhsAge = rhs.0.ageDays ?? .infinity
+      let lhsAge = lhs.0.age(for: recency, now: now) ?? .infinity
+      let rhsAge = rhs.0.age(for: recency, now: now) ?? .infinity
       if lhsAge != rhsAge { return lhsAge < rhsAge }
       return lhs.0.title < rhs.0.title
     }
     var candidates: [Candidate] = []
     var fuzzy: [String: Double] = [:]
-    if let evaluation = Calculator.evaluate(trimmed) {
+    if scope == .all, let evaluation = Calculator.evaluate(trimmed) {
       let calc = Candidate(
         id: calculationID, title: "= \(evaluation.formatted)",
         subtitle: "\(evaluation.expression) · Enter copies the result", kind: .calculate,
@@ -107,8 +117,10 @@ enum Ranker {
     let web = Candidate(
       id: webSearchID, title: "Search the web for “\(trimmed)”",
       subtitle: "Opens your default browser", kind: .webSearch, payload: .webSearch(trimmed))
-    candidates.append(web)
-    fuzzy[web.id] = 0.1
+    if scope == .all || scope == .links {
+      candidates.append(web)
+      fuzzy[web.id] = 0.1
+    }
     return Prefiltered(candidates: candidates, fuzzy: fuzzy, window: window)
   }
 
@@ -168,7 +180,7 @@ enum Ranker {
   static func setMembers(_ prefiltered: Prefiltered, judgment: JevJudgment?) -> Set<String> {
     guard let judgment, judgment.setProbability >= offerThreshold else { return [] }
     let eligible = prefiltered.candidates.filter { candidate in
-      candidate.id != webSearchID && candidate.id != calculationID
+      candidate.isOpenable
         && (judgment.matchProbabilities[candidate.id] ?? 0) >= memberThreshold
     }
     let sorted = eligible.sorted {

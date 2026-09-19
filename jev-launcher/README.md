@@ -1,18 +1,57 @@
-# Jev Launcher
+# Launcher
 
-A Spotlight-style launcher for macOS that reads intent, not strings. Press ⌥Space and type the way you would say it: `dark`, `wifi off`, `15% of 240`, `the pdf I just downloaded`, `open the devin ambassador links I visited in the past 24 hours`. On every keystroke the panel sends what you typed, a little local context and the best local candidates to [Jev](https://docs.typesafe.ai) in one request. Jev answers a handful of typed questions (which candidate, what kind of action, one item or all of them, which rows fit, is this settled enough to run on Enter), the list re-ranks live, and when the intent is clear the top row gets a green ↵. Enter runs it: one file, one toggle, or a whole set of links at once.
+> [!IMPORTANT]
+> **Archived:** this copy of Launcher is no longer maintained here. Development has moved to [dabit3/launcher](https://github.com/dabit3/launcher). Use the new repository for the latest code, releases and setup instructions.
+
+A native macOS launcher for things you remember by meaning: `the last pdf I opened`, `files I used in the last hour`, `open the devin ambassador links I visited today`. Press ⌥Space, describe what you need, and press Enter. Local search finds candidates, [Jev](https://docs.typesafe.ai) judges your intent on each keystroke, and the selected result opens. Pin frequent items, preview files, edit a matching group, or save it as a workspace you can reopen by name.
 
 ![Typing the five demo queries against the live Jev API](docs/demo.gif)
 
 ![Open all 3 links: the group row on top, members checked, unrelated visits from the same day unchecked](docs/set-ambassador.png)
 
+These captures show the earlier single-target and group experiences. The current panel also has search scopes and an Actions menu.
+
 ## Why speed matters
 
-A launcher is judged per keystroke. Anything above roughly 200 ms feels like lag, which is why nobody puts a general LLM (2 to 4 seconds) between the keyboard and the results list. Jev returns the full judgment in about 100 ms from this VM, so the list re-ranks on every character with no debounce. Each query change fires a request tagged with a sequence number; the newest answer wins and anything older is discarded. Nothing waits on the network: the fuzzy order is on screen immediately and Jev's answer replaces it when it lands.
+A launcher is judged per keystroke. Previous single-target runs measured about 100 ms per Jev round trip from this VM. Local results appear immediately; Jev refines them when its answer arrives. Superseded requests are canceled, old responses are rejected, and manually selected rows stay selected when ranking changes. Spotlight searches in parallel and can trigger a fresh judgment when it finds more candidates.
 
 ## What it does
 
+### Find files by what happened
+
+The immediate index covers Downloads, Desktop and Documents. Spotlight expands search across indexed content in your home directory, excluding hidden paths, Library, app contents and `node_modules`. Searches use filename words and file-type metadata and map at most 150 retrieved items into candidates.
+
+Recency has three distinct meanings:
+
+| Query | Evidence used |
+|---|---|
+| `the last pdf I opened` | Spotlight last-used date, or a successful launch recorded by this app |
+| `the pdf I just downloaded` | Date added to the folder, with modification time as a fallback when added metadata is unavailable |
+| `files I modified yesterday` | File modification date |
+
+Files with unknown last-used dates are excluded from opened/used queries. A recently edited file is not treated as recently opened. Finder metadata is not available for every file, and "added" does not prove a browser download.
+
+Jev also receives the query-relevant file age in seconds and its evidence source. Two files labeled "added 7 min ago" can still be distinguished without mistaking a recent edit for a recent arrival.
+
+### A launcher that remembers
+
+Pins and recent launches fill the empty screen. Successful launches build a small local history of frequency, recency and query aliases, used as bounded boosts in the fuzzy shortlist. Clear launch history in Settings to reset these boosts while keeping pins and workspaces.
+
+The scope bar switches between **All**, **Files**, **Apps**, **Links** and **Workspaces**. Tab and Shift-Tab cycle through scopes. The calculator appears in All; web-search fallback appears in All and Links.
+
+### Act without opening
+
+Press **⌘K** for the selected result's actions. Arrow keys select an action and Enter runs it. Files support Quick Look and Reveal in Finder; files, links and calculations can be copied; apps, files and links can be pinned. Escape closes the current overlay before dismissing the launcher.
+
+### Save a workflow
+
+Check or uncheck members of a suggested group, or build a group yourself with **⌘Space** on individual results. **Save group as workspace** gives it a name, such as `Writing` or `Launch research`. That name becomes a searchable result containing 2 to 25 apps, files or links. Open its Actions menu and choose **Review and edit items** to adjust the group before opening it or saving a new workspace. Workspaces are local, capped at 20, and removable from their Actions menu.
+
+Only openable items can belong to groups. System commands and shortcuts cannot be bundled into a workspace. Empty Trash requires a separate confirmation after selection.
+
 ### Single targets
+
+Historical live examples, rather than guaranteed probabilities:
 
 | Query | Top hit | Jev target probability |
 |---|---|---|
@@ -22,7 +61,7 @@ A launcher is judged per keystroke. Anything above roughly 200 ms feels like lag
 | `the pdf I just downloaded` | `Q3-Roadmap-Review.pdf`, the newest of six PDFs | 100% |
 | `sleep` | Sleep | 99% |
 
-The fuzzy matcher alone cannot tell `invoice-2026-08.pdf` from `Q3-Roadmap-Review.pdf` on the PDF query; both match "pdf" and "downloaded" equally. Jev reads the `modified 16 min ago` detail against "just downloaded" and puts all of the probability on the newest one.
+The fuzzy matcher gets plausible PDFs into the shortlist. Jev compares their added, opened and modified details with what the query actually asks for.
 
 ### One item or all of them
 
@@ -34,7 +73,9 @@ The fuzzy matcher alone cannot tell `invoice-2026-08.pdf` from `Q3-Roadmap-Revie
 4. **Group row, in code.** Rows with `match ≥ 0.6` (at least two, at most 25) form the set. The panel adds a synthetic `Open all 3 links` row: first when `P(all) ≥ 0.5`, right under the best single hit when Jev is torn (`0.15 ≤ P(all) < 0.5`), and not at all when the query is clearly about one thing (`P(all) < 0.15`). Members get a checkmark; ↓ still walks through them one by one. The group row is ready only when `P(all) ≥ 0.75`.
 5. **Enter opens them.** URL groups go to Chrome in one `NSWorkspace.open(_:withApplicationAt:)` call (default browser if Chrome is not installed); other members run through the normal single-item path. Nothing runs without Enter.
 
-The same machinery is not Chrome-specific. `the files I downloaded in the last hour` yields `Open all 3 files` over the PDFs modified in the last hour, with older ones excluded in code before Jev sees them. Mixed sets (`Open all 4 items`) work too.
+The same machinery is not Chrome-specific. `the files I used in the last hour` can offer an `Open all` row over files with matching last-opened evidence, with older files excluded before Jev sees them. Mixed sets (`Open all 4 items`) work too. Membership checkboxes remain editable while an answer is in flight, and a new answer does not overwrite those choices.
+
+Historical group-query measurements:
 
 | Query | P(all) | Top row | Set |
 |---|---|---|---|
@@ -46,7 +87,7 @@ The same machinery is not Chrome-specific. `the files I downloaded in the last h
 
 ## Measured numbers
 
-All figures are from real runs on this macOS VM (macOS 26.5, ARM64, Xcode 26.6) against `jev-latest`, which resolved to `jev-1.13.0`. Latency is the full HTTPS round trip measured in the app, including network and inference.
+These baseline figures come from earlier live runs on this macOS VM (macOS 26.5, ARM64, Xcode 26.6) against `jev-latest`, which resolved to `jev-1.13.0`. They are not a benchmark of every new feature. Latency is the full HTTPS round trip measured in the app, including network and inference.
 
 | Metric | Value |
 |---|---|
@@ -59,13 +100,13 @@ All figures are from real runs on this macOS VM (macOS 26.5, ARM64, Xcode 26.6) 
 | Cost per keystroke | about $0.00006 at $0.042 per million input tokens |
 | Cost of a five-query session | about $0.003 |
 
-Every question in a request comes back in the same round trip, so five judgments per keystroke cost the same latency as one. The footer shows the last round trip on the left and the running cost on the right; hovering it shows p50, p95, decision count and tokens per decision.
+Questions share one round trip and are evaluated in parallel. Candidate and question counts still affect tokens and latency. The footer shows only the latest round trip and estimated running cost. Hover for p50, p95, decision count and tokens per decision. Canceled requests may still incur server charges that the app cannot count without a usage response.
 
 ## How the Jev request is built
 
-One `POST /v1/systemone` per keystroke with `model: jev-latest`. Jev never generates text; it picks among options the code supplies. Everything else (indexing, fuzzy prefiltering, time parsing, arithmetic, execution) is plain Swift.
+Each query change starts a `POST /v1/systemone` with `model: jev-latest`, unless local-only mode, a missing key or a rate-limit cooldown prevents it. A completed Spotlight search or index refresh can issue a replacement judgment. Jev returns typed probabilities; indexing, prefiltering, time parsing, arithmetic and execution remain plain Swift.
 
-**State** (`Sources/JevQuestions.swift`):
+**State**, abbreviated (`Sources/JevQuestions.swift`):
 
 ```json
 {
@@ -74,14 +115,14 @@ One `POST /v1/systemone` per keystroke with `model: jev-latest`. Jev never gener
   "context": { "frontmost_app": "Finder", "recent_apps": ["Finder", "Safari"], "clipboard_kind": "text", "time_of_day": "afternoon", "weekday": "Thursday" },
   "time_window": null,
   "candidates": [
-    { "id": "c0", "kind": "open_file", "title": "Q3-Roadmap-Review.pdf", "detail": "PDF in ~/Downloads · modified 16 min ago" },
-    { "id": "c1", "kind": "open_file", "title": "invoice-2026-08.pdf", "detail": "PDF in ~/Downloads · modified 1 month ago" },
+    { "id": "c0", "kind": "open_file", "title": "Q3-Roadmap-Review.pdf", "detail": "PDF in ~/Downloads · modified 16 min ago", "recency": { "basis": "modified", "seconds_ago": 964 } },
+    { "id": "c1", "kind": "open_file", "title": "invoice-2026-08.pdf", "detail": "PDF in ~/Downloads · modified 1 month ago", "recency": { "basis": "modified", "seconds_ago": 2678400 } },
     { "id": "c6", "kind": "web_search", "title": "Search the web for “the pdf I”", "detail": "Opens your default browser" }
   ]
 }
 ```
 
-Candidates are the top 13 fuzzy matches from the local index (30 when the query names a time window) plus synthetic rows: an arithmetic result when the query parses, and a web search for any non-empty query. They carry short ids (`c0` to `cN`) that the code maps back to real candidates when the answer arrives, so Jev only ever sees a few dozen rows, never the whole index or the browser history.
+Candidates are the top 13 fuzzy matches from the merged local sources (30 when the query names a time window), after scope filtering and personal boosts. Synthetic rows add arithmetic results in All and web search in All/Links. They carry short ids (`c0` to `cN`) that the code maps back to real candidates when the answer arrives, so Jev only ever sees a few dozen rows, never the whole index or browser history.
 
 **Questions**, all in one `questions` object:
 
@@ -93,7 +134,7 @@ Candidates are the top 13 fuzzy matches from the local index (30 when the query 
 
 **Ranking** is deterministic given the answer: `score = 0.65 · P(target) + 0.20 · P(action matches kind) + 0.15 · fuzzy`, plus `0.25 · P(all) · P(match)` for rows in the set so members sit together under the group row. Without an answer the score is just `fuzzy`.
 
-**In-flight handling**: every query change increments a sequence number and starts a `Task`. A response is applied only if its sequence is newer than the last one applied. While a newer request is in flight the previous judgment is kept, dimmed, so the list does not flicker back to fuzzy order between keystrokes. The green ↵ hides as soon as ↑/↓ moves the selection off the top row, since Enter then runs whatever is selected.
+**In-flight handling**: a response must belong to the current sequence and its task must not be canceled. Spotlight callbacks also check their search generation. While a replacement request is in flight, previous probabilities may stay visible but cannot light the readiness badge. Manual selection is preserved by candidate identity. Membership edits survive reordering. Late action completions cannot dismiss a newer query.
 
 ### Iteration notes
 
@@ -113,7 +154,9 @@ The `ready` wording went through several rounds against the five queries plus de
 
 ## What is local (code, not Jev)
 
-- **Index** (`LocalIndex.swift`): `.app` bundles in `/Applications`, `/System/Applications`, `/System/Applications/Utilities`; files in `~/Downloads`, `~/Desktop`, `~/Documents` (top level plus one nested level, capped at 400 per folder, with modification age in the subtitle); user Shortcuts from `shortcuts list`; nine system toggles; Chrome history (`ChromeHistory.swift`, every `Default` and `Profile *` under `~/Library/Application Support/Google/Chrome`, last 90 days, 3,000 rows). The index is rebuilt in the background each time the panel is shown.
+- **Index** (`LocalIndex.swift`): `.app` bundles in `/Applications`, `/System/Applications`, `/System/Applications/Utilities` and `~/Applications`; files in `~/Downloads`, `~/Desktop`, `~/Documents` (top level plus one nested level, capped at 400 per folder); user Shortcuts; nine system toggles; optional Chrome history (`ChromeHistory.swift`, every `Default` and `Profile *` profile, last 90 days, 3,000 rows). The index refreshes in the background when the panel opens.
+- **Spotlight** (`SpotlightSearch.swift`): cancellable `NSMetadataQuery` searches with a one-second collection timeout. Results merge with the static index and library by identity before the bounded fuzzy prefilter.
+- **Personal library** (`PersonalLibrary.swift`): at most 200 local records, eight query aliases per record and 20 workspaces, persisted as Codable data in `UserDefaults` under `launcher.library.v1`. No file contents are stored.
 - **Time windows** (`TimeWindow.swift`): relative (`past 24 hours`, `last 3 days`, `a couple of weeks ago`), named (`today`, `yesterday`, `this week`, `last month`, `this morning`, `tonight`, `last night`, `just now`, `recently`) and number words, resolved against the local calendar.
 - **System toggles** (`Executor.swift`): Dark Mode (AppleScript to System Events), Wi-Fi on/off (`networksetup -setairportpower`), Do Not Disturb (opens Focus settings), Sleep (AppleScript), Lock Screen (`CGSession -suspend`), Empty Trash (AppleScript to Finder), Show/Hide hidden files (`defaults write` plus `killall Finder`).
 - **Calculator** (`Calculator.swift`): a recursive-descent parser for `+ - * / ^ ( )`, `x` as multiply, `sqrt`, percentages (`15% of 240`, `200 * 10%`), with an optional `calc` or `=` prefix. No `NSExpression`, no eval.
@@ -130,12 +173,32 @@ export TYPESAFE_API_KEY=...        # read from the environment; never hardcoded
 ./run.sh --show                    # builds Debug and launches with the panel open
 ```
 
-`run.sh` execs the binary from the shell so the environment variable is inherited. If you launch the `.app` from Finder instead, the key is read from the Settings field (menu bar ⚡, then Settings, stored in `UserDefaults` under `typesafeAPIKey`). With no key the panel still works as a fuzzy launcher and the empty state says so.
+The built application is `Launcher.app`. The Xcode project and module retain their internal names, and the bundle identifier stays unchanged so existing settings, pins and workspaces carry over.
+
+`run.sh` execs the binary from the shell so the environment variable is inherited. If you launch the `.app` from Finder instead, the key is read from the Settings field (menu bar ⚡, then Settings, stored in `UserDefaults` under `typesafeAPIKey`). With no key the panel works locally and a header icon explains why. Settings also control Spotlight, Chrome history and local-only mode. Source and local-only changes invalidate pending searches immediately.
 
 - **⌥Space** toggles the panel from anywhere (Carbon `RegisterEventHotKey`; no Accessibility permission needed).
 - **↑ / ↓** move the selection, **↵** runs it, **esc** hides the panel. The example chips in the empty state (`dark`, `wifi off`, `15% of 240`, `the pdf I just downloaded`, `links I visited today`) are clickable.
 - The menu-bar ⚡ item has Toggle Launcher, Settings and Quit. The app has no Dock icon (`LSUIElement`).
 - The panel is a translucent `NSVisualEffectView` HUD that resizes to its content (up to seven rows). App and file rows show the real Finder icon; toggles, the calculator, web search, links and group rows use tinted SF Symbols. A small dot next to the field shows while a request is in flight; the bolt turns green when the top row is ready. The footer is just latency and cost.
+
+| Shortcut | Action |
+|---|---|
+| ⌘K | Open or close Actions |
+| ⌘Y | Quick Look the selected file |
+| ⌘R | Reveal the selected app or file in Finder |
+| ⇧⌘C | Copy path, link, result or group values |
+| ⌘P | Pin or unpin |
+| ⌘Space | Include or exclude the selected item in a group |
+| Tab / Shift-Tab | Next / previous scope |
+
+`⌘Space` is commonly assigned to macOS Spotlight. If macOS intercepts it, use the member checkbox or the Actions menu instead.
+
+### Privacy and failure behavior
+
+The request contains the query, short candidate titles/details, query-relevant file ages and limited context. Details can include folder names, browser hosts and workspace member names. File contents, clipboard text, the complete index and raw browser databases stay local. Local-only mode disables Jev requests; pinning, workspaces, previews, calculations and manual groups still work.
+
+Errors appear as a compact header icon with a tooltip. Missing keys, HTTP errors, timeouts and transport failures preserve local results. HTTP 429 and 529 pause new requests, honor `Retry-After` when supplied, and use increasing cooldowns for repeated limits. Enter remains explicit even when Jev reports high confidence. File existence, URL schemes and group eligibility are validated before execution.
 
 ### Permissions
 
@@ -154,15 +217,17 @@ xcodebuild -project JevLauncher.xcodeproj -scheme JevLauncher -configuration Deb
 xcrun swift-format lint --strict --recursive Sources Tests
 ```
 
-58 tests cover the calculator, fuzzy scorer, prefilter and ranker, request construction and response parsing, latency and cost statistics, recency phrasing, file candidates, Wi-Fi port parsing, Chrome timestamp conversion, reading a copied `History` database, time-window parsing and filtering, set membership, group placement and the `scope` and `match_cN` questions. 53 run offline; `LiveJevTests` (5) hit the real API and are skipped unless `JEV_LIVE=1` and `TYPESAFE_API_KEY` are set in the test runner. See [TESTING.md](TESTING.md) for the manual checklist and fixture setup.
+The offline suite covers ranking, typed requests, arithmetic, Chrome history, recency semantics, scopes, persisted pins and workspaces, action validation, manual selection and group edits during late responses, local-only mode and destructive confirmation. `LiveJevTests` and `LiveExperienceTests` are opt-in API probes. See [TESTING.md](TESTING.md) for commands, coverage and the desktop checklist.
 
 ## Limitations
 
 - **The list is always shown.** Hiding it on a probabilistic signal felt wrong for a launcher, so readiness is the green ↵ on the top row; Enter always runs the selected row regardless.
 - **Latency is network-bound.** The numbers above are from a US VM; p50 will track your distance to `api.typesafe.ai`.
-- **Fast typists generate stale answers.** Typing far faster than about 10 characters per second produces overlapping requests. The newest answer always wins, but the stale count climbs and p95 rises.
+- **Cancellation is best effort.** It avoids applying old answers, but cannot guarantee an already received server request stops processing.
 - **Context is minimal.** `frontmost_app`, `recent_apps`, `clipboard_kind`, `time_of_day` and `weekday` are sent; the app does not read window titles, open browser tabs or clipboard contents. Chrome history is read locally and only the rows that match the query and time window are sent, as title plus host plus relative visit time.
 - **Chrome only, and only visits.** Safari's history is not read (it needs Full Disk Access); the Chrome `downloads` table and open tabs are not used. History is indexed when the panel opens, so a page visited seconds ago appears on the next ⌥Space.
 - **Set thresholds are tuned by hand** on the queries above (`Ranker.setThreshold`, `memberThreshold`, `offerThreshold`).
-- **Files are indexed by modification time**, not last-opened time, so "the pdf I just downloaded" is exact while "the last pdf I opened" resolves to the most recently modified one.
-- The files and history entries in the screenshots are fixtures created on the VM; TESTING.md recreates them.
+- **Metadata coverage varies.** Spotlight must be enabled and the location indexed. Opening a file in another app does not always update its last-used date. The local library records only successful launches through this launcher. Moved or missing files are not automatically repaired.
+- **Grouped opens are not transactional.** A mid-execution app or OS failure can leave some members open; the launcher reports the failure rather than recording the whole group as successful.
+- **Settings keys use UserDefaults**, not Keychain. Use the environment variable if you do not want the launcher to persist the API key.
+- Screenshots use fixture documents and browsing history. Current desktop interactions need a separate UI verification pass; automated checks do not validate macOS permission dialogs or preview rendering.

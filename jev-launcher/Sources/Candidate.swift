@@ -41,8 +41,8 @@ enum ActionKind: String, CaseIterable, Codable, Sendable {
 }
 
 /// Something the launcher can execute. Produced by the local index or synthesized from the query.
-struct Candidate: Identifiable, Hashable, Sendable {
-  enum Payload: Hashable, Sendable {
+struct Candidate: Identifiable, Hashable, Codable, Sendable {
+  enum Payload: Hashable, Codable, Sendable {
     case app(URL)
     case file(URL)
     case url(URL)
@@ -64,10 +64,14 @@ struct Candidate: Identifiable, Hashable, Sendable {
   /// Days since the item was last modified or visited; used to describe recency to Jev in words
   /// and to apply a time window such as "in the past 24 hours". Nil for timeless items.
   let ageDays: Double?
+  let modifiedAt: Date?
+  let lastOpenedAt: Date?
+  let addedAt: Date?
 
   init(
     id: String, title: String, subtitle: String, kind: ActionKind, keywords: [String] = [],
-    payload: Payload, ageDays: Double? = nil
+    payload: Payload, ageDays: Double? = nil, modifiedAt: Date? = nil,
+    lastOpenedAt: Date? = nil, addedAt: Date? = nil
   ) {
     self.id = id
     self.title = title
@@ -76,6 +80,35 @@ struct Candidate: Identifiable, Hashable, Sendable {
     self.keywords = keywords
     self.payload = payload
     self.ageDays = ageDays
+    self.modifiedAt = modifiedAt
+    self.lastOpenedAt = lastOpenedAt
+    self.addedAt = addedAt
+  }
+
+  var isOpenable: Bool {
+    switch payload {
+    case .app, .file, .url: return true
+    default: return false
+    }
+  }
+
+  var fileURL: URL? {
+    switch payload {
+    case .app(let url), .file(let url): return url
+    default: return nil
+    }
+  }
+
+  func age(for intent: FileRecency, now: Date) -> Double? {
+    guard case .file = payload else { return ageDays }
+    let date: Date?
+    switch intent {
+    case .opened: date = lastOpenedAt
+    case .added: date = addedAt ?? modifiedAt
+    case .modified: date = modifiedAt
+    }
+    if let date { return max(0, now.timeIntervalSince(date)) / 86_400 }
+    return intent == .opened ? nil : ageDays
   }
 
   /// Lower-cased text the fuzzy matcher searches: title words plus keywords.
@@ -88,7 +121,7 @@ struct Candidate: Identifiable, Hashable, Sendable {
 }
 
 /// A fixed system toggle executed by code (AppleScript, shell or a settings URL). Never by Jev.
-enum SystemToggle: String, CaseIterable, Hashable, Sendable {
+enum SystemToggle: String, CaseIterable, Hashable, Codable, Sendable {
   case toggleDarkMode
   case wifiOn
   case wifiOff

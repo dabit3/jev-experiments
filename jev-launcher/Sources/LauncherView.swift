@@ -18,12 +18,12 @@ struct LauncherView: View {
   @ObservedObject var model: LauncherModel
   @FocusState private var focused: Bool
 
-  private var isEmptyQuery: Bool { model.query.trimmingCharacters(in: .whitespaces).isEmpty }
-
   var body: some View {
     VStack(spacing: 0) {
       header
         .frame(height: LauncherPanelController.headerHeight)
+      scopeBar
+        .frame(height: LauncherPanelController.scopeHeight)
       Divider().overlay(Theme.border)
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -46,6 +46,7 @@ struct LauncherView: View {
     )
     .preferredColorScheme(.dark)
     .onAppear { focused = true }
+    .onChange(of: model.savingWorkspace) { _, saving in if !saving { focused = true } }
   }
 
   private var header: some View {
@@ -59,40 +60,139 @@ struct LauncherView: View {
         .font(.system(size: 24, weight: .regular, design: .rounded))
         .foregroundStyle(Theme.text)
         .focused($focused)
+        .accessibilityLabel("Search apps, files, links and workspaces")
+      if let error = model.lastError {
+        Image(systemName: "exclamationmark.icloud")
+          .foregroundStyle(Theme.warn)
+          .help(error)
+          .accessibilityLabel(error)
+      } else if model.isLocalOnly {
+        Image(systemName: "lock.shield")
+          .foregroundStyle(Theme.dim)
+          .help("Local search. Online ranking is disabled.")
+      } else if let status = model.status {
+        Image(systemName: "checkmark.circle")
+          .foregroundStyle(Theme.ready)
+          .help(status)
+          .accessibilityLabel(status)
+      }
       Circle()
         .fill(Theme.accent)
         .frame(width: 6, height: 6)
-        .opacity(model.inFlight > 0 ? 1 : 0)
+        .opacity(model.inFlight > 0 || model.isIndexing ? 1 : 0)
         .animation(.easeOut(duration: 0.12), value: model.inFlight > 0)
         .accessibilityHidden(true)
     }
     .padding(.horizontal, 22)
   }
 
+  private var scopeBar: some View {
+    HStack(spacing: 4) {
+      ForEach(SearchScope.allCases) { scope in
+        Button {
+          model.scope = scope
+        } label: {
+          Text(scope.rawValue)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(model.scope == scope ? Theme.text : Theme.dim)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+              model.scope == scope ? Theme.surface : Color.clear,
+              in: RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .help("Filter to \(scope.rawValue.lowercased()). Tab cycles filters.")
+        .accessibilityAddTraits(model.scope == scope ? .isSelected : [])
+      }
+      Spacer()
+      if model.topHit != nil {
+        Button {
+          model.actionsVisible.toggle()
+        } label: {
+          HStack(spacing: 5) {
+            Text("Actions")
+            Text("⌘K").foregroundStyle(Theme.faint)
+          }
+          .font(.system(size: 11, weight: .medium))
+          .foregroundStyle(Theme.dim)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Actions for selected result")
+      }
+    }
+    .padding(.horizontal, 18)
+    .padding(.bottom, 8)
+  }
+
   @ViewBuilder
   private var content: some View {
-    if isEmptyQuery {
+    if let confirmation = model.confirmation {
+      VStack(alignment: .leading, spacing: 14) {
+        Label(confirmation.title, systemImage: "exclamationmark.triangle")
+          .font(.system(size: 18, weight: .semibold))
+          .foregroundStyle(Theme.warn)
+        Text("This permanently deletes everything in the Trash.")
+          .foregroundStyle(Theme.dim)
+        HStack {
+          Button("Cancel") { _ = model.cancelOverlay() }
+          Spacer()
+          Button("Empty Trash") { model.executeSelection() }
+            .tint(Theme.danger)
+        }
+      }
+      .padding(24)
+    } else if model.savingWorkspace {
+      WorkspaceEditor(model: model)
+    } else if model.actionsVisible {
+      ActionList(model: model)
+    } else if model.isEmptyQuery && model.hits.isEmpty {
       EmptyHint(model: model)
     } else if model.hits.isEmpty {
-      Text("Nothing here matches yet")
-        .font(.system(size: 14))
-        .foregroundStyle(Theme.faint)
+      VStack(spacing: 8) {
+        Image(systemName: "magnifyingglass").font(.system(size: 23, weight: .light))
+        Text("No \(model.scope.rawValue.lowercased()) results")
+        Text("Try a name, a file type, or another filter.")
+          .font(.system(size: 12))
+      }
+      .foregroundStyle(Theme.dim)
     } else {
       ScrollViewReader { proxy in
         ScrollView(showsIndicators: false) {
           LazyVStack(spacing: 0) {
             ForEach(Array(model.hits.enumerated()), id: \.element.id) { index, hit in
-              HitRow(
-                hit: hit, selected: index == model.selection,
-                ready: model.isReady && index == 0,
-                stale: !model.judgmentIsFresh && hit.jevProbability != nil
-              )
-              .frame(height: LauncherPanelController.rowHeight)
-              .id(hit.id)
-              .onTapGesture {
-                model.selection = index
-                model.executeSelection()
+              HStack(spacing: 0) {
+                if model.hasEditableGroup && hit.candidate.isOpenable {
+                  Button {
+                    model.toggleMember(hit.candidate)
+                  } label: {
+                    Image(systemName: hit.inSet ? "checkmark.circle.fill" : "circle")
+                      .foregroundStyle(hit.inSet ? Theme.accent : Theme.faint)
+                      .font(.system(size: 17))
+                      .frame(width: 30, height: LauncherPanelController.rowHeight)
+                  }
+                  .buttonStyle(.plain)
+                  .accessibilityLabel(
+                    "\(hit.inSet ? "Exclude" : "Include") \(hit.candidate.title) in group")
+                }
+                HitRow(
+                  hit: hit, selected: index == model.selection,
+                  ready: model.isReady && index == 0,
+                  stale: !model.judgmentIsFresh && hit.jevProbability != nil,
+                  pinned: model.library.isPinned(hit.candidate)
+                )
+                .frame(height: LauncherPanelController.rowHeight)
+                .onTapGesture(count: 2) {
+                  model.select(index)
+                  model.executeSelection()
+                }
+                .onTapGesture { model.select(index) }
+                .accessibilityAction(named: "Open") {
+                  model.select(index)
+                  model.executeSelection()
+                }
               }
+              .id(hit.id)
             }
           }
           .padding(.horizontal, 8)
@@ -126,6 +226,7 @@ struct HitRow: View {
   let selected: Bool
   let ready: Bool
   let stale: Bool
+  var pinned = false
 
   var body: some View {
     HStack(spacing: 14) {
@@ -141,13 +242,11 @@ struct HitRow: View {
           .lineLimit(1)
       }
       Spacer(minLength: 12)
-      if hit.inSet {
-        Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 13, weight: .semibold))
-          .foregroundStyle(Theme.accent)
-          .opacity(stale ? 0.45 : 1)
-          .help("Part of the set the “Open all” row opens")
-          .transition(.opacity)
+      if pinned {
+        Image(systemName: "pin.fill")
+          .font(.system(size: 11))
+          .foregroundStyle(Theme.accent.opacity(0.7))
+          .help("Pinned")
       }
       Confidence(probability: hit.jevProbability, emphasized: selected, stale: stale)
       if ready {
@@ -169,6 +268,7 @@ struct HitRow: View {
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(hit.candidate.title), \(hit.candidate.kind.label)")
+    .accessibilityValue(selected ? "Selected" : "")
   }
 }
 
@@ -180,7 +280,7 @@ struct Confidence: View {
 
   var body: some View {
     if let probability {
-      let percent = Int((probability * 100).rounded())
+      let percent = Int((min(max(probability, 0), 1) * 100).rounded())
       HStack(spacing: 8) {
         Capsule()
           .fill(Theme.faint.opacity(0.35))
@@ -267,21 +367,35 @@ struct CandidateIcon: View {
 struct EmptyHint: View {
   @ObservedObject var model: LauncherModel
   private let examples = [
-    "dark", "wifi off", "15% of 240", "the pdf I just downloaded", "links I visited today",
+    "the pdf I just downloaded", "links I visited today", "15% of 240",
   ]
 
   var body: some View {
-    HStack(spacing: 8) {
-      ForEach(examples, id: \.self) { example in
-        Text(example)
-          .font(.system(size: 12, weight: .medium, design: .monospaced))
-          .foregroundStyle(Theme.dim)
-          .padding(.horizontal, 11)
-          .padding(.vertical, 6)
-          .background(Theme.surface, in: Capsule())
-          .onTapGesture { model.query = example }
+    VStack(spacing: 12) {
+      if model.scope == .workspaces {
+        Image(systemName: "square.stack.3d.up")
+          .font(.system(size: 23, weight: .light))
+        Text("Save a group from Actions to reopen it by name.")
+          .font(.system(size: 13))
+      } else {
+        HStack(spacing: 8) {
+          ForEach(examples, id: \.self) { example in
+            Button {
+              model.scope = .all
+              model.query = example
+            } label: {
+              Text(example)
+                .font(.system(size: 11, weight: .medium))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(Theme.surface, in: Capsule())
+            }
+            .buttonStyle(.plain)
+          }
+        }
       }
     }
+    .foregroundStyle(Theme.dim)
     .padding(.horizontal, 24)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
@@ -295,19 +409,12 @@ struct StatsFooter: View {
   var body: some View {
     let stats = model.stats
     HStack(spacing: 0) {
-      if let error = model.lastError {
-        Text(error)
-          .foregroundStyle(Theme.danger)
-          .lineLimit(1)
-      } else if !model.hasAPIKey {
-        Text("TYPESAFE_API_KEY not set")
-          .foregroundStyle(Theme.danger)
-      } else if let last = stats.lastMs {
+      if let last = stats.lastMs {
         Text("\(ms(last)) ms")
           .foregroundStyle(tint(last))
           .fontWeight(.semibold)
       } else {
-        Text("— ms")
+        Text("– ms")
           .foregroundStyle(Theme.faint)
       }
       Spacer(minLength: 12)
