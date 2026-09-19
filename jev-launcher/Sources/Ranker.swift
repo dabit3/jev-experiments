@@ -30,6 +30,9 @@ enum Ranker {
   static let webSearchID = "web:search"
   static let calculationID = "calc:result"
   static let groupID = "group:all"
+  /// Rows assembled from a verb, a contact and a file rank above plain fuzzy hits but below a
+  /// calculation; Jev's target judgment decides between them and the bare file or app.
+  static let intentFuzzy = 0.6
 
   /// Jev must lean at least this far toward "all" before the group row leads the list.
   static let setThreshold = 0.5
@@ -54,11 +57,12 @@ enum Ranker {
   }
 
   /// Fuzzy-scores the whole index and keeps the top-k, then appends synthetic candidates
-  /// (a calculation when the query parses, and a web search for any non-empty query).
+  /// (a calculation when the query parses, deliveries and reminders when the query reads as
+  /// one, and a web search for any non-empty query).
   /// A time window in the query is applied here, in code: items outside it are never sent.
   static func prefilter(
     query: String, index: [Candidate], now: Date = Date(), scope: SearchScope = .all,
-    boosts: [String: Double] = [:]
+    boosts: [String: Double] = [:], contacts: [Contact] = []
   ) -> Prefiltered {
     let trimmed = query.trimmingCharacters(in: .whitespaces)
     guard !trimmed.isEmpty else { return Prefiltered(candidates: [], fuzzy: [:]) }
@@ -109,6 +113,34 @@ enum Ranker {
         payload: .calculation(expression: evaluation.expression, result: evaluation.formatted))
       candidates.append(calc)
       fuzzy[calc.id] = 0.95
+    }
+    if scope == .all {
+      if let reminder = Intents.parseReminder(trimmed, now: now) {
+        let row = reminder.candidate
+        candidates.append(row)
+        fuzzy[row.id] = 0.95
+      }
+      let itemText = Intents.parseSend(trimmed)?.itemText ?? ""
+      var itemScored: [(Candidate, Double)] = []
+      if !itemText.isEmpty {
+        itemScored = index.compactMap { candidate in
+          guard case .file = candidate.payload else { return nil }
+          let score = Fuzzy.score(query: itemText, candidate: candidate)
+          return score > 0 ? (candidate, score) : nil
+        }
+        itemScored.sort { lhs, rhs in
+          if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+          let lhsAge = lhs.0.age(for: recency, now: now) ?? .infinity
+          let rhsAge = rhs.0.age(for: recency, now: now) ?? .infinity
+          if lhsAge != rhsAge { return lhsAge < rhsAge }
+          return lhs.0.title < rhs.0.title
+        }
+      }
+      for delivery in Intents.deliveries(query: trimmed, contacts: contacts, files: itemScored) {
+        let row = delivery.candidate
+        candidates.append(row)
+        fuzzy[row.id] = intentFuzzy
+      }
     }
     for (candidate, score) in scored.prefix(limit) {
       candidates.append(candidate)

@@ -33,8 +33,9 @@ The default suite is offline. Both live test classes skip unless `JEV_LIVE=1` an
 | `SetsAndHistoryTests.swift` | Copied Chrome SQLite data, visit timestamps, local time windows, group membership and placement |
 | `StatsAndIndexTests.swift` | Token/cost statistics, file candidates, recency wording and Wi-Fi device parsing |
 | `LauncherExperienceTests.swift` | Opened/added/modified evidence, scopes, bounded personal boosts, Spotlight path filtering, execution validation, copy formatting, persistent pins/workspaces, group editing, stale replies, manual selection, local-only mode, cooldowns and Empty Trash confirmation |
+| `IntentsTests.swift` | Send/text/airdrop parsing, contact matching (prefix, nickname, full name, ambiguity), delivery rows with and without attachments, contacts without handles, reminder time parsing, prefilter placement, Jev-lifted send rows and attachment validation |
 | `LiveExperienceTests.swift` | Live Jev judgments over fixed candidate fixtures for last-opened PDFs, named workspaces and recently used file groups |
-| `LiveJevTests.swift` | Live API against the machine's real local index and browsing fixtures |
+| `LiveJevTests.swift` | Live API against the machine's real local index and browsing fixtures, plus fixture-only probes for `send the invoice to sarah`, `text mom I'm running late` and `remind me to call the dentist tomorrow at 9` |
 
 Model tests inject a request function and use isolated `UserDefaults` suites. Executor unit tests validate routing inputs without running system commands. The confirmation test checks only the first Enter; it never empties Trash.
 
@@ -51,7 +52,9 @@ TEST_RUNNER_JEV_LIVE=1 TEST_RUNNER_TYPESAFE_API_KEY="$TYPESAFE_API_KEY" \
 
 These probes print the query, selected result, round-trip latency and input-token count. They validate live typed judgments but not retrieval or OS action execution.
 
-`LiveJevTests` additionally depends on a real index containing three recent Ambassador history entries, a TypeSafe docs visit, unrelated pages, PDFs of different ages and at least two recently added files. Use a disposable macOS account and fresh valid documents. Do not overwrite personal Chrome history. Visit pages normally or seed a dedicated test profile. Results depending on a "last hour" window expire, so recreate their fixtures before running that class.
+The three compound-intent probes in `LiveJevTests` (`testSendTheInvoiceToSarahPicksTheEmailRow`, `testTextMomPicksTheMessageRow`, `testRemindMePicksTheReminderRow`) use fixture files and fixture contacts only and can be run with `-only-testing` on any machine. They check Jev's target and action choices; opening Mail, Messages, AirDrop or Reminders is not exercised by automated tests and needs the desktop pass below.
+
+The remaining `LiveJevTests` depend on a real index containing three recent Ambassador history entries, a TypeSafe docs visit, unrelated pages, PDFs of different ages and at least two recently added files. Use a disposable macOS account and fresh valid documents. Do not overwrite personal Chrome history. Visit pages normally or seed a dedicated test profile. Results depending on a "last hour" window expire, so recreate their fixtures before running that class.
 
 ## Desktop acceptance checklist
 

@@ -27,6 +27,9 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_NSAppleEventsUsageDescription: Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.
+        INFOPLIST_KEY_NSContactsUsageDescription: Launcher reads contact names, emails and phone numbers so requests like “send the invoice to Sarah” can name a recipient.
+        INFOPLIST_KEY_NSRemindersFullAccessUsageDescription: Launcher creates reminders for requests like “remind me to call the dentist tomorrow at 9”.
+        INFOPLIST_KEY_NSRemindersUsageDescription: Launcher creates reminders for requests like “remind me to call the dentist tomorrow at 9”.
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO
