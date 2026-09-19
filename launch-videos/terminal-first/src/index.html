@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud, terminal-first</title>
+<style>
+  @font-face { font-family: "Inter Tight"; src: url("../assets/InterTight.ttf") format("truetype"); font-weight: 100 900; }
+  @font-face { font-family: "JetBrains Mono"; src: url("../assets/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; }
+  html, body { margin: 0; padding: 0; background: #000; }
+  body { width: 1920px; height: 1080px; overflow: hidden; }
+  #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--field); font-family: var(--sans); color: var(--text); -webkit-font-smoothing: antialiased; }
+  #root::before { content: ""; position: absolute; inset: 0; background: radial-gradient(1400px 900px at 50% 40%, rgba(255,255,255,0.035), rgba(0,0,0,0) 70%); }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+  .abs { position: absolute; }
+  .hidden { opacity: 0; }
+
+  /* Opening */
+  #opening { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 72px; }
+  #openLogo { width: 560px; }
+  #headline { position: relative; font-size: 104px; font-weight: 500; letter-spacing: -0.035em; line-height: 1.05; white-space: nowrap; }
+  #headline .ghost { visibility: hidden; }
+  #headline .typed { position: absolute; left: 0; top: 0; white-space: nowrap; }
+  .caret { display: inline-block; width: 0.42em; height: 0.86em; background: var(--text); vertical-align: -0.09em; margin-left: 0.08em; border-radius: 2px; }
+
+  /* Morph shape: caret -> baseline -> window */
+  #morph { position: absolute; background: var(--panel); border: 1px solid var(--lineStrong); box-sizing: border-box; box-shadow: 0 40px 120px rgba(0,0,0,0.6); }
+
+  /* Section label outside the product */
+  #label { position: absolute; left: 80px; top: 40px; font-size: 30px; font-weight: 500; letter-spacing: -0.01em; color: var(--muted); white-space: nowrap; }
+  #label .caret { background: var(--muted); }
+
+  /* Product window */
+  #win { position: absolute; left: 80px; top: 100px; width: 1760px; height: 940px; border-radius: 18px; background: var(--panel); border: 1px solid var(--lineStrong); box-sizing: border-box; overflow: hidden; box-shadow: 0 40px 120px rgba(0,0,0,0.6); }
+  #left { position: absolute; left: 0; top: 0; width: 620px; height: 100%; border-right: 1px solid var(--line); box-sizing: border-box; }
+  #right { position: absolute; left: 620px; top: 0; width: 1140px; height: 100%; }
+  .bar { position: absolute; left: 0; top: 0; right: 0; height: 68px; display: flex; align-items: center; padding: 0 22px; gap: 14px; font-size: 22px; color: var(--text); box-sizing: border-box; }
+  .bar .title { font-weight: 500; letter-spacing: -0.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar .ico { flex: none; }
+  .chip { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 9px; background: rgba(123,108,255,0.16); color: var(--accentSoft); font-weight: 500; font-size: 20px; }
+  .ico { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .tabs { display: flex; gap: 6px; align-items: center; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 10px; color: var(--muted); font-size: 22px; }
+  .tab.on { background: rgba(255,255,255,0.08); color: var(--text); }
+
+  /* Chat */
+  #chat { position: absolute; left: 24px; right: 24px; top: 86px; bottom: 206px; display: flex; flex-direction: column; gap: 20px; font-size: 22px; line-height: 1.35; color: var(--text); }
+  .msg { opacity: 0; transform: translateY(14px); }
+  .user { align-self: flex-end; max-width: 520px; background: rgba(255,255,255,0.07); border-radius: 16px; padding: 14px 18px; }
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step { display: flex; align-items: center; gap: 12px; color: var(--muted); }
+  .step .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); flex: none; }
+  .step.live { color: var(--text); }
+  .step.live .dot { background: var(--accentSoft); box-shadow: 0 0 0 6px rgba(123,108,255,0.18); }
+  .result { display: flex; gap: 12px; align-items: flex-start; }
+  .result img { width: 30px; height: 30px; margin-top: 1px; }
+
+  /* Composer */
+  #composer { position: absolute; left: 24px; right: 24px; bottom: 24px; height: 160px; border-radius: 22px; background: var(--raised); border: 1px solid var(--line); box-sizing: border-box; padding: 20px 22px; font-size: 22px; line-height: 1.35; }
+  #promptText { min-height: 58px; color: var(--faint); white-space: pre-wrap; }
+  #composerRow { position: absolute; left: 22px; right: 22px; bottom: 16px; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 20px; }
+  .envChip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 9px; background: rgba(123,108,255,0.16); color: var(--accentSoft); font-weight: 500; }
+  .send { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .send.armed { background: var(--text); color: #111; }
+
+  /* Home: the new-session composer is the hero before the session view exists */
+  #home { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; }
+  #homeMark { width: 72px; height: 72px; }
+  #homeComposer { position: relative; width: 1180px; height: 300px; border-radius: 30px; background: var(--raised); border: 1px solid var(--lineStrong); box-sizing: border-box; padding: 30px 34px; font-size: 40px; line-height: 1.35; letter-spacing: -0.01em; box-shadow: 0 30px 90px rgba(0,0,0,0.45); }
+  #homePrompt { color: var(--text); white-space: pre-wrap; }
+  #homePrompt.placeholder { color: var(--faint); }
+  #homeRow { position: absolute; left: 30px; right: 30px; bottom: 24px; display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 24px; }
+  #homeRow .ico { width: 28px; height: 28px; }
+  #homeRow .envChip { height: 46px; padding: 0 16px; border-radius: 12px; }
+  #homeRow .send { width: 58px; height: 58px; }
+  #homeRow .send .ico { width: 30px; height: 30px; }
+
+  /* Editor */
+  #editor { position: absolute; left: 20px; right: 20px; top: 84px; border-radius: 14px; background: #121215; border: 1px solid var(--line); box-sizing: border-box; overflow: hidden; }
+  #editorHead { height: 56px; display: flex; align-items: center; padding: 0 20px; gap: 10px; font-size: 22px; color: var(--muted); border-bottom: 1px solid var(--line); }
+  #editorHead b { color: var(--text); font-weight: 500; }
+  #code { padding: 22px 0; font-family: var(--mono); font-size: 25px; line-height: 38px; color: #d9d9de; font-variant-ligatures: none; }
+  .ln { display: flex; height: 38px; white-space: pre; }
+  .ln .n { width: 92px; text-align: right; padding-right: 30px; color: rgba(255,255,255,0.22); flex: none; }
+  .kw { color: #ff7ab2; } .fn { color: #7fd6ff; } .en { color: #c8a5ff; } .num { color: #ffd479; }
+  .ccaret { display: inline-block; width: 13px; height: 29px; background: #d9d9de; vertical-align: -5px; }
+  #buildBar { height: 68px; overflow: hidden; box-sizing: border-box; border-top: 1px solid var(--line); display: flex; align-items: center; padding: 0 20px; gap: 14px; font-family: var(--mono); font-size: 24px; color: var(--muted); background: #121215; }
+  #buildBar .ok { margin-left: auto; color: var(--green); }
+
+  /* Computer pane: Mac desktop with Simulator */
+  #computer { position: absolute; left: 20px; right: 20px; top: 84px; bottom: 20px; border-radius: 14px; overflow: hidden; background: radial-gradient(900px 600px at 30% 0%, #2a2340 0%, #14131c 55%, #0c0c10 100%); border: 1px solid var(--line); box-sizing: border-box; }
+  #menubar { position: absolute; left: 0; right: 0; top: 0; height: 34px; background: rgba(0,0,0,0.35); display: flex; align-items: center; gap: 22px; padding: 0 18px; font-size: 18px; color: rgba(255,255,255,0.8); }
+  #menubar b { font-weight: 600; }
+  #simTitle { position: absolute; left: 50%; transform: translateX(-50%); top: 88px; height: 44px; padding: 0 18px; border-radius: 12px; background: rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 18px; color: rgba(255,255,255,0.85); }
+  #simTitle .lights { display: flex; gap: 7px; } #simTitle .lights i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  #phone { position: absolute; left: 50%; top: 50%; width: 1052px; height: 508px; transform: translate(-50%, -46%); border-radius: 76px; background: #0b0b0d; box-shadow: 0 0 0 2px #2a2a2e, 0 0 0 4px #0b0b0d, 0 50px 120px rgba(0,0,0,0.7); }
+  #screen { position: absolute; left: 22px; top: 22px; width: 1008px; height: 464px; border-radius: 56px; overflow: hidden; background: #000; }
+  #screen img { position: absolute; left: 50%; top: 50%; width: 100%; height: auto; transform: translate(-50%, -50%); }
+  #island { position: absolute; left: 36px; top: 50%; width: 16px; height: 96px; margin-top: -48px; border-radius: 10px; background: #000; z-index: 2; box-shadow: 0 0 0 1px rgba(255,255,255,0.05); }
+
+  /* Cursor */
+  #cursor { position: absolute; width: 26px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+
+  /* End card */
+  #end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; }
+  #endLogo { width: 620px; }
+  #cta { font-size: 46px; font-weight: 500; letter-spacing: -0.02em; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="stage">
+    <div id="win">
+      <div id="left">
+        <div class="bar">
+          <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          <span class="title" id="sessionTitle"></span>
+          <span class="chip"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg><span id="chipText"></span></span>
+        </div>
+        <div id="chat">
+          <div class="msg user" id="mUser"></div>
+          <div class="msg" id="mPlan"></div>
+          <div class="msg steps" id="mSteps"></div>
+          <div class="msg result" id="mResult"><img id="resultAvatar" alt="" /><span id="resultText"></span></div>
+        </div>
+        <div id="composer">
+          <div id="promptText"></div>
+          <div id="composerRow">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="envChip"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg><span class="envText"></span></span>
+            <span class="send"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div id="home">
+        <img id="homeMark" alt="" />
+        <div id="homeComposer">
+          <div id="homePrompt" class="placeholder"></div>
+          <div id="homeRow">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="envChip"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg><span class="envText"></span></span>
+            <span class="send" id="homeSend"><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div id="right">
+        <div class="bar">
+          <div class="tabs">
+            <span class="tab" id="tabProgress"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Progress</span>
+            <span class="tab" id="tabChanges"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Changes</span>
+            <span class="tab" id="tabComputer"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Computer</span>
+          </div>
+        </div>
+        <div id="editor" class="hidden">
+          <div id="editorHead"><svg class="ico" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span>Sources /</span><b id="fileName"></b></div>
+          <div id="code"></div>
+          <div id="buildBar"><span id="buildCmd">xcodebuild</span><span class="ok" id="buildOk"></span></div>
+        </div>
+        <div id="computer" class="hidden">
+          <div id="menubar"><span>&#63743;</span><b>Simulator</b><span>File</span><span>Edit</span><span>Device</span><span>I/O</span><span>Features</span><span>Debug</span><span>Window</span><span>Help</span></div>
+          <div id="simTitle"><span class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span>iPhone 17</span><span style="opacity:.6">iOS 26.5</span></div>
+          <div id="phone"><div id="island"></div><div id="screen"><img id="footage" alt="" /></div></div>
+        </div>
+      </div>
+    </div>
+    <svg id="cursor" viewBox="0 0 26 32" class="hidden"><path d="M2 2 L2 26 L8.5 20 L13 30 L17.5 28 L13 18.5 L22 18.5 Z" fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  </div>
+  <div id="label"><span id="labelText"></span><span class="caret"></span></div>
+  <div id="morph" class="hidden"></div>
+  <div id="opening">
+    <img id="openLogo" alt="Devin" />
+    <div id="headline"><span class="ghost" id="headGhost"></span><span class="typed"><span id="headTyped"></span><span class="caret" id="headCaret"></span></span></div>
+  </div>
+  <div id="end" class="hidden"><img id="endLogo" alt="Devin" /><div id="cta"></div></div>
+</div>
+<script type="module">
+import { BRAND, MEDIA, COPY, CODE_LINES, T, CAMERA } from './config.js';
+
+const root = document.documentElement;
+root.style.setProperty('--field', BRAND.field);
+root.style.setProperty('--panel', BRAND.panel);
+root.style.setProperty('--raised', BRAND.panelRaised);
+root.style.setProperty('--text', BRAND.text);
+root.style.setProperty('--muted', BRAND.textMuted);
+root.style.setProperty('--faint', BRAND.textFaint);
+root.style.setProperty('--accentSoft', BRAND.accentSoft);
+root.style.setProperty('--green', BRAND.green);
+root.style.setProperty('--line', BRAND.line);
+root.style.setProperty('--lineStrong', BRAND.lineStrong);
+root.style.setProperty('--sans', BRAND.fontSans);
+root.style.setProperty('--mono', BRAND.fontMono);
+
+const $ = (id) => document.getElementById(id);
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const lerp = (a, b, x) => a + (b - a) * x;
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+// progress 0..1 across a [start, end] window
+const prog = (t, w, ease = easeInOut) => ease(clamp01((t - w[0]) / (w[1] - w[0])));
+const blink = (t, period = 1.0) => ((t % period) < period * 0.55 ? 1 : 0);
+
+// Static copy
+$('openLogo').src = MEDIA.lockup;
+$('endLogo').src = MEDIA.lockup;
+$('resultAvatar').src = MEDIA.avatar;
+$('headGhost').textContent = COPY.headline;
+$('sessionTitle').textContent = COPY.sessionTitle;
+$('chipText').textContent = COPY.environment;
+for (const el of document.querySelectorAll('.envText')) el.textContent = COPY.environment;
+$('homeMark').src = MEDIA.avatar;
+$('promptText').textContent = COPY.composerPlaceholder;
+$('fileName').textContent = COPY.buildFile;
+$('buildOk').textContent = COPY.buildResult;
+$('cta').textContent = COPY.cta;
+$('mUser').textContent = COPY.prompt;
+$('mPlan').textContent = COPY.devinPlan;
+$('resultText').textContent = COPY.result;
+const stepsEl = $('mSteps');
+for (const s of COPY.steps) {
+  const d = document.createElement('div');
+  d.className = 'step';
+  d.innerHTML = '<span class="dot"></span><span></span>';
+  d.lastChild.textContent = s.text;
+  stepsEl.appendChild(d);
+}
+const codeEl = $('code');
+const codeLineEls = CODE_LINES.map((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'ln';
+  const n = document.createElement('span'); n.className = 'n'; n.textContent = String(106 + i);
+  const body = document.createElement('span'); body.className = 'b';
+  d.appendChild(n); d.appendChild(body);
+  codeEl.appendChild(d);
+  return body;
+});
+const codeTotalChars = CODE_LINES.reduce((a, l) => a + Math.max(1, l.t.reduce((b, tok) => b + tok.s.length, 0)), 0);
+
+function renderCode(chars) {
+  let left = chars;
+  codeLineEls.forEach((body, i) => {
+    body.innerHTML = '';
+    const toks = CODE_LINES[i].t;
+    const lineLen = Math.max(1, toks.reduce((b, tok) => b + tok.s.length, 0));
+    body.parentElement.style.display = left <= 0 ? 'none' : 'flex';
+    if (left <= 0) return;
+    let budget = Math.min(left, lineLen);
+    const partial = budget < lineLen;
+    for (const tok of toks) {
+      if (budget <= 0) break;
+      const s = tok.s.slice(0, budget);
+      budget -= s.length;
+      const sp = document.createElement('span'); sp.className = tok.k; sp.textContent = s; body.appendChild(sp);
+    }
+    if (partial || (left === lineLen && chars < codeTotalChars)) {
+      const c = document.createElement('span'); c.className = 'ccaret'; body.appendChild(c);
+    }
+    left -= lineLen;
+  });
+}
+
+function camera(t) {
+  if (t <= CAMERA[0][0]) return CAMERA[0].slice(1);
+  for (let i = 0; i < CAMERA.length - 1; i++) {
+    const a = CAMERA[i], b = CAMERA[i + 1];
+    if (t >= a[0] && t <= b[0]) {
+      const x = easeInOut(clamp01((t - a[0]) / (b[0] - a[0] || 1)));
+      return [lerp(a[1], b[1], x), lerp(a[2], b[2], x), lerp(a[3], b[3], x)];
+    }
+  }
+  return CAMERA[CAMERA.length - 1].slice(1);
+}
+
+// Stage-space positions used by the cursor (home composer: 1180x300 centered in the window, below the mark)
+const HOME_C = { x: 80 + (1760 - 1180) / 2, y: 100 + (940 - (72 + 44 + 300)) / 2 + 72 + 44 };
+const SEND_POS = [HOME_C.x + 1180 - 30 - 29, HOME_C.y + 300 - 24 - 29];
+const PROMPT_END_POS = [HOME_C.x + 34 + 600, HOME_C.y + 30 + 40 + 64];
+
+const footageImg = $('footage');
+const footageFrameFile = (i) => MEDIA.footageFramesDir + '/' + MEDIA.footageFramePattern.replace('%05d', String(i + 1).padStart(5, '0'));
+
+function setMsg(el, on, t0, t) {
+  const x = on ? prog(t, [t0, t0 + 0.45], easeOut) : 0;
+  el.style.opacity = x;
+  el.style.transform = `translateY(${lerp(14, 0, x)}px)`;
+}
+
+window.seek = async function seek(t) {
+  const fps = 30;
+  // Camera
+  let [cx, cy, s] = camera(t);
+  // While code types, the camera follows the growing editor panel (which starts at content height).
+  {
+    const chars = Math.floor(prog(t, T.codeType, (x) => x) * codeTotalChars);
+    let left = chars, lines = 0;
+    for (const l of CODE_LINES) { if (left <= 0) break; lines++; left -= Math.max(1, l.t.reduce((b, tok) => b + tok.s.length, 0)); }
+    const h = 56 + 44 + lines * 38;
+    const target = Math.min(684, Math.max(414, 184 + h / 2));
+    const w = prog(t, [T.codeType[0] - 0.3, T.codeType[0] + 0.3], easeInOut) * (1 - prog(t, [T.codeType[1] - 0.1, T.codeType[1] + 0.4], easeInOut));
+    cy = lerp(cy, target, w);
+  }
+  $('stage').style.transform = `translate(${960 - cx * s}px, ${540 - cy * s}px) scale(${s})`;
+
+  // Opening
+  const opening = $('opening');
+  const openOut = prog(t, T.openingOut, easeInOut);
+  opening.style.opacity = t < T.openingOut[1] ? 1 - openOut : 0;
+  $('openLogo').style.opacity = prog(t, T.logoIn, easeOut);
+  $('openLogo').style.transform = `translateY(${lerp(18, 0, prog(t, T.logoIn, easeOut))}px)`;
+  const headChars = Math.floor(prog(t, T.headlineType, (x) => x) * COPY.headline.length);
+  $('headTyped').textContent = COPY.headline.slice(0, headChars);
+  const typingDone = t >= T.headlineType[1];
+  $('headCaret').style.opacity = t < T.headlineType[0] ? blink(t, 0.9) : typingDone ? blink(t - T.headlineType[1], 0.9) : 1;
+  // Headline caret is hidden once the morph takes over (the morph IS the caret from here on)
+  if (t >= T.caretToLine[0]) $('headCaret').style.opacity = 0;
+  opening.style.transform = `translateY(${lerp(0, -24, openOut)}px)`;
+
+  // Morph: caret -> baseline -> window ; and window -> baseline -> gone at the end
+  const morph = $('morph');
+  const win = $('win');
+  const WIN = { x: 80, y: 100, w: 1760, h: 940, r: 18 };
+  const caretRect = (() => {
+    const ghost = $('headGhost').getBoundingClientRect();
+    const rootR = $('root').getBoundingClientRect();
+    return { x: ghost.right - rootR.left + 8, y: ghost.top - rootR.top + 10, w: 44, h: 90 };
+  })();
+  let morphOn = false, mx, my, mw, mh, mr;
+  if (t >= T.caretToLine[0] && t < T.lineToWindow[1]) {
+    morphOn = true;
+    const a = prog(t, T.caretToLine, easeInOut);
+    const b = prog(t, T.lineToWindow, easeInOut);
+    // caret -> centered 3px line of 44px width, at window center height
+    const lineY = WIN.y + WIN.h / 2;
+    const x1 = lerp(caretRect.x, 960 - 22, a), y1 = lerp(caretRect.y, lineY - 1.5, a), w1 = 44, h1 = lerp(caretRect.h, 3, a);
+    // line -> window
+    const w2 = lerp(w1, WIN.w, easeOutExpo(clamp01(b * 1.25)));
+    const h2 = lerp(3, WIN.h, easeInOut(clamp01((b - 0.3) / 0.7)));
+    mx = lerp(x1, WIN.x, easeOutExpo(clamp01(b * 1.25))); mw = w2;
+    my = lineY - h2 / 2; mh = h2; mr = lerp(2, WIN.r, b);
+    if (b === 0) { mx = x1; my = y1; mw = w1; mh = h1; mr = 2; }
+    morph.style.background = b > 0.5 ? BRAND.panel : BRAND.text;
+    morph.style.borderColor = b > 0.5 ? BRAND.lineStrong : 'transparent';
+  } else if (t >= T.windowToLine[0] && t < T.lineOut[1]) {
+    morphOn = true;
+    const a = prog(t, T.windowToLine, easeInOut);
+    const b = prog(t, T.lineOut, easeInOut);
+    const lineY = WIN.y + WIN.h / 2;
+    const h = lerp(WIN.h, 3, easeInOut(clamp01(a / 0.7)));
+    const w = lerp(WIN.w, 44, easeInOut(clamp01((a - 0.25) / 0.75)));
+    mx = 960 - w / 2; my = lineY - h / 2; mw = w; mh = h; mr = lerp(WIN.r, 2, a);
+    morph.style.background = a < 0.5 ? BRAND.panel : BRAND.text;
+    morph.style.borderColor = a < 0.5 ? BRAND.lineStrong : 'transparent';
+    morph.style.opacity = 1 - b;
+  }
+  if (morphOn) {
+    morph.classList.remove('hidden');
+    morph.style.left = mx + 'px'; morph.style.top = my + 'px'; morph.style.width = mw + 'px'; morph.style.height = mh + 'px'; morph.style.borderRadius = mr + 'px';
+    if (!(t >= T.windowToLine[0])) morph.style.opacity = 1;
+  } else { morph.classList.add('hidden'); morph.style.opacity = 0; }
+
+  // Window visibility
+  const uiIn = prog(t, T.uiIn, easeOut);
+  const winVisible = t >= T.uiIn[0] && t < T.windowToLine[0];
+  win.style.opacity = winVisible ? uiIn : 0;
+  const contentOut = 1 - prog(t, [T.windowToLine[0] - 0.3, T.windowToLine[0]], easeInOut);
+  const sessionIn = prog(t, [T.sendClick + 0.2, T.sendClick + 0.65], easeOut);
+  const leftIn = prog(t, [T.computerIn[0] + 0.2, T.computerIn[0] + 0.7], easeOut);
+  $('left').style.opacity = Math.min(contentOut, leftIn); $('right').style.opacity = Math.min(contentOut, sessionIn);
+  const home = $('home');
+  const homeOut = prog(t, [T.sendClick + 0.05, T.sendClick + 0.4], easeInOut);
+  home.style.opacity = t < T.sendClick + 0.4 ? 1 - homeOut : 0;
+  home.style.transform = `scale(${lerp(1, 0.94, homeOut)})`;
+
+  // Section label
+  const label = $('label');
+  let lab = null;
+  for (const l of COPY.sectionLabels) if (t >= l.at) lab = l;
+  if (lab && t < T.windowToLine[0] + 0.2) {
+    const x = clamp01((t - lab.at) / 0.55);
+    const n = Math.floor(x * lab.text.length);
+    $('labelText').textContent = lab.text.slice(0, n);
+    // Captions live outside the product: hide them while the camera is pushed into the UI.
+    const zoomFade = clamp01((1.28 - s) / 0.1);
+    label.style.opacity = Math.min(1, uiIn, zoomFade, 1 - prog(t, [T.windowToLine[0], T.windowToLine[0] + 0.2], easeOut));
+    label.querySelector('.caret').style.opacity = x >= 1 ? blink(t - lab.at, 0.9) : 1;
+  } else label.style.opacity = 0;
+
+  // Home composer + prompt
+  const promptEl = $('homePrompt');
+  const pChars = Math.floor(prog(t, T.promptType, (x) => x) * COPY.prompt.length);
+  const sent = t >= T.sendClick;
+  if (sent || pChars === 0) {
+    promptEl.textContent = COPY.composerPlaceholder;
+    promptEl.classList.add('placeholder');
+  } else {
+    promptEl.textContent = COPY.prompt.slice(0, pChars);
+    promptEl.classList.remove('placeholder');
+    const c = document.createElement('span'); c.className = 'caret'; c.style.width = '2px'; c.style.height = '1.1em'; c.style.verticalAlign = '-0.2em'; c.style.marginLeft = '2px';
+    c.style.opacity = pChars >= COPY.prompt.length ? blink(t - T.promptType[1], 0.9) : 1;
+    promptEl.appendChild(c);
+  }
+  $('homeSend').classList.toggle('armed', pChars > 0 && !sent);
+  const clickScale = t >= T.sendClick && t < T.sendClick + 0.25 ? lerp(0.86, 1, easeOut(clamp01((t - T.sendClick) / 0.25))) : 1;
+  $('homeSend').style.transform = `scale(${clickScale})`;
+
+  // Cursor
+  const cursor = $('cursor');
+  if (t >= T.cursorToSend[0] - 0.4 && t < T.sendClick + 0.5) {
+    cursor.classList.remove('hidden');
+    const x = prog(t, T.cursorToSend, easeInOut);
+    const px = lerp(PROMPT_END_POS[0], SEND_POS[0], x), py = lerp(PROMPT_END_POS[1], SEND_POS[1], x);
+    cursor.style.left = px + 'px'; cursor.style.top = py + 'px';
+    cursor.style.opacity = Math.min(prog(t, [T.cursorToSend[0] - 0.4, T.cursorToSend[0]], easeOut), 1 - prog(t, [T.sendClick + 0.2, T.sendClick + 0.5], easeOut));
+  } else { cursor.classList.add('hidden'); cursor.style.opacity = 0; }
+
+  // Chat timeline
+  setMsg($('mUser'), sent, T.sendClick + 0.05, t);
+  setMsg($('mPlan'), t >= T.planIn, T.planIn, t);
+  const stepEls = stepsEl.children;
+  let anyStep = false, lastVisible = -1;
+  COPY.steps.forEach((s, i) => {
+    const on = t >= s.at;
+    if (on) { anyStep = true; lastVisible = i; }
+    const x = on ? prog(t, [s.at, s.at + 0.45], easeOut) : 0;
+    stepEls[i].style.opacity = x;
+    stepEls[i].style.transform = `translateY(${lerp(10, 0, x)}px)`;
+  });
+  Array.from(stepEls).forEach((el, i) => el.classList.toggle('live', i === lastVisible && t < T.resultIn));
+  stepsEl.style.opacity = anyStep ? 1 : 0; stepsEl.style.transform = 'none';
+  setMsg($('mResult'), t >= T.resultIn, T.resultIn, t);
+
+  // Right pane tabs and content
+  const showEditor = t >= T.editorIn[0] && t < T.computerIn[1];
+  const showComputer = t >= T.computerIn[0];
+  $('tabProgress').classList.toggle('on', !showEditor && !showComputer);
+  $('tabChanges').classList.toggle('on', showEditor && !showComputer);
+  $('tabComputer').classList.toggle('on', showComputer);
+  const ed = $('editor');
+  ed.classList.toggle('hidden', !showEditor);
+  ed.style.opacity = showEditor ? Math.min(prog(t, T.editorIn, easeOut), 1 - prog(t, T.computerIn, easeInOut)) : 0;
+  ed.style.transform = `translateY(${lerp(16, 0, prog(t, T.editorIn, easeOut))}px)`;
+  const codeChars = Math.floor(prog(t, T.codeType, (x) => x) * codeTotalChars);
+  renderCode(codeChars);
+  const buildIn = t >= T.buildResultIn ? prog(t, [T.buildResultIn, T.buildResultIn + 0.35], easeOut) : 0;
+  $('buildBar').style.opacity = buildIn;
+  $('buildBar').style.height = `${lerp(0, 68, buildIn)}px`;
+
+  const comp = $('computer');
+  comp.classList.toggle('hidden', !showComputer);
+  comp.style.opacity = showComputer ? prog(t, T.computerIn, easeOut) : 0;
+  comp.style.transform = `translateY(${lerp(16, 0, prog(t, T.computerIn, easeOut))}px)`;
+  if (showComputer) {
+    const rel = Math.max(0, t - T.footageStart);
+    const idx = Math.min(MEDIA.footageFrameCount - 1, Math.floor(rel * fps));
+    const src = footageFrameFile(idx);
+    if (!footageImg.src.endsWith(src.replace('../', ''))) {
+      footageImg.src = src;
+      await new Promise((res) => { if (footageImg.complete && footageImg.naturalWidth) res(); footageImg.onload = res; footageImg.onerror = res; });
+    }
+  }
+
+  // End card
+  const end = $('end');
+  const endIn = prog(t, T.endIn, easeOut);
+  end.classList.toggle('hidden', t < T.endIn[0]);
+  end.style.opacity = endIn;
+  $('endLogo').style.transform = `translateY(${lerp(20, 0, endIn)}px)`;
+  $('cta').style.opacity = prog(t, [T.endIn[0] + 0.25, T.endIn[1] + 0.2], easeOut);
+
+  await document.fonts.ready;
+  return true;
+};
+</script>
+</body>
+</html>

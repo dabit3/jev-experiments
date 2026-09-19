@@ -1,0 +1,12 @@
+{
+  "name": "launch-video-terminal-first",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "preview": "node render.mjs --skip-footage --preview"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}
