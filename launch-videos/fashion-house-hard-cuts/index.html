@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud: fashion-house hard cuts</title>
+<style>
+  :root {
+    --paper: #F3F1EC;
+    --ink: #141414;
+    --ink-soft: #6F6F6F;
+    --ink-faint: #A3A3A3;
+    --panel: #FFFFFF;
+    --hairline: #E7E5E0;
+    --hover: #F1F1F1;
+    --bubble: #F2F2F2;
+    --accent: #2F6FE4;
+    --accent-soft: #E6EEFC;
+    --green: #1E9E5A;
+    --orange: #E8842E;
+    --dark: #0C0C0C;
+    --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", Menlo, monospace;
+  }
+  html, body { margin: 0; padding: 0; background: #000; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: var(--font); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  .scene { position: absolute; inset: 0; display: none; }
+  .scene.on { display: block; }
+  .cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+  .paper { background: var(--paper); }
+  img { display: block; }
+  .abs { position: absolute; }
+  .row { display: flex; align-items: center; }
+
+  /* ---------- headline ---------- */
+  #s-title .mark { position: absolute; left: 50%; top: 250px; width: 170px; height: 170px; margin-left: -85px; }
+  #s-title .headline { position: absolute; left: 0; right: 0; top: 448px; text-align: center; font-size: 176px; font-weight: 500; letter-spacing: -0.048em; line-height: 1; white-space: nowrap; }
+  #s-title .word { display: inline-block; margin: 0 0.11em; will-change: transform, opacity; }
+
+  /* ---------- shared Devin composer ---------- */
+  .composer { position: absolute; background: var(--panel); border-radius: 26px; box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 14px 40px rgba(20,20,20,0.10), 0 0 0 1px rgba(0,0,0,0.05); }
+  .composer .text { position: absolute; left: 34px; top: 30px; right: 34px; font-size: 38px; line-height: 1.3; letter-spacing: -0.012em; color: var(--ink); white-space: pre-wrap; }
+  .composer .text .caret { display: inline-block; width: 2px; height: 1.05em; background: var(--ink); vertical-align: -0.16em; margin-left: 2px; }
+  .composer .placeholder { color: var(--ink-faint); }
+  .composer .bar { position: absolute; left: 30px; right: 30px; bottom: 24px; height: 60px; display: flex; align-items: center; }
+  .composer .icon { width: 30px; height: 30px; color: #7A7A7A; margin-right: 22px; }
+  .composer .chip { display: flex; align-items: center; height: 46px; padding: 0 18px 0 14px; border-radius: 23px; background: var(--hover); font-size: 24px; color: #4B4B4B; letter-spacing: -0.01em; }
+  .composer .chip .apple-svg { width: 24px; height: 24px; margin-right: 10px; position: relative; top: -1px; color: #333; }
+  .composer .spacer { flex: 1; }
+  .composer .send { display: flex; height: 60px; border-radius: 30px; background: #262626; color: #fff; overflow: hidden; will-change: transform; }
+  .composer .send .arrow, .composer .send .chev { width: 62px; display: flex; align-items: center; justify-content: center; }
+  .composer .send .chev { width: 52px; border-left: 1px solid rgba(255,255,255,0.18); }
+  .composer .send svg { width: 26px; height: 26px; }
+
+  /* ---------- selector ---------- */
+  #s-select .composer { left: 320px; top: 300px; width: 1280px; height: 250px; }
+  .menu { position: absolute; background: var(--panel); border-radius: 22px; box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 18px 50px rgba(20,20,20,0.14), 0 0 0 1px rgba(0,0,0,0.06); padding: 18px 12px 12px; width: 560px; transform-origin: 100% 0; will-change: transform, opacity; }
+  .menu .head { font-size: 24px; color: var(--ink-soft); padding: 0 20px 16px; letter-spacing: -0.005em; }
+  .menu .item { position: relative; display: flex; align-items: center; height: 76px; border-radius: 16px; padding: 0 22px; font-size: 32px; letter-spacing: -0.015em; will-change: transform, opacity; }
+  .menu .item .ic { width: 38px; height: 38px; margin-right: 22px; display: flex; align-items: center; justify-content: center; }
+  .menu .item .ic .apple-svg { width: 34px; height: 34px; position: relative; top: -2px; color: #1C1C1C; }
+  .menu .item .new { margin-left: 16px; font-size: 22px; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; }
+  .menu .item .check { position: absolute; right: 22px; top: 50%; width: 30px; height: 30px; margin-top: -15px; color: var(--ink-soft); }
+  .menu .item.sel { background: var(--hover); }
+  .pointer { position: absolute; width: 34px; height: 44px; will-change: transform; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
+
+  /* ---------- composer scene ---------- */
+  #s-compose .lockup { position: absolute; left: 340px; top: 232px; width: 330px; height: 113px; will-change: transform, opacity; }
+  #s-compose .lockup img { position: absolute; left: -50px; top: -33px; width: 418px; }
+  #s-compose .toggle { position: absolute; right: 360px; top: 250px; height: 66px; border-radius: 33px; background: var(--hover); display: flex; padding: 4px; will-change: transform, opacity; }
+  #s-compose .toggle div { height: 58px; padding: 0 30px; border-radius: 29px; display: flex; align-items: center; font-size: 27px; color: var(--ink-soft); letter-spacing: -0.01em; }
+  #s-compose .toggle .on { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.10); }
+  #s-compose .composer { left: 340px; top: 362px; width: 1240px; height: 336px; }
+  #s-compose .composer .textwrap { position: absolute; left: 0; right: 0; top: 0; height: 236px; overflow: hidden; }
+
+  /* ---------- Devin session shell ---------- */
+  .shell { position: absolute; left: 40px; top: 40px; width: 1840px; height: 1000px; background: var(--panel); border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(20,20,20,0.16), 0 0 0 1px rgba(0,0,0,0.05); }
+  .shell .chat { position: absolute; left: 0; top: 0; width: 700px; height: 1000px; border-right: 1px solid var(--hairline); }
+  .shell .pane { position: absolute; left: 701px; top: 0; right: 0; height: 1000px; }
+  .shell .hdr { position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; padding: 0 22px; font-size: 22px; letter-spacing: -0.01em; }
+  .shell .hdr .ico { width: 24px; height: 24px; color: #6B6B6B; margin-right: 22px; }
+  .shell .hdr .title { font-weight: 500; margin-right: 18px; }
+  .shell .hdr .tag { display: flex; align-items: center; height: 34px; padding: 0 12px 0 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: 20px; }
+  .shell .hdr .tag .apple-svg { width: 20px; height: 20px; margin-right: 8px; position: relative; top: -1px; }
+  .shell .tabs { position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; padding: 0 22px; }
+  .shell .tabs .tab { display: flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; font-size: 21px; color: #5F5F5F; margin-right: 10px; letter-spacing: -0.01em; }
+  .shell .tabs .tab svg { width: 20px; height: 20px; margin-right: 9px; }
+  .shell .tabs .tab.on { background: #EFEFEF; color: var(--ink); }
+  .shell .tabs .tab.file { font-family: var(--mono); font-size: 19px; }
+  .shell .msgs { position: absolute; left: 28px; right: 28px; top: 84px; font-size: 26px; line-height: 1.42; letter-spacing: -0.008em; }
+  .shell .user { margin-left: 90px; background: var(--bubble); border-radius: 18px; padding: 18px 22px; color: #222; }
+  .shell .devin { margin-top: 28px; color: #222; }
+  .shell .steps { margin-top: 26px; }
+  .shell .step { display: flex; align-items: center; height: 50px; color: #3A3A3A; will-change: transform, opacity; }
+  .shell .step svg { width: 24px; height: 24px; color: var(--green); margin-right: 14px; flex: none; }
+  .shell .status { position: absolute; left: 28px; bottom: 176px; display: flex; align-items: center; font-size: 22px; color: #5A5A5A; }
+  .shell .status .dot { width: 12px; height: 12px; border-radius: 6px; background: var(--orange); margin-right: 14px; }
+  .shell .mini { position: absolute; left: 22px; right: 22px; bottom: 22px; height: 134px; border-radius: 22px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 6px 20px rgba(20,20,20,0.08), 0 0 0 1px rgba(0,0,0,0.06); }
+  .shell .mini .ph { position: absolute; left: 24px; top: 22px; font-size: 22px; color: var(--ink-faint); letter-spacing: -0.01em; }
+  .shell .mini .bar { position: absolute; left: 22px; right: 20px; bottom: 18px; height: 46px; display: flex; align-items: center; }
+  .shell .mini .icon { width: 24px; height: 24px; color: #7A7A7A; margin-right: 18px; }
+  .shell .mini .send { width: 46px; height: 46px; border-radius: 23px; background: #262626; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .shell .mini .send svg { width: 22px; height: 22px; }
+  .shell .mini .spacer { flex: 1; }
+
+  /* computer pane */
+  .desk { position: absolute; left: 16px; right: 16px; top: 72px; bottom: 76px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #F0EFEB 0%, #E4E3DE 100%); box-shadow: 0 0 0 1px rgba(0,0,0,0.05) inset; }
+  .live { position: absolute; left: 16px; right: 16px; bottom: 16px; height: 48px; display: flex; align-items: center; }
+  .live .pill { display: flex; align-items: center; height: 42px; padding: 0 18px 0 14px; border-radius: 21px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); font-size: 21px; color: #333; }
+  .live .pill .rd { width: 12px; height: 12px; border-radius: 6px; background: #E5484D; margin-right: 10px; }
+  .live .track { flex: 1; height: 6px; border-radius: 3px; margin: 0 22px; background: #E3E3E3; position: relative; overflow: hidden; }
+  .live .track div { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); }
+
+  /* Simulator window + phone */
+  .sim { position: absolute; will-change: transform, opacity; }
+  .sim .titlebar { position: absolute; left: 50%; top: 0; width: 364px; height: 44px; margin-left: -182px; border-radius: 14px; background: #1F1F21; box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+  .sim .titlebar .lights { position: absolute; left: 14px; top: 15px; display: flex; }
+  .sim .titlebar .lights i { display: block; width: 13px; height: 13px; border-radius: 7px; margin-right: 8px; }
+  .sim .titlebar .name { position: absolute; left: 82px; top: 6px; color: #fff; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+  .sim .titlebar .os { position: absolute; left: 82px; top: 25px; color: #A9A9AD; font-size: 11px; }
+  .sim .titlebar .btns { position: absolute; right: 12px; top: 8px; height: 28px; width: 92px; border-radius: 8px; background: #3A3A3D; }
+  .phone { position: absolute; left: 50%; top: 52px; width: 380px; height: 788px; margin-left: -190px; border-radius: 74px; background: #101012; box-shadow: 0 30px 60px rgba(0,0,0,0.35), 0 0 0 2px #3A3A3E inset; }
+  .phone .screen { position: absolute; left: 16px; top: 16px; width: 348px; height: 756px; border-radius: 58px; overflow: hidden; background: #000; }
+  .phone .screen img { position: absolute; left: 0; top: 0; width: 348px; height: 756px; }
+  .phone .island { position: absolute; left: 50%; top: 26px; width: 92px; height: 30px; margin-left: -46px; border-radius: 15px; background: #000; }
+  .phone .btn { position: absolute; background: #2A2A2E; border-radius: 2px; }
+
+  /* enlarged live crop */
+  .crop { position: absolute; border-radius: 22px; overflow: hidden; background: #0D0D0D; box-shadow: 0 30px 70px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.35); will-change: transform, opacity; }
+  .crop img { position: absolute; left: 0; top: 0; }
+
+  /* code pane */
+  .code { position: absolute; left: 16px; right: 16px; top: 72px; bottom: 16px; border-radius: 12px; background: #FBFBFA; box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset; overflow: hidden; }
+  .code pre { margin: 0; padding: 30px 34px; font-family: var(--mono); font-size: 24px; line-height: 1.6; color: #1F1F1F; letter-spacing: -0.01em; white-space: pre; }
+  .code pre { padding-left: 34px; }
+  .code .k { color: #AD3DA4; } .code .s { color: #C41A16; } .code .t { color: #3F6E74; } .code .n { color: #1C00CF; } .code .f { color: #326D74; } .code .c { color: #5D6C79; }
+  .code .cl { display: block; will-change: opacity, transform; }
+  .code .caret { display: inline-block; width: 2px; height: 1.1em; background: #1F1F1F; vertical-align: -0.2em; }
+
+  /* end card */
+  #s-end { background: var(--dark); }
+  #s-end .lockup { position: absolute; left: 50%; top: 366px; width: 760px; margin-left: -380px; will-change: transform, opacity; }
+  #s-end .url { position: absolute; left: 0; right: 0; top: 660px; text-align: center; color: #fff; font-size: 60px; letter-spacing: -0.03em; will-change: transform, opacity; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. headline on paper -->
+  <div class="scene paper" id="s-title">
+    <div class="cam">
+      <img class="mark" src="assets/mark-black.png" />
+      <div class="headline"><span class="word">macOS</span><span class="word">in</span><span class="word">Devin</span><span class="word">Cloud</span></div>
+    </div>
+  </div>
+
+  <!-- 2. environment selector detail -->
+  <div class="scene paper" id="s-select">
+    <div class="cam">
+      <div class="composer" id="sel-composer">
+        <div class="text placeholder">Ask Devin to build features, fix bugs, or work on your code</div>
+        <div class="bar">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4v16M16 4v16"/><circle cx="8" cy="10" r="2.4" fill="#fff"/><circle cx="16" cy="15" r="2.4" fill="#fff"/></svg>
+          <div class="chip"><span id="sel-chip-icon"></span><span id="sel-chip-text">Ubuntu</span></div>
+          <div class="spacer"></div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <div class="send"><div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div><div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></div></div>
+        </div>
+      </div>
+      <div class="menu" id="sel-menu">
+        <div class="head">Hosted</div>
+        <div class="item" id="mi-ubuntu"><div class="ic"><svg viewBox="0 0 40 40" width="38" height="38"><circle cx="20" cy="20" r="12" fill="none" stroke="#E95420" stroke-width="5.5"/><circle cx="32.5" cy="12.5" r="5" fill="#E95420" stroke="#fff" stroke-width="2"/><circle cx="32.5" cy="27.5" r="5" fill="#E95420" stroke="#fff" stroke-width="2"/><circle cx="7" cy="20" r="5" fill="#E95420" stroke="#fff" stroke-width="2"/></svg></div>Ubuntu<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div class="item" id="mi-macos"><div class="ic"><svg class="apple-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></div>macOS<span class="new">New</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="display:none"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div class="item" id="mi-windows"><div class="ic"><svg viewBox="0 0 40 40" width="34" height="34"><rect x="3" y="3" width="16" height="16" fill="#F25022"/><rect x="21" y="3" width="16" height="16" fill="#7FBA00"/><rect x="3" y="21" width="16" height="16" fill="#00A4EF"/><rect x="21" y="21" width="16" height="16" fill="#FFB900"/></svg></div>Windows</div>
+      </div>
+      <svg class="pointer" id="sel-pointer" viewBox="0 0 34 44"><path d="M3 2 L3 34 L11 26 L18 42 L25 39 L18 24 L29 24 Z" fill="#111" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <!-- 3. full composer -->
+  <div class="scene paper" id="s-compose">
+    <div class="cam">
+      <div class="lockup"><img src="assets/lockup-black.png" /></div>
+      <div class="toggle"><div class="on">Agent</div><div>Ask</div></div>
+      <div class="composer" id="cmp-composer">
+        <div class="textwrap"><div class="text" id="cmp-text"></div></div>
+        <div class="bar">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4v16M16 4v16"/><circle cx="8" cy="10" r="2.4" fill="#fff"/><circle cx="16" cy="15" r="2.4" fill="#fff"/></svg>
+          <div class="chip"><svg class="apple-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>macOS</div>
+          <div class="spacer"></div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <div class="send" id="cmp-send"><div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div><div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 + 5. Devin session shell (code pane, then computer pane) -->
+  <div class="scene paper" id="s-session">
+    <div class="cam">
+      <div class="shell" id="shell">
+        <div class="chat">
+          <div class="hdr">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+            <span class="title">Build Silverroom for iPhone</span>
+            <span class="tag"><svg class="apple-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>macOS</span>
+          </div>
+          <div class="msgs">
+            <div class="user" id="chat-user"></div>
+            <div class="devin" id="chat-devin"></div>
+            <div class="steps" id="chat-steps"></div>
+          </div>
+          <div class="status" id="chat-status"><div class="dot"></div><span></span></div>
+          <div class="mini">
+            <div class="ph">Ask Devin to build features, fix bugs, or work on your code</div>
+            <div class="bar">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4v16M16 4v16"/><circle cx="8" cy="10" r="2.4" fill="#fff"/><circle cx="16" cy="15" r="2.4" fill="#fff"/></svg>
+              <div class="spacer"></div>
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+              <div class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="tabs">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Progress</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Changes</div>
+            <div class="tab" id="tab-computer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Computer</div>
+            <div class="tab file" id="tab-file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>ImageEngine.swift</div>
+          </div>
+
+          <div class="code" id="code-pane">
+                        <pre id="code-pre"></pre>
+          </div>
+
+          <div class="desk" id="desk">
+            <div class="sim" id="sim">
+              <div class="titlebar">
+                <div class="lights"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></div>
+                <div class="name">iPhone 17 Pro</div>
+                <div class="os">iOS 26.5</div>
+                <div class="btns"></div>
+              </div>
+              <div class="phone">
+                <div class="btn" style="left:-3px;top:174px;width:3px;height:40px"></div>
+                <div class="btn" style="left:-3px;top:244px;width:3px;height:74px"></div>
+                <div class="btn" style="left:-3px;top:336px;width:3px;height:74px"></div>
+                <div class="btn" style="right:-3px;top:266px;width:3px;height:116px"></div>
+                <div class="screen"><img id="take-a" /></div>
+                <div class="island"></div>
+              </div>
+            </div>
+            <div class="crop" id="crop"><img id="take-b" /></div>
+          </div>
+          <div class="live" id="live">
+            <div class="pill"><div class="rd"></div>Live</div>
+            <div class="track"><div id="live-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. end card -->
+  <div class="scene" id="s-end">
+    <div class="cam">
+      <div class="lockup"><img src="assets/lockup-white.png" style="width:760px" /></div>
+      <div class="url">devin.ai</div>
+    </div>
+  </div>
+</div>
+
+<script src="composition.js"></script>
+</body>
+</html>

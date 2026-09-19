@@ -1,0 +1,13 @@
+{
+  "name": "fashion-house-hard-cuts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "macOS in Devin Cloud launch video, fashion-house hard cuts direction",
+  "scripts": {
+    "prepare-take": "./prepare.sh",
+    "render": "node render.js"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
