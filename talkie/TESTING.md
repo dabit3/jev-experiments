@@ -45,7 +45,10 @@ Verification used macOS ARM64 with Xcode 26.6 / Swift 6.3.3:
 - 19 deterministic unit tests and 8 opt-in live service tests passed, including all six route cases, arithmetic continuation, literal replacement and completion.
 - Native UI acceptance verified exact lowercase and single/curly-quoted TextEdit selection replacement; repeated clean Calculator runs reached 576 for 48 × 12.
 - Verified visible-control highlighting, screen explanation, real cited research/source navigation, imported-audio review and explicit execution, cancellation without late actions, rejected Delete preserving text, and opt-in history restoration/deletion.
-- Welcome layout is readable at minimum and maximized size. A final companion-overlap adjustment hides it when it would cover the main window.
+- Compact native acceptance verified quiet startup, menu-bar invocation, exact TextEdit typing and Dictate mode, cited replies/source navigation, Escape cancellation, missing-microphone notice, and both approval cancellation and an approved synthetic Delete without opening the full window.
+- Imported-audio acceptance verified native chooser keyboard focus after it rendered, file selection and cancellation without leaking text into the external app, compact transcript review, and explicit Send opening Calculator.
+- History and Settings open explicitly; closing them returns to quiet idle. Menu/application reopen uses the compact panel, and the optional idle companion preserves on/off choices across quit/relaunch.
+- The full history/settings window remains readable at minimum and maximized size; the companion hides when it would overlap that window.
 - Jev route fixture samples were approximately 73–173 ms in recent runs; these are observed samples, not a latency guarantee.
 - Live microphone capture, spoken dictation and audible output remain **unverified**: the test VM exposes no audio devices. Missing-device handling was verified.
 - Recordings and screenshots are linked in the PR evidence. Earlier runs exposed and drove fixes for repeated focus, quote delimiters, autocapitalization, and completion checks.
