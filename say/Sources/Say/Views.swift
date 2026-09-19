@@ -79,7 +79,6 @@ struct RootView: View {
       ConversationDetail(model: model)
     }
     .frame(minWidth: 760, minHeight: 500)
-    .onExitCommand { model.stop() }
     .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification))
     { _ in model.refreshPermissions() }
   }
@@ -103,19 +102,19 @@ struct ConversationSidebar: View {
 
   var body: some View {
     List(selection: selection) {
-      ForEach(conversations) { conversation in
-        Label(conversation.title, systemImage: "bubble.left")
-          .lineLimit(1)
-          .tag(conversation.id)
+      Section("Conversations") {
+        if conversations.isEmpty {
+          Text("No conversations yet").foregroundStyle(.secondary)
+        }
+        ForEach(conversations) { conversation in
+          Label(conversation.title, systemImage: "bubble.left")
+            .lineLimit(1)
+            .tag(conversation.id)
+        }
       }
     }
     .listStyle(.sidebar)
     .disabled(locked)
-    .overlay {
-      if conversations.isEmpty {
-        Text("No Conversations").foregroundStyle(.secondary)
-      }
-    }
     .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
     .toolbar {
       ToolbarItem {
@@ -149,14 +148,18 @@ struct ConversationDetail: View {
         NoticeBar(text: notice) { model.notice = nil }
           .padding(.horizontal, 20).padding(.bottom, 12)
       }
-      if let pending = model.pending {
-        ApprovalView(model: model, pending: pending)
-          .padding(.horizontal, 20).padding(.bottom, 12)
-      }
       Divider()
-      HStack(spacing: 8) {
-        VoiceControlView(model: model)
-        SayMenu(model: model)
+      HStack(spacing: 12) {
+        Text(model.pending != nil ? "Waiting for your approval" : "Hold ⌃ ⌥ Space to talk")
+          .font(.callout).foregroundStyle(.secondary)
+        Spacer(minLength: 0)
+        Button(model.pending != nil ? "Review Action" : "Open Listener") { model.openListener() }
+        Button {
+          model.openSettings()
+        } label: {
+          Image(systemName: "gearshape")
+        }
+        .accessibilityLabel("Settings").help("Settings")
       }
       .padding(.horizontal, 20).padding(.vertical, 12)
       .background(.bar)
@@ -180,18 +183,18 @@ struct ConversationDetail: View {
   private var emptyState: some View {
     ContentUnavailableView {
       Label {
-        Text("Say Something")
+        Text("Your Conversations")
       } icon: {
         SayMark(size: 52).foregroundStyle(.secondary)
       }
     } description: {
-      Text("Hold ⌃ ⌥ Space and speak, or click the microphone.")
+      Text("Hold ⌃ ⌥ Space to speak, or open the listener.")
       Text("Try “Open Calculator” or “Explain my screen.”")
     } actions: {
       if !model.connected {
-        Button("Open Settings…") { model.showSettings?() }
+        Button("Set Up Connections…") { model.openSettings(.connections) }
       } else if !model.accessGranted {
-        Button("Allow Accessibility…") { model.showSettings?() }
+        Button("Review Permissions…") { model.openSettings(.privacy) }
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -313,7 +316,7 @@ struct MessageView: View {
             }
             .padding(.top, 4)
           } label: {
-            Text("\(message.activities.count) steps")
+            Text(message.activities.count == 1 ? "1 step" : "\(message.activities.count) steps")
           }
           .font(.caption).foregroundStyle(.secondary)
         }

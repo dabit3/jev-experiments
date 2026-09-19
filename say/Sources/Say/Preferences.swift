@@ -13,27 +13,41 @@ enum Credential: String, CaseIterable {
     environmentNames.compactMap { ProcessInfo.processInfo.environment[$0] }
       .first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
   }
-  func read() -> String {
-    if let environmentValue { return environmentValue }
-    let query: [String: CFTypeRef] = [
+  static let service = "ai.jev.say"
+  static let legacyService = "ai.jev.talkie"
+  private var label: String { "Say (\(title) API key)" }
+
+  private func query(service: String) -> [String: CFTypeRef] {
+    [
       kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: "ai.jev.talkie" as CFString,
+      kSecAttrService as String: service as CFString,
       kSecAttrAccount as String: rawValue as CFString,
-      kSecReturnData as String: kCFBooleanTrue,
-      kSecMatchLimit as String: kSecMatchLimitOne,
     ]
+  }
+
+  private func stored(in service: String) -> String? {
+    var query = query(service: service)
+    query[kSecReturnData as String] = kCFBooleanTrue
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
     var result: CFTypeRef?
     guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
       let data = result as? Data
-    else { return "" }
+    else { return nil }
     return String(decoding: data, as: UTF8.self)
   }
+
+  func read() -> String {
+    if let environmentValue { return environmentValue }
+    if let value = stored(in: Self.service) { return value }
+    guard let legacy = stored(in: Self.legacyService) else { return "" }
+    if (try? save(legacy)) != nil, stored(in: Self.service) == legacy {
+      SecItemDelete(query(service: Self.legacyService) as CFDictionary)
+    }
+    return legacy
+  }
+
   func save(_ value: String) throws {
-    let query: [String: CFTypeRef] = [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: "ai.jev.talkie" as CFString,
-      kSecAttrAccount as String: rawValue as CFString,
-    ]
+    let query = query(service: Self.service)
     let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
     if clean.isEmpty {
       let status = SecItemDelete(query as CFDictionary)
@@ -43,10 +57,12 @@ enum Credential: String, CaseIterable {
       return
     }
     let data = Data(clean.utf8) as CFData
-    var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
+    let attributes = [kSecValueData: data, kSecAttrLabel: label as CFString] as CFDictionary
+    var status = SecItemUpdate(query as CFDictionary, attributes)
     if status == errSecItemNotFound {
       var item = query
       item[kSecValueData as String] = data
+      item[kSecAttrLabel as String] = label as CFString
       item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
       status = SecItemAdd(item as CFDictionary, nil)
     }
@@ -58,20 +74,44 @@ enum Credential: String, CaseIterable {
 
 @MainActor
 final class Preferences: ObservableObject {
-  @Published var speak: Bool { didSet { UserDefaults.standard.set(speak, forKey: "speak") } }
+  private let defaults: UserDefaults
+  private let saveCredential: (Credential, String) throws -> Void
+  let credentialEnvironment: (Credential) -> String?
+  @Published var speak: Bool { didSet { defaults.set(speak, forKey: "speak") } }
   @Published var screenContext: Bool {
-    didSet { UserDefaults.standard.set(screenContext, forKey: "screenContext") }
+    didSet { defaults.set(screenContext, forKey: "screenContext") }
   }
   @Published var keepHistory: Bool {
-    didSet { UserDefaults.standard.set(keepHistory, forKey: "keepHistory") }
+    didSet { defaults.set(keepHistory, forKey: "keepHistory") }
   }
   @Published var companion: Bool {
-    didSet { UserDefaults.standard.set(companion, forKey: "companion") }
+    didSet { defaults.set(companion, forKey: "companion") }
   }
   @Published var jevKey: String
   @Published var openAIKey: String
-  init() {
-    let defaults = UserDefaults.standard
+  init(
+    defaults: UserDefaults = .standard,
+    readCredential: (Credential) -> String = { $0.read() },
+    saveCredential: @escaping (Credential, String) throws -> Void = { try $0.save($1) },
+    credentialEnvironment: @escaping (Credential) -> String? = { credential in
+      credential.environmentNames.first {
+        !(ProcessInfo.processInfo.environment[$0] ?? "")
+          .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      }
+    },
+    migrateLegacy: Bool = true
+  ) {
+    self.defaults = defaults
+    self.saveCredential = saveCredential
+    self.credentialEnvironment = credentialEnvironment
+    let keys = ["speak", "screenContext", "keepHistory", "companion"]
+    if migrateLegacy, keys.allSatisfy({ defaults.object(forKey: $0) == nil }),
+      let legacy = defaults.persistentDomain(forName: Credential.legacyService)
+    {
+      for key in keys {
+        if let value = legacy[key] { defaults.set(value, forKey: key) }
+      }
+    }
     defaults.register(defaults: [
       "speak": true, "screenContext": true, "keepHistory": false, "companion": false,
     ])
@@ -79,17 +119,51 @@ final class Preferences: ObservableObject {
     screenContext = defaults.bool(forKey: "screenContext")
     keepHistory = defaults.bool(forKey: "keepHistory")
     companion = defaults.bool(forKey: "companion")
-    jevKey = Credential.jev.read()
-    openAIKey = Credential.openAI.read()
+    jevKey = readCredential(.jev)
+    openAIKey = readCredential(.openAI)
+  }
+
+  func key(for credential: Credential) -> String {
+    credential == .jev ? jevKey : openAIKey
+  }
+
+  func setKey(_ value: String, for credential: Credential) throws {
+    guard credentialEnvironment(credential) == nil else {
+      throw SayError(
+        "This key comes from your launch environment. Change it there and restart Say.")
+    }
+    let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    try saveCredential(credential, clean)
+    if credential == .jev { jevKey = clean } else { openAIKey = clean }
   }
 }
 
 @MainActor
 final class HistoryStore {
   private let url: URL
-  init() {
-    url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("Talkie/conversations.json")
+  init(url location: URL? = nil) {
+    if let url = location {
+      self.url = url
+      return
+    }
+    let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[
+      0]
+    url = support.appendingPathComponent("Say/conversations.json")
+    let legacy = support.appendingPathComponent("Talkie/conversations.json")
+    let files = FileManager.default
+    guard !files.fileExists(atPath: url.path), files.fileExists(atPath: legacy.path) else { return }
+    do {
+      try files.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true,
+        attributes: [.posixPermissions: 0o700])
+      try files.moveItem(at: legacy, to: url)
+      let folder = legacy.deletingLastPathComponent()
+      if try files.contentsOfDirectory(atPath: folder.path).isEmpty {
+        try files.removeItem(at: folder)
+      }
+    } catch {
+      NSLog("Could not move saved conversations from Talkie to Say: %@", error.localizedDescription)
+    }
   }
   func load() -> [Conversation] {
     guard let data = try? Data(contentsOf: url) else { return [] }

@@ -14,13 +14,15 @@ Ask it to open Calculator, type into a document, explain your screen, or look so
 
 Open the DMG and drag Say into Applications. Eject the disk image, then open Say from Applications. To make a DMG from this source, use the build command below.
 
-1. Click the Say speech bubble in your menu bar and choose Settings from the three-dot menu, or press Command-comma.
-2. In Connections, paste a [TypeSafe](https://typesafe.ai/) key for Jev and an OpenAI key with access to `gpt-live-transcribe`, pressing Return after each.
-3. Allow Microphone access when you first speak, and enable Accessibility so Say can operate your apps.
+1. Open Say to see Settings, or choose Settings from its menu-bar icon.
+2. In Connections, use Add Key to save a [TypeSafe](https://typesafe.ai/) key and an OpenAI key with `gpt-live-transcribe` access.
+3. Allow Microphone access when you first record, and enable Accessibility so Say can operate your apps.
 
-Try saying “Open Calculator.” You can also click the microphone to record, then click Finish recording.
+Opening Say never starts recording. Hold the shortcut, or choose Open Listener from the menu bar and click its microphone. Try saying “Open Calculator.”
 
-Keys stay in macOS Keychain. Screen Recording permission is optional, for reading text in apps that expose few controls. This local build is not Apple-notarized. If macOS blocks it, use System Settings → Privacy & Security → Open Anyway.
+Close the listener with its × button or Escape. Quit Say from the menu bar, the Settings footer, or Command-Q when Say is active.
+
+Keys stay in macOS Keychain. Screen Recording permission is optional, for reading text in apps that expose few controls. This local build is signed but not Apple-notarized. If macOS blocks it, use System Settings → Privacy & Security → Open Anyway.
 
 ## What leaves your Mac
 
@@ -40,6 +42,8 @@ bash run.sh --dmg
 ```
 
 The installer appears in `build/`. The script installs pinned DMG tools into `.build/dmg-tools` on the first run. Run `bash run.sh` to build and launch, or `bash run.sh --build-only` for just the app. There are no third-party Swift dependencies.
+
+The script signs with your Developer ID Application or Apple Development certificate when one is in your Keychain, so macOS remembers permissions across rebuilds. Set `SAY_SIGNING_IDENTITY` to choose a certificate. Without one, builds use an ad-hoc signature and macOS asks for permissions after every rebuild. Run one copy of Say at a time, and install from the DMG rather than launching it from the mounted disk image.
 
 ```sh
 swift test

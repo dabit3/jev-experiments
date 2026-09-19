@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   private var commandPanel: NSPanel!
   private var highlightPanel: NSPanel?
   private var statusItem: NSStatusItem!
+  private var appMenu: AppMenuController!
   private let shortcut = GlobalShortcut()
   private var localMonitor: NSObjectProtocol?
   private var outsideMonitor: NSObjectProtocol?
@@ -39,8 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     window.isReleasedWhenClosed = false
     window.delegate = self
     window.setContentSize(NSSize(width: 920, height: 620))
-    window.setFrameAutosaveName("TalkieMain")
-    if UserDefaults.standard.string(forKey: "NSWindow Frame TalkieMain") == nil { window.center() }
+    window.setFrameAutosaveName("SayMain")
+    if UserDefaults.standard.string(forKey: "NSWindow Frame SayMain") == nil { window.center() }
     companion = CompanionPanel(
       contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
       backing: .buffered, defer: false)
@@ -65,9 +66,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     commandPanel.isMovableByWindowBackground = true
     commandPanel.contentView = NSHostingView(rootView: QuickView(model: model))
     model.showWindow = { [weak self] in self?.showResponse() }
+    model.showListener = { [weak self] in self?.openListener() }
     model.showHistory = { [weak self] in self?.showMain() }
-    model.showSettings = { [weak self] in self?.openSettings() }
-    model.dismissQuick = { [weak self] in self?.dismissQuick() }
+    model.showSettings = { [weak self] pane in self?.presentSettings(pane) }
+    model.quitApplication = { NSApplication.shared.terminate(nil) }
+    model.dismissQuick = { [weak self] in self?.hideListener() }
     model.showCompletion = { [weak self] in self?.showCompletion() }
     model.hideWindow = { [weak self] in
       self?.window.orderOut(nil)
@@ -84,17 +87,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
       }
     }
     shortcut.onDown = { [weak self] in
-      guard let self else { return }
+      guard let self, !self.model.listening else { return }
       self.commandPanel.orderOut(nil)
+      self.settings.window?.orderOut(nil)
+      self.window.orderOut(nil)
       self.positionCompanion()
       self.model.startListening()
     }
     shortcut.onUp = { [weak self] in self?.model.finishListening() }
-    shortcut.onEscape = { [weak self] in self?.dismissQuick() }
+    shortcut.onEscape = { [weak self] in
+      guard let self, self.commandPanel.isVisible || self.model.listening || self.model.busy else {
+        return
+      }
+      self.model.dismissListener()
+    }
     model.shortcutAvailable = shortcut.install()
     localMonitor =
       NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-        if event.keyCode == 53 { MainActor.assumeIsolated { self?.dismissQuick() } }
+        if event.keyCode == 53, event.window === self?.commandPanel {
+          MainActor.assumeIsolated { self?.model.dismissListener() }
+          return nil
+        }
         return event
       } as? NSObjectProtocol
     outsideMonitor =
@@ -108,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
       } as? NSObjectProtocol
     updateCompanion()
+    model.openApplication()
   }
 
   private func buildMenu() {
@@ -118,8 +132,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     appMenu.addItem(NSMenuItem.separator())
     appMenu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
     appMenu.addItem(NSMenuItem.separator())
-    appMenu.addItem(
-      withTitle: "Quit Say", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+    appMenu.addItem(withTitle: "Quit Say", action: #selector(quitSay), keyEquivalent: "q")
+    for item in appMenu.items where item.action != nil { item.target = self }
     appItem.submenu = appMenu
     main.addItem(appItem)
     let file = NSMenuItem()
@@ -127,6 +141,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     fileMenu.addItem(
       withTitle: "New Conversation", action: #selector(newConversation), keyEquivalent: "n")
     fileMenu.addItem(withTitle: "History", action: #selector(showMain), keyEquivalent: "")
+    fileMenu.addItem(
+      withTitle: "Open Listener…", action: #selector(openListener), keyEquivalent: "")
+    for item in fileMenu.items { item.target = self }
     fileMenu.addItem(NSMenuItem.separator())
     fileMenu.addItem(
       withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
@@ -155,12 +172,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let menuIcon = SayBrand.mark.copy() as? NSImage
     menuIcon?.size = NSSize(width: 20, height: 20)
     statusItem.button?.image = menuIcon
-    statusItem.button?.target = self
-    statusItem.button?.action = #selector(toggleQuick)
-    statusItem.button?.toolTip = "Say · Hold Control Option Space to talk"
+    self.appMenu = AppMenuController(model: model) { [weak self] in self?.showAbout() }
+    statusItem.menu = self.appMenu.menu
+    statusItem.button?.toolTip = "Say controls and settings"
   }
 
   @objc func showMain() {
+    if model.listening || model.busy || model.pending != nil { model.stop() }
     commandPanel.orderOut(nil)
     window.makeKeyAndOrderFront(nil)
     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -168,11 +186,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     updateCompanion()
   }
 
-  @objc private func openSettings() {
+  @objc private func openSettings() { model.openSettings() }
+
+  private func presentSettings(_ pane: SettingsPane?) {
     commandPanel.orderOut(nil)
-    settings.show()
+    settings.show(pane: pane)
     updateCompanion()
   }
+
+  @objc private func quitSay() { model.quit() }
 
   @objc private func showAbout() {
     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -184,14 +206,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     showMain()
   }
 
-  @objc private func toggleQuick() {
-    if commandPanel.isVisible { dismissQuick() } else { showQuick() }
-  }
-
-  private func showResponse() {
-    if window.isVisible, !window.isMiniaturized { return }
+  @objc private func openListener() {
+    settings.window?.orderOut(nil)
+    window.orderOut(nil)
     showQuick()
   }
+
+  private func showResponse() { showQuick() }
 
   private func showQuick() {
     model.refreshPermissions()
@@ -215,9 +236,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     commandPanel.setFrame(frame, display: true)
   }
 
-  private func dismissQuick() {
-    model.stop()
-    if commandPanel.isVisible { model.notice = nil }
+  private func hideListener() {
     completionTask?.cancel()
     showingCompletion = false
     commandPanel.orderOut(nil)
@@ -294,7 +313,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool
   {
-    showQuick()
+    model.openApplication()
     return true
   }
   func windowShouldClose(_ sender: NSWindow) -> Bool {

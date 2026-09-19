@@ -21,8 +21,18 @@ iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icn
 cp "$WORK/artwork/SayMark.pdf" "$APP/Contents/Resources/SayMark.pdf"
 cp .build/release/Say "$APP/Contents/MacOS/Say"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
-codesign --force --sign - --identifier ai.jev.talkie "$APP"
+IDENTITY="${SAY_SIGNING_IDENTITY:-}"
+if [ -z "$IDENTITY" ]; then
+    IDENTITY="$(security find-identity -v -p codesigning \
+        | awk -F'"' '/Developer ID Application|Apple Development/ { print $2; exit }')"
+fi
+if [ -z "$IDENTITY" ]; then
+    IDENTITY="-"
+    printf 'No signing certificate found. Using an ad-hoc signature, so macOS will ask for permissions again after every rebuild.\n' >&2
+fi
+codesign --force --sign "$IDENTITY" --identifier ai.jev.say "$APP"
 codesign --verify --deep --strict "$APP"
+printf 'Signed with: %s\n' "$IDENTITY"
 if [ "$MODE" = "--dmg" ]; then
     VERSION="$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")"
     ARCH="$(lipo -archs "$APP/Contents/MacOS/Say" | tr ' ' '-')"
@@ -41,5 +51,6 @@ if [ "$MODE" = "--dmg" ]; then
 elif [ "$MODE" != "--build-only" ]; then
     cleanup
     trap - EXIT
+    pkill -x Say || true
     exec "$APP/Contents/MacOS/Say"
 fi

@@ -186,13 +186,16 @@ final class DesktopAccess {
           at: URL(fileURLWithPath: directory),
           includingPropertiesForKeys: nil)) ?? []
       for url in urls where url.pathExtension == "app" {
-        guard let bundle = Bundle(url: url), let id = bundle.bundleIdentifier, id != "ai.jev.talkie"
+        guard let bundle = Bundle(url: url), let id = bundle.bundleIdentifier,
+          id != Bundle.main.bundleIdentifier
         else { continue }
         apps[url.deletingPathExtension().lastPathComponent] = id
       }
     }
     for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
-      if let name = app.localizedName, let id = app.bundleIdentifier, id != "ai.jev.talkie" {
+      if let name = app.localizedName, let id = app.bundleIdentifier,
+        id != Bundle.main.bundleIdentifier
+      {
         apps[name] = id
       }
     }

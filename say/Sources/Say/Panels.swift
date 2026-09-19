@@ -8,7 +8,7 @@ struct VoiceControlView: View {
   private var title: String {
     if model.listening { return model.voice.finishing ? "Transcribing…" : "Listening…" }
     if model.busy { return model.status }
-    return model.mode == .auto ? "Say" : "Say · \(model.mode.rawValue)"
+    return "Say"
   }
   private var hint: String {
     if model.listening {
@@ -22,8 +22,10 @@ struct VoiceControlView: View {
     return model.listening ? "Finish recording" : "Start microphone"
   }
   private var buttonColor: Color {
-    if model.listening { return .red }
-    return model.busy ? Color(nsColor: .systemGray) : .accentColor
+    if model.voice.finishing || model.busy || !model.connected {
+      return Color(nsColor: .systemGray)
+    }
+    return model.listening ? .red : .accentColor
   }
 
   var body: some View {
@@ -37,7 +39,7 @@ struct VoiceControlView: View {
           .frame(width: 36, height: 36)
           .background(buttonColor.gradient, in: Circle())
       }
-      .buttonStyle(.plain).disabled(model.pending != nil)
+      .buttonStyle(.plain).disabled(model.pending != nil || !model.connected)
       .accessibilityLabel(buttonLabel).help(buttonLabel)
       VStack(alignment: .leading, spacing: 2) {
         Text(title).font(.headline).lineLimit(1)
@@ -56,34 +58,36 @@ struct VoiceControlView: View {
   }
 }
 
-struct SayMenu: View {
+struct ListenerModeMenu: View {
   @ObservedObject var model: SayModel
 
   var body: some View {
     Menu {
-      Button("New Conversation") { model.newConversation() }
-        .disabled(model.busy || model.listening || model.pending != nil)
-      Button("History") { model.showHistory?() }
-      Divider()
       Picker("Mode", selection: $model.mode) {
         ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
       }
-      .disabled(model.busy || model.listening || model.pending != nil)
-      Text(model.preferences.screenContext ? "Context: \(model.contextApp)" : "Screen context off")
-      if model.speaker.speaking {
-        Button("Stop Speaking") { model.speaker.stop() }
-      }
-      Divider()
-      Button("Settings…") { model.showSettings?() }
-      Button("Dismiss Panel") { model.dismissQuick?() }
-      Divider()
-      Button("Quit Say") { NSApplication.shared.terminate(nil) }
     } label: {
-      Image(systemName: "ellipsis.circle").imageScale(.large)
-        .frame(width: 28, height: 28).contentShape(Rectangle())
+      Text(model.mode.rawValue).font(.caption)
     }
-    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-    .foregroundStyle(.secondary).accessibilityLabel("Say menu").help("More")
+    .menuStyle(.borderlessButton).fixedSize()
+    .disabled(model.busy || model.listening || model.pending != nil)
+    .foregroundStyle(.secondary).accessibilityLabel("Listener mode").help("Choose a mode")
+  }
+}
+
+struct CloseListenerButton: View {
+  @ObservedObject var model: SayModel
+
+  var body: some View {
+    Button {
+      model.dismissListener()
+    } label: {
+      Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
+        .foregroundStyle(.secondary).frame(width: 24, height: 24).contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Close listener")
+    .help(model.listening || model.busy ? "Cancel and close (Esc)" : "Close listener (Esc)")
   }
 }
 
@@ -118,26 +122,32 @@ struct QuickView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      HStack(spacing: 8) {
+      HStack(spacing: 6) {
         VoiceControlView(model: model)
-        SayMenu(model: model)
+        ListenerModeMenu(model: model)
+        CloseListenerButton(model: model)
       }
       if let pending = model.pending {
         Divider()
-        ApprovalView(model: model, pending: pending)
-      } else if let reply = model.quickReply {
-        Divider()
-        ScrollView { MessageView(message: reply, compact: true).padding(.trailing, 4) }
+        ScrollView { ApprovalView(model: model, pending: pending) }
       } else if let notice = model.notice {
         Divider()
         ScrollView { NoticeBar(text: notice) { model.notice = nil } }
+      } else if let reply = model.quickReply {
+        Divider()
+        ScrollView { MessageView(message: reply, compact: true).padding(.trailing, 4) }
       } else if !model.connected {
-        Button("Set Up Say…") { model.showSettings?() }.buttonStyle(.link)
+        Divider()
+        HStack {
+          Text("Add your API keys to get started.").font(.callout).foregroundStyle(.secondary)
+          Spacer(minLength: 8)
+          Button("Set Up…") { model.openSettings(.connections) }
+        }
       }
     }
     .padding(16).frame(width: model.quickWidth, height: model.quickHeight)
     .background(PanelSurface())
-    .onExitCommand { model.dismissQuick?() }
+    .onExitCommand { model.dismissListener() }
   }
 }
 
@@ -163,7 +173,7 @@ struct CompanionView: View {
   var body: some View {
     HStack(spacing: 10) {
       Button {
-        model.showWindow?()
+        model.openListener()
       } label: {
         SayMark(size: 26, active: model.listening || model.busy)
       }
@@ -184,6 +194,9 @@ struct CompanionView: View {
             (model.listening ? Color.red : Color.accentColor).gradient, in: Circle())
       }
       .buttonStyle(.plain).accessibilityLabel(buttonLabel)
+      if model.listening || model.busy {
+        CloseListenerButton(model: model)
+      }
     }
     .padding(.horizontal, 14).frame(width: 260, height: 60)
     .background(PanelSurface(radius: 20))

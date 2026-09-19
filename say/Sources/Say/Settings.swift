@@ -23,28 +23,38 @@ enum SettingsPane: String, CaseIterable {
 
   var size: CGSize {
     switch self {
-    case .general: CGSize(width: 600, height: 268)
-    case .connections: CGSize(width: 600, height: 366)
-    case .privacy: CGSize(width: 600, height: 434)
+    case .general: CGSize(width: 600, height: 380)
+    case .connections: CGSize(width: 600, height: 400)
+    case .privacy: CGSize(width: 600, height: 460)
     }
   }
 
   @MainActor func view(model: SayModel) -> AnyView {
-    switch self {
-    case .general: AnyView(GeneralSettingsView(model: model))
-    case .connections: AnyView(ConnectionsSettingsView(model: model))
-    case .privacy: AnyView(PrivacySettingsView(model: model))
-    }
+    AnyView(SettingsPage(pane: self, model: model))
   }
 }
 
 @MainActor
-final class SettingsWindowController: NSWindowController {
+private final class SettingsTabs: NSTabViewController {
+  var didSelect: (() -> Void)?
+
+  override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
+    super.tabView(tabView, didSelect: tabViewItem)
+    didSelect?()
+  }
+}
+
+@MainActor
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
   private let model: SayModel
+  private let tabs = SettingsTabs()
+  private var hasPositioned = false
+
+  var selectedPane: SettingsPane { SettingsPane.allCases[tabs.selectedTabViewItemIndex] }
 
   init(model: SayModel) {
     self.model = model
-    let tabs = NSTabViewController()
+    super.init(window: nil)
     tabs.tabStyle = .toolbar
     for pane in SettingsPane.allCases {
       let host = NSHostingController(
@@ -60,8 +70,10 @@ final class SettingsWindowController: NSWindowController {
     window.styleMask = [.titled, .closable]
     window.toolbarStyle = .preference
     window.isReleasedWhenClosed = false
-    window.setContentSize(SettingsPane.general.size)
-    super.init(window: window)
+    window.delegate = self
+    self.window = window
+    tabs.didSelect = { [weak self] in self?.sizeToPane() }
+    sizeToPane()
   }
 
   @available(*, unavailable)
@@ -69,13 +81,58 @@ final class SettingsWindowController: NSWindowController {
     fatalError("The Settings window is created in code.")
   }
 
-  func show() {
+  func select(_ pane: SettingsPane) {
+    tabs.selectedTabViewItemIndex = SettingsPane.allCases.firstIndex(of: pane)!
+    sizeToPane()
+  }
+
+  func show(pane: SettingsPane? = nil) {
     guard let window else { return }
+    if let pane { select(pane) }
     model.refreshPermissions()
-    if !window.isVisible { window.center() }
+    if !hasPositioned {
+      window.center()
+      hasPositioned = true
+    }
     showWindow(nil)
     window.makeKeyAndOrderFront(nil)
     NSApplication.shared.activate(ignoringOtherApps: true)
+  }
+
+  func windowDidBecomeKey(_ notification: Notification) { model.refreshPermissions() }
+
+  private func sizeToPane() {
+    guard let window else { return }
+    window.title = selectedPane.title
+    var frame = window.frameRect(forContentRect: NSRect(origin: .zero, size: selectedPane.size))
+    frame.origin = NSPoint(x: window.frame.minX, y: window.frame.maxY - frame.height)
+    window.setFrame(frame, display: true, animate: window.isVisible)
+  }
+}
+
+struct SettingsPage: View {
+  let pane: SettingsPane
+  @ObservedObject var model: SayModel
+
+  var body: some View {
+    VStack(spacing: 0) {
+      Group {
+        switch pane {
+        case .general: GeneralSettingsView(model: model)
+        case .connections: ConnectionsSettingsView(model: model)
+        case .privacy: PrivacySettingsView(model: model)
+        }
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      Divider()
+      HStack(spacing: 12) {
+        Text("Say stays in your menu bar.").font(.caption).foregroundStyle(.secondary)
+        Spacer(minLength: 0)
+        Button("Open Listener") { model.openListener() }
+        Button("Quit Say") { model.quit() }
+      }
+      .padding(.horizontal, 20).padding(.vertical, 14)
+    }
   }
 }
 
@@ -85,31 +142,38 @@ struct GeneralSettingsView: View {
   var body: some View {
     Form {
       Section {
+        HStack(spacing: 12) {
+          SayMark(size: 44).foregroundStyle(Color.accentColor)
+          VStack(alignment: .leading, spacing: 3) {
+            Text("Say").font(.title2.weight(.semibold))
+            Text("Voice control for your Mac.").foregroundStyle(.secondary)
+          }
+        }
+        .padding(.vertical, 4)
         LabeledContent {
-          Text("⌃ ⌥ Space").foregroundStyle(.secondary)
+          Text("⌃ ⌥ Space").font(.body.monospaced()).foregroundStyle(.secondary)
         } label: {
-          Text("Talk to Say")
-          Text("Hold the keys while you speak, then release.")
-        }
-        Toggle(isOn: $model.preferences.speak) {
-          Text("Speak answers aloud")
-        }
-        .onChange(of: model.preferences.speak) { _, enabled in
-          if !enabled { model.speaker.stop() }
-        }
-        Toggle(isOn: $model.preferences.companion) {
-          Text("Show companion when idle")
-          Text("A small status panel stays near the bottom of your screen.")
+          Text("Hold to talk")
+          Text("Release to send. Press Escape to cancel.")
         }
       } footer: {
         if !model.shortcutAvailable {
-          Text("Another app is using this shortcut. Use the microphone button in the Say panel.")
+          Text(
+            "Another app is using this shortcut. Open the listener and use its microphone button.")
         }
       }
       Section {
+        Toggle("Speak answers aloud", isOn: $model.preferences.speak)
+          .onChange(of: model.preferences.speak) { _, enabled in
+            if !enabled { model.speaker.stop() }
+          }
+        Toggle(isOn: $model.preferences.companion) {
+          Text("Keep status indicator visible")
+          Text("Show the floating indicator even when idle.")
+        }
         Toggle(isOn: $model.preferences.screenContext) {
-          Text("Use what is on your screen")
-          Text("Say reads the front window to choose controls and explain your screen.")
+          Text("Use screen context")
+          Text("Read the front window when you ask for help.")
         }
       }
     }
@@ -123,15 +187,19 @@ struct ConnectionsSettingsView: View {
   var body: some View {
     Form {
       CredentialSection(
-        model: model, credential: .jev, title: "Jev",
+        model: model, credential: .jev,
         description:
-          "Jev understands your request and chooses each Mac action. [Get a key at typesafe.ai](https://typesafe.ai/)"
+          "Chooses controls and actions in your Mac apps. [Get a TypeSafe key](https://typesafe.ai/)."
       )
       CredentialSection(
-        model: model, credential: .openAI, title: "OpenAI",
+        model: model, credential: .openAI,
         description:
-          "OpenAI transcribes your voice and handles conversation, research, and drafts. The key needs access to gpt-live-transcribe. [Manage keys](https://platform.openai.com/api-keys)\n\nKeys are saved to your Keychain when you press Return. Clear a field to remove its key."
+          "Voice transcription, answers, and web research. Requires gpt-live-transcribe access. [Manage OpenAI keys](https://platform.openai.com/api-keys)."
       )
+      Section {
+        Text("Keys stay in your Mac’s Keychain. API usage is billed to your provider accounts.")
+          .font(.callout).foregroundStyle(.secondary)
+      }
     }
     .formStyle(.grouped)
   }
@@ -140,72 +208,103 @@ struct ConnectionsSettingsView: View {
 struct CredentialSection: View {
   @ObservedObject var model: SayModel
   let credential: Credential
-  let title: String
   let description: LocalizedStringKey
-  @State private var draft = ""
+  @State private var editing = false
+  @State private var removing = false
   @State private var problem: String?
-  @FocusState private var editing: Bool
 
-  private var saved: String {
-    credential == .jev ? model.preferences.jevKey : model.preferences.openAIKey
-  }
-  private var environmentName: String? {
-    credential.environmentNames.first {
-      !(ProcessInfo.processInfo.environment[$0] ?? "").trimmingCharacters(in: .whitespaces).isEmpty
-    }
-  }
-  private var status: String {
-    if let environmentName { return "Provided by \(environmentName)" }
-    return saved.isEmpty ? "Not connected" : "Connected"
-  }
+  private var saved: Bool { !model.preferences.key(for: credential).isEmpty }
+  private var environmentName: String? { model.preferences.credentialEnvironment(credential) }
 
   var body: some View {
     Section {
-      SecureField("API Key", text: $draft, prompt: Text("Required"))
-        .focused($editing)
-        .onSubmit(commit)
-        .disabled(environmentName != nil)
-        .accessibilityLabel("\(title) API key")
-      LabeledContent("Status") {
-        HStack(spacing: 6) {
-          Circle()
-            .fill(saved.isEmpty ? Color.secondary.opacity(0.35) : Color.green)
-            .frame(width: 8, height: 8)
-          Text(status)
+      LabeledContent("API key") {
+        HStack(spacing: 10) {
+          Text(
+            environmentName != nil ? "From environment" : saved ? "Saved in Keychain" : "Not added"
+          )
+          .foregroundStyle(.secondary)
+          if environmentName == nil {
+            Button(saved ? "Change…" : "Add Key…") { editing = true }
+            if saved {
+              Menu {
+                Button("Remove Key…", role: .destructive) { removing = true }
+              } label: {
+                Image(systemName: "ellipsis.circle")
+              }
+              .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+              .accessibilityLabel("\(credential.title) key options")
+            }
+          }
         }
-        .foregroundStyle(.secondary)
       }
     } header: {
-      Text(title)
+      Text(credential.title)
     } footer: {
-      VStack(alignment: .leading, spacing: 6) {
+      VStack(alignment: .leading, spacing: 4) {
         Text(description)
+        if let environmentName {
+          Text(
+            "Provided by \(environmentName). Change it in your launch environment and restart Say.")
+        }
         if let problem { Text(problem).foregroundStyle(.red) }
       }
     }
-    .onAppear { draft = saved }
-    .onChange(of: saved) { _, value in draft = value }
-    .onChange(of: editing) { _, focused in
-      if !focused { commit() }
+    .sheet(isPresented: $editing) {
+      CredentialEditor(title: credential.title) { value in
+        try model.preferences.setKey(value, for: credential)
+        problem = nil
+      }
     }
+    .confirmationDialog("Remove the \(credential.title) API key?", isPresented: $removing) {
+      Button("Remove Key", role: .destructive) {
+        do {
+          try model.preferences.setKey("", for: credential)
+          problem = nil
+        } catch { problem = error.localizedDescription }
+      }
+    } message: {
+      Text("Say will need a new key before you can use it again.")
+    }
+  }
+}
+
+struct CredentialEditor: View {
+  let title: String
+  let save: (String) throws -> Void
+  @Environment(\.dismiss) private var dismiss
+  @State private var draft = ""
+  @State private var problem: String?
+  @FocusState private var focused: Bool
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      Text("\(title) API Key").font(.headline)
+      Text("Saved securely in your Mac’s Keychain.").foregroundStyle(.secondary)
+      SecureField("Paste your API key", text: $draft)
+        .textFieldStyle(.roundedBorder).focused($focused)
+        .accessibilityLabel("\(title) API key")
+        .onSubmit(commit)
+      if let problem { Text(problem).font(.callout).foregroundStyle(.red) }
+      HStack {
+        Spacer()
+        Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+        Button("Save", action: commit).keyboardShortcut(.defaultAction)
+          .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .padding(24).frame(width: 440)
+    .onAppear { focused = true }
   }
 
   private func commit() {
     let value = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard value != saved else { return }
+    guard !value.isEmpty else { return }
     do {
-      try credential.save(value)
-      let stored = credential.read()
-      if credential == .jev {
-        model.preferences.jevKey = stored
-      } else {
-        model.preferences.openAIKey = stored
-      }
-      draft = stored
-      problem = nil
-    } catch {
-      problem = error.localizedDescription
-    }
+      try save(value)
+      draft = ""
+      dismiss()
+    } catch { problem = error.localizedDescription }
   }
 }
 
@@ -213,84 +312,105 @@ struct PrivacySettingsView: View {
   @ObservedObject var model: SayModel
   @State private var deleting = false
 
+  private var microphoneStatus: String {
+    switch model.microphoneStatus {
+    case .authorized: "Allowed"
+    case .notDetermined: "Not requested"
+    case .restricted: "Restricted"
+    default: "Not allowed"
+    }
+  }
+
   var body: some View {
     Form {
       Section("Permissions") {
         PermissionRow(
-          title: "Microphone",
-          detail: "Needed to hear you. Audio streams to OpenAI only while you record.",
-          granted: model.microphoneGranted, pane: "Privacy_Microphone"
+          title: "Microphone", detail: "Hear your voice when you record.",
+          status: microphoneStatus,
+          button: model.microphoneStatus == .notDetermined ? "Allow…" : "Manage…",
+          action: requestMicrophone)
+        PermissionRow(
+          title: "Accessibility", detail: "Read controls and act in your apps.",
+          status: model.accessGranted ? "Allowed" : "Not enabled",
+          button: model.accessGranted ? "Manage…" : "Allow…"
         ) {
-          AVCaptureDevice.requestAccess(for: .audio) { _ in }
+          if model.accessGranted {
+            openPrivacy("Privacy_Accessibility")
+          } else {
+            DesktopAccess.requestTrust()
+          }
         }
         PermissionRow(
-          title: "Accessibility",
-          detail: "Lets Say read controls and act in your apps.",
-          granted: model.accessGranted, pane: "Privacy_Accessibility"
+          title: "Screen Recording", detail: "Optional. Read text in apps with limited access.",
+          status: model.screenGranted ? "Allowed" : "Not enabled",
+          button: model.screenGranted ? "Manage…" : "Allow…"
         ) {
-          DesktopAccess.requestTrust()
-        }
-        PermissionRow(
-          title: "Screen Recording",
-          detail: "Optional. Reads on-screen text in apps that expose few controls.",
-          granted: model.screenGranted, pane: "Privacy_ScreenCapture"
-        ) {
-          CGRequestScreenCaptureAccess()
+          if model.screenGranted {
+            openPrivacy("Privacy_ScreenCapture")
+          } else {
+            CGRequestScreenCaptureAccess()
+            model.refreshPermissions()
+          }
         }
       }
       Section {
         Toggle(isOn: $model.preferences.keepHistory) {
           Text("Remember conversations")
-          Text("Saved only on this Mac. Turning this off deletes the saved file.")
+          Text("Stored on this Mac. Turning this off deletes saved history.")
         }
         .onChange(of: model.preferences.keepHistory) { _, _ in model.historyPreferenceChanged() }
-        LabeledContent("Saved conversations") {
+        LabeledContent("Conversations") {
           Button("Delete All…", role: .destructive) { deleting = true }
-            .confirmationDialog(
-              "Delete all conversations from this Mac?", isPresented: $deleting
-            ) {
-              Button("Delete", role: .destructive) { model.clearHistory() }
+            .disabled(model.conversations.allSatisfy { $0.messages.isEmpty })
+            .confirmationDialog("Delete all conversations from this Mac?", isPresented: $deleting) {
+              Button("Delete All", role: .destructive) { model.clearHistory() }
             }
         }
       } header: {
         Text("History")
       } footer: {
         Text(
-          "Say never saves audio. While you record, audio streams to OpenAI for transcription. On-screen text goes to Jev, and to OpenAI only when you ask a question. Screenshots stay on your Mac."
+          "Audio goes to OpenAI while you record. Screen text goes to Jev and OpenAI when needed for your request. Say does not save audio or upload screenshots."
         )
       }
     }
     .formStyle(.grouped)
     .onAppear { model.refreshPermissions() }
   }
+
+  private func requestMicrophone() {
+    guard AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined else {
+      openPrivacy("Privacy_Microphone")
+      return
+    }
+    AVCaptureDevice.requestAccess(for: .audio) { _ in
+      Task { @MainActor in model.refreshPermissions() }
+    }
+  }
+
+  private func openPrivacy(_ pane: String) {
+    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") {
+      NSWorkspace.shared.open(url)
+    }
+  }
 }
 
 struct PermissionRow: View {
   let title: String
   let detail: String
-  let granted: Bool
-  let pane: String
-  let request: () -> Void
+  let status: String
+  let button: String
+  let action: () -> Void
 
   var body: some View {
     LabeledContent {
       HStack(spacing: 10) {
-        Text(granted ? "Allowed" : "Not allowed").foregroundStyle(.secondary)
-        Button(granted ? "Open System Settings…" : "Allow…") {
-          if !granted { request() }
-          openPrivacy()
-        }
+        Text(status).foregroundStyle(.secondary)
+        Button(button, action: action)
       }
     } label: {
       Text(title)
       Text(detail)
-    }
-    .accessibilityElement(children: .combine)
-  }
-
-  private func openPrivacy() {
-    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") {
-      NSWorkspace.shared.open(url)
     }
   }
 }

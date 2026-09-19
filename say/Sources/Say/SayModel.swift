@@ -11,11 +11,12 @@ struct PendingAction {
 
 @MainActor
 final class SayModel: ObservableObject {
-  var preferences = Preferences()
+  var preferences: Preferences
   let voice = VoiceInput()
   let speaker = Speaker()
   let desktop = DesktopAccess()
-  private let historyStore = HistoryStore()
+  private let historyStore: HistoryStore
+  private let permissions: () -> PermissionSnapshot
   @Published var conversations: [Conversation] = []
   @Published var currentID = UUID()
   @Published var mode = Mode.auto
@@ -23,9 +24,10 @@ final class SayModel: ObservableObject {
   @Published var status = "Ready when you are"
   @Published var activities: [Activity] = []
   @Published var pending: PendingAction?
-  @Published var accessGranted = DesktopAccess.trusted
-  @Published var screenGranted = CGPreflightScreenCaptureAccess()
-  @Published var microphoneGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+  @Published var accessGranted = false
+  @Published var screenGranted = false
+  @Published var microphoneStatus = AVAuthorizationStatus.notDetermined
+  var microphoneGranted: Bool { microphoneStatus == .authorized }
   @Published var lastLatency: Int?
   @Published var contextApp = "your Mac"
   @Published var shortcutAvailable = true
@@ -37,8 +39,10 @@ final class SayModel: ObservableObject {
   private var confirmation: CheckedContinuation<Bool, Never>?
   private var subscriptions: Set<AnyCancellable> = []
   var showWindow: (() -> Void)?
+  var showListener: (() -> Void)?
   var showHistory: (() -> Void)?
-  var showSettings: (() -> Void)?
+  var showSettings: ((SettingsPane?) -> Void)?
+  var quitApplication: (() -> Void)?
   var dismissQuick: (() -> Void)?
   var showCompletion: (() -> Void)?
   var hideWindow: (() -> Void)?
@@ -46,8 +50,16 @@ final class SayModel: ObservableObject {
   var hideHighlight: (() -> Void)?
   var updateCompanion: (() -> Void)?
 
-  init() {
-    if preferences.keepHistory { conversations = historyStore.load() }
+  init(
+    preferences: Preferences? = nil, historyStore: HistoryStore? = nil,
+    permissions: (() -> PermissionSnapshot)? = nil
+  ) {
+    self.preferences = preferences ?? Preferences()
+    self.historyStore = historyStore ?? HistoryStore()
+    self.permissions = permissions ?? { .current() }
+    refreshPermissions()
+    let preferences = self.preferences
+    if preferences.keepHistory { conversations = self.historyStore.load() }
     if conversations.isEmpty { conversations = [Conversation()] }
     currentID = conversations[0].id
     remember(NSWorkspace.shared.frontmostApplication)
@@ -86,9 +98,9 @@ final class SayModel: ObservableObject {
   var quickWidth: CGFloat { 340 }
   var quickHeight: CGFloat {
     if pending != nil { return 300 }
+    if notice != nil { return 176 }
     if quickReply != nil { return 360 }
-    if notice != nil { return 200 }
-    if !connected { return 124 }
+    if !connected { return 148 }
     return 88
   }
 
@@ -142,15 +154,46 @@ final class SayModel: ObservableObject {
   }
 
   func refreshPermissions() {
-    accessGranted = DesktopAccess.trusted
-    screenGranted = CGPreflightScreenCaptureAccess()
-    microphoneGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+    let snapshot = permissions()
+    accessGranted = snapshot.accessibility
+    screenGranted = snapshot.screenRecording
+    microphoneStatus = snapshot.microphone
+  }
+
+  func openApplication() {
+    openSettings(connected ? .general : .connections)
+  }
+
+  func openSettings(_ pane: SettingsPane? = nil) {
+    if listening || busy || pending != nil { stop() }
+    notice = nil
+    if quickReply?.isError == true { quickReply = nil }
+    showSettings?(pane)
+  }
+
+  func openListener() {
+    showListener?()
+  }
+
+  func dismissListener() {
+    stop()
+    notice = nil
+    dismissQuick?()
+  }
+
+  func quit() {
+    stop()
+    quitApplication?()
   }
 
   func startListening() {
     stop()
     notice = nil
     quickReply = nil
+    guard connected else {
+      openSettings(.connections)
+      return
+    }
     status = "Listening…"
     voice.start(key: preferences.openAIKey)
     updateCompanion?()

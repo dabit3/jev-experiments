@@ -10,7 +10,7 @@ Research date: September 18, 2026.
 
 ## Say’s implementation
 
-Say uses a cobalt-and-ivory speech bubble with a cursor-shaped tail. The app icon, menu-bar mark, and README artwork use the same custom vector shape. Settings is a separate window with toolbar panes, built on `NSTabViewController` and grouped SwiftUI forms, the same structure Apple uses for Safari and Mail settings. The History window uses `NavigationSplitView`, system fonts, and the user's accent color. There are no third-party Swift dependencies or web views.
+Say uses a cobalt-and-ivory speech bubble with a cursor-shaped tail. The app icon, menu-bar mark, and README artwork use the same custom vector shape. Opening the app shows a separate Settings window built with AppKit toolbar tabs and grouped SwiftUI forms. A native menu-bar menu exposes Settings and Quit without opening the recorder. The listener has its own panel, mode picker, and close control. The History window uses `NavigationSplitView`, system fonts, and the user's accent color. There are no third-party Swift dependencies or web views.
 
 Jev routes spoken requests and chooses every Mac action from actual Accessibility controls, installed apps, explicit text spans and keyboard shortcuts. Screen OCR stays local; text context is sent only on request. OpenAI `gpt-live-transcribe` transcribes live microphone audio. Apple speaks answers. The required OpenAI key also enables free-form answers, web research with citations, and generated drafts. Commands are voice-only; typed entry and audio-file import are unavailable.
 
