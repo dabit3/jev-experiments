@@ -3,6 +3,29 @@ import XCTest
 @testable import JevLauncher
 
 final class RetrievalTests: XCTestCase {
+  func testRequestPreservesPreciseRecencyAndItsActualSource() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let added = Candidate(
+      id: "added", title: "New.pdf", subtitle: "added 7 min ago", kind: .openFile,
+      payload: .file(URL(fileURLWithPath: "/fixtures/new.pdf")),
+      modifiedAt: now.addingTimeInterval(-1_209_600),
+      addedAt: now.addingTimeInterval(-421))
+    let fallback = Candidate(
+      id: "fallback", title: "Fallback.pdf", subtitle: "modified 7 min ago", kind: .openFile,
+      payload: .file(URL(fileURLWithPath: "/fixtures/fallback.pdf")),
+      modifiedAt: now.addingTimeInterval(-446))
+    let request = JevQuestions.buildRequest(
+      query: "the pdf I just downloaded",
+      context: .init(
+        frontmostApp: "", recentApps: [], clipboardKind: "empty", timeOfDay: "", weekday: ""),
+      candidates: [added, fallback, Fixtures.safari], now: now)
+    XCTAssertEqual(request.state.candidates[0].recency?.secondsAgo, 421)
+    XCTAssertEqual(request.state.candidates[0].recency?.basis, "added")
+    XCTAssertEqual(request.state.candidates[1].recency?.secondsAgo, 446)
+    XCTAssertEqual(request.state.candidates[1].recency?.basis, "modified")
+    XCTAssertNil(request.state.candidates[2].recency)
+  }
+
   let now = Date(timeIntervalSince1970: 1_800_000_000)
 
   func testRetryAfterAcceptsSecondsAndHTTPDate() {

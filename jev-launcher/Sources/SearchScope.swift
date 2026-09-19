@@ -20,7 +20,7 @@ enum SearchScope: String, CaseIterable, Identifiable {
   }
 }
 
-enum FileRecency {
+enum FileRecency: String {
   case modified, opened, added
 
   init(query: String) {

@@ -46,6 +46,24 @@ final class LiveExperienceTests: XCTestCase {
     XCTAssertFalse(hits.contains(where: \.isGroup))
   }
 
+  func testDownloadedRecencyDistinguishesMatchingRoundedLabels() async throws {
+    let now = Date()
+    let newest = Candidate(
+      id: "newest", title: "Gamma.pdf",
+      subtitle: "PDF in Downloads · added 7 min ago · modified 14 days ago",
+      kind: .openFile, keywords: ["pdf", "downloaded"],
+      payload: .file(URL(fileURLWithPath: "/fixtures/gamma.pdf")),
+      modifiedAt: now.addingTimeInterval(-1_209_600), addedAt: now.addingTimeInterval(-421))
+    let edited = Candidate(
+      id: "edited", title: "Beta.pdf",
+      subtitle: "PDF in Downloads · added 7 min ago · modified just now",
+      kind: .openFile, keywords: ["pdf", "downloaded"],
+      payload: .file(URL(fileURLWithPath: "/fixtures/beta.pdf")),
+      modifiedAt: now, addedAt: now.addingTimeInterval(-446))
+    let hits = try await judge("the pdf I just downloaded", candidates: [edited, newest])
+    XCTAssertEqual(hits.first?.id, newest.id)
+  }
+
   func testNamedWorkspaceIsASingleTarget() async throws {
     let workspace = await MainActor.run {
       PersonalLibrary.Workspace(

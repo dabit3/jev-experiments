@@ -28,6 +28,8 @@ Recency has three distinct meanings:
 
 Files with unknown last-used dates are excluded from opened/used queries. A recently edited file is not treated as recently opened. Finder metadata is not available for every file, and "added" does not prove a browser download.
 
+Jev also receives the query-relevant file age in seconds and its evidence source. Two files labeled "added 7 min ago" can still be distinguished without mistaking a recent edit for a recent arrival.
+
 ### A launcher that remembers
 
 Pins and recent launches fill the empty screen. Successful launches build a small local history of frequency, recency and query aliases, used as bounded boosts in the fuzzy shortlist. Clear launch history in Settings to reset these boosts while keeping pins and workspaces.
@@ -101,7 +103,7 @@ Questions share one round trip and are evaluated in parallel. Candidate and ques
 
 Each query change starts a `POST /v1/systemone` with `model: jev-latest`, unless local-only mode, a missing key or a rate-limit cooldown prevents it. A completed Spotlight search or index refresh can issue a replacement judgment. Jev returns typed probabilities; indexing, prefiltering, time parsing, arithmetic and execution remain plain Swift.
 
-**State** (`Sources/JevQuestions.swift`):
+**State**, abbreviated (`Sources/JevQuestions.swift`):
 
 ```json
 {
@@ -110,14 +112,14 @@ Each query change starts a `POST /v1/systemone` with `model: jev-latest`, unless
   "context": { "frontmost_app": "Finder", "recent_apps": ["Finder", "Safari"], "clipboard_kind": "text", "time_of_day": "afternoon", "weekday": "Thursday" },
   "time_window": null,
   "candidates": [
-    { "id": "c0", "kind": "open_file", "title": "Q3-Roadmap-Review.pdf", "detail": "PDF in ~/Downloads · modified 16 min ago" },
-    { "id": "c1", "kind": "open_file", "title": "invoice-2026-08.pdf", "detail": "PDF in ~/Downloads · modified 1 month ago" },
+    { "id": "c0", "kind": "open_file", "title": "Q3-Roadmap-Review.pdf", "detail": "PDF in ~/Downloads · modified 16 min ago", "recency": { "basis": "modified", "seconds_ago": 964 } },
+    { "id": "c1", "kind": "open_file", "title": "invoice-2026-08.pdf", "detail": "PDF in ~/Downloads · modified 1 month ago", "recency": { "basis": "modified", "seconds_ago": 2678400 } },
     { "id": "c6", "kind": "web_search", "title": "Search the web for “the pdf I”", "detail": "Opens your default browser" }
   ]
 }
 ```
 
-Candidates are the top 13 fuzzy matches from the local index (30 when the query names a time window) plus synthetic rows: an arithmetic result when the query parses, and a web search for any non-empty query. They carry short ids (`c0` to `cN`) that the code maps back to real candidates when the answer arrives, so Jev only ever sees a few dozen rows, never the whole index or the browser history.
+Candidates are the top 13 fuzzy matches from the merged local sources (30 when the query names a time window), after scope filtering and personal boosts. Synthetic rows add arithmetic results in All and web search in All/Links. They carry short ids (`c0` to `cN`) that the code maps back to real candidates when the answer arrives, so Jev only ever sees a few dozen rows, never the whole index or browser history.
 
 **Questions**, all in one `questions` object:
 
@@ -189,7 +191,7 @@ export TYPESAFE_API_KEY=...        # read from the environment; never hardcoded
 
 ### Privacy and failure behavior
 
-The request contains the query, short candidate titles/details and limited context. Details can include folder names, browser hosts and workspace member names. File contents, clipboard text, the complete index and raw browser databases stay local. Local-only mode disables Jev requests; pinning, workspaces, previews, calculations and manual groups still work.
+The request contains the query, short candidate titles/details, query-relevant file ages and limited context. Details can include folder names, browser hosts and workspace member names. File contents, clipboard text, the complete index and raw browser databases stay local. Local-only mode disables Jev requests; pinning, workspaces, previews, calculations and manual groups still work.
 
 Errors appear as a compact header icon with a tooltip. Missing keys, HTTP errors, timeouts and transport failures preserve local results. HTTP 429 and 529 pause new requests, honor `Retry-After` when supplied, and use increasing cooldowns for repeated limits. Enter remains explicit even when Jev reports high confidence. File existence, URL schemes and group eligibility are validated before execution.
 
