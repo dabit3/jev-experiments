@@ -13,13 +13,16 @@
 		2F25A06D065A6FC73ABD5DF5 /* Ranker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7FD548C3DCCAAD3B79F785 /* Ranker.swift */; };
 		33E630203EDC907D2D37958C /* LauncherExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */; };
 		5152F52E9FF4C8C1AC4735D1 /* Fuzzy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364AB77D4E5E2C84224EF6D8 /* Fuzzy.swift */; };
+		51B50B82CB0D8CB5AE670D81 /* PeopleAndReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA672EF7C3C25FAA3F0562FE /* PeopleAndReminders.swift */; };
 		5C278B0DA6719F02D2F14713 /* SetsAndHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B956AE5A913ECE64ED1A37 /* SetsAndHistoryTests.swift */; };
+		601D0713BC7105ED6E79CD62 /* IntentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18DEB48F96B4709C4766A4AB /* IntentsTests.swift */; };
 		64B5652FF6A815AF962530FD /* ActionList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AFBF3FC2CCEA1432A15BF0B /* ActionList.swift */; };
 		7422E3AACC95E38E9CAD294C /* JevQuestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85AC05631A30C27624B4F7A5 /* JevQuestionsTests.swift */; };
 		7624E1801292443844BA082F /* JevQuestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC5AE9F9DB8086F755633ACB /* JevQuestions.swift */; };
 		7AEE5718C424116E00571207 /* JevLauncherApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA4F2A3387CD6B7EE692C12 /* JevLauncherApp.swift */; };
 		84AA30C3BBE5B1D2AD7F48BA /* Candidate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D5C1AB51EC9E299A063CF0 /* Candidate.swift */; };
 		8C8263B1CF8EB2DDB286D370 /* JevClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781D7E1A1227797B76B6AB81 /* JevClient.swift */; };
+		930AA73DADC1057B09E46E81 /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB371CE1A07FE11538D9B233 /* Intents.swift */; };
 		9332E9D2806DDCD1714E368A /* SpotlightSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DDBE0FC9D0F4E7530FC686 /* SpotlightSearch.swift */; };
 		B47E380FA12909D19DD56F72 /* LatencyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFA2B0083CA208C66E94437 /* LatencyStats.swift */; };
 		C2F425CB423982628531693B /* LauncherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E414ABBE8C4B65435AF1DEE /* LauncherView.swift */; };
@@ -48,6 +51,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		18DEB48F96B4709C4766A4AB /* IntentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentsTests.swift; sourceTree = "<group>"; };
 		1BFA2B0083CA208C66E94437 /* LatencyStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyStats.swift; sourceTree = "<group>"; };
 		1CA4F2A3387CD6B7EE692C12 /* JevLauncherApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevLauncherApp.swift; sourceTree = "<group>"; };
 		1E1EE11CC567F925116ACF1C /* JevLauncherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JevLauncherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,8 +79,10 @@
 		C2AC71663AC83731AF4D5D1E /* TimeWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeWindow.swift; sourceTree = "<group>"; };
 		CAAC05428581023BC4B1D23D /* StatsAndIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsAndIndexTests.swift; sourceTree = "<group>"; };
 		CC5AE9F9DB8086F755633ACB /* JevQuestions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JevQuestions.swift; sourceTree = "<group>"; };
+		DB371CE1A07FE11538D9B233 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		E4E8EB4E2E96DEBC18B900C4 /* SearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScope.swift; sourceTree = "<group>"; };
 		F05BB9B525410201DDD348D7 /* Launcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Launcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA672EF7C3C25FAA3F0562FE /* PeopleAndReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeopleAndReminders.swift; sourceTree = "<group>"; };
 		FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherExperienceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -85,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				9EC08356D4BB9015E71450EC /* CalculatorTests.swift */,
+				18DEB48F96B4709C4766A4AB /* IntentsTests.swift */,
 				85AC05631A30C27624B4F7A5 /* JevQuestionsTests.swift */,
 				FF03D5B40869A98B586E79B8 /* LauncherExperienceTests.swift */,
 				885628A00329CE133F328AF5 /* LiveExperienceTests.swift */,
@@ -124,6 +131,7 @@
 				B6FAB00F4D64BADE280B59A3 /* Executor.swift */,
 				364AB77D4E5E2C84224EF6D8 /* Fuzzy.swift */,
 				A4AE5996EE56BBE0F79713E4 /* HotKey.swift */,
+				DB371CE1A07FE11538D9B233 /* Intents.swift */,
 				781D7E1A1227797B76B6AB81 /* JevClient.swift */,
 				1CA4F2A3387CD6B7EE692C12 /* JevLauncherApp.swift */,
 				CC5AE9F9DB8086F755633ACB /* JevQuestions.swift */,
@@ -132,6 +140,7 @@
 				2EC611D803571AD8C3726794 /* LauncherPanel.swift */,
 				7E414ABBE8C4B65435AF1DEE /* LauncherView.swift */,
 				9C3611FA2E6B7D612B0B19F1 /* LocalIndex.swift */,
+				FA672EF7C3C25FAA3F0562FE /* PeopleAndReminders.swift */,
 				4B92E2272AF964BE3B60EFE9 /* PersonalLibrary.swift */,
 				9E7FD548C3DCCAAD3B79F785 /* Ranker.swift */,
 				E4E8EB4E2E96DEBC18B900C4 /* SearchScope.swift */,
@@ -224,6 +233,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A3131FD056A9BB77AE2531C /* CalculatorTests.swift in Sources */,
+				601D0713BC7105ED6E79CD62 /* IntentsTests.swift in Sources */,
 				7422E3AACC95E38E9CAD294C /* JevQuestionsTests.swift in Sources */,
 				33E630203EDC907D2D37958C /* LauncherExperienceTests.swift in Sources */,
 				FEA2AEFA7E97FFF31D00DC79 /* LiveExperienceTests.swift in Sources */,
@@ -245,6 +255,7 @@
 				F9198A994AC8E40D74BACD3B /* Executor.swift in Sources */,
 				5152F52E9FF4C8C1AC4735D1 /* Fuzzy.swift in Sources */,
 				CC4E85F50160876CA6E08C02 /* HotKey.swift in Sources */,
+				930AA73DADC1057B09E46E81 /* Intents.swift in Sources */,
 				8C8263B1CF8EB2DDB286D370 /* JevClient.swift in Sources */,
 				7AEE5718C424116E00571207 /* JevLauncherApp.swift in Sources */,
 				7624E1801292443844BA082F /* JevQuestions.swift in Sources */,
@@ -253,6 +264,7 @@
 				CD888953163671058C582738 /* LauncherPanel.swift in Sources */,
 				C2F425CB423982628531693B /* LauncherView.swift in Sources */,
 				DFFD9F58A57B977DB52D3D0D /* LocalIndex.swift in Sources */,
+				51B50B82CB0D8CB5AE670D81 /* PeopleAndReminders.swift in Sources */,
 				E767F8E4091D4C2FB7FAA063 /* PersonalLibrary.swift in Sources */,
 				2F25A06D065A6FC73ABD5DF5 /* Ranker.swift in Sources */,
 				F1B115CE4C79C1612426BC73 /* SearchScope.swift in Sources */,
@@ -343,7 +355,10 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Launcher reads contact names, emails and phone numbers so requests like “send the invoice to Sarah” can name a recipient.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Launcher creates reminders for requests like “remind me to call the dentist tomorrow at 9”.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "Launcher creates reminders for requests like “remind me to call the dentist tomorrow at 9”.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -465,7 +480,10 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Launcher sends Apple Events to System Events and Finder to run system toggles such as Dark Mode, Sleep and Empty Trash.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Launcher reads contact names, emails and phone numbers so requests like “send the invoice to Sarah” can name a recipient.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Launcher creates reminders for requests like “remind me to call the dentist tomorrow at 9”.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "Launcher creates reminders for requests like “remind me to call the dentist tomorrow at 9”.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

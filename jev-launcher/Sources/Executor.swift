@@ -62,6 +62,10 @@ enum Executor {
       return await Task.detached {
         command("/usr/bin/shortcuts", ["run", name], success: "Ran shortcut \(name)")
       }.value
+    case .send(let delivery):
+      return Sharing.perform(delivery)
+    case .reminder(let reminder):
+      return await Reminders.create(reminder)
     case .toggle(.doNotDisturb):
       let url = URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension")!
       let opened = NSWorkspace.shared.open(url)
@@ -81,6 +85,10 @@ enum Executor {
     case .url(let url):
       return ["https", "http"].contains(url.scheme?.lowercased() ?? "")
         && url.host != nil ? nil : "Only HTTP and HTTPS links can be opened."
+    case .send(let delivery):
+      guard let url = delivery.attachment else { return nil }
+      return url.isFileURL && FileManager.default.fileExists(atPath: url.path)
+        ? nil : "\(url.lastPathComponent) is no longer at its saved location."
     case .group(let members):
       guard !members.isEmpty, members.count <= Ranker.maximumSetSize,
         members.allSatisfy(\.isOpenable)

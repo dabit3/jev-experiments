@@ -43,6 +43,12 @@ The scope bar switches between **All**, **Files**, **Apps**, **Links** and **Wor
 
 Press **⌘K** for the selected result's actions. Arrow keys select an action and Enter runs it. Files support Quick Look and Reveal in Finder; files, links and calculations can be copied; apps, files and links can be pinned. Escape closes the current overlay before dismissing the launcher.
 
+### Send it, text it, remind me
+
+Some requests name a person, a file and a channel at once. `send the invoice to sarah` becomes one row, **Email invoice-2026-08.pdf to Sarah Chen**, with a **Message** twin beneath it; Enter opens a Mail draft with the recipient filled in and the PDF attached, nothing is sent until you press Send in Mail. `text mom I'm running late` becomes **Text Linda Park: “I'm running late”** in Messages; `airdrop the pdf I just downloaded` opens the AirDrop picker on that file; `remind me to call the dentist tomorrow at 9` creates the reminder in Reminders with the time parsed locally.
+
+The parts are resolved in code: contacts come from the macOS address book (name, nickname, first email and phone), the file from the same fuzzy prefilter that ranks plain file queries, the time from the calendar. Jev sees the assembled rows alongside the bare file, the app and the web-search fallback and picks between them, so `send` and `text` land on different channels and a query without a plausible person or file produces no send row at all. In the live probes below Jev puts 100% on the email row for `send the invoice to sarah`, 95% on the Messages row for `text mom I'm running late` and 100% on the reminder row, at 90 to 140 ms each.
+
 ### Save a workflow
 
 Check or uncheck members of a suggested group, or build a group yourself with **⌘Space** on individual results. **Save group as workspace** gives it a name, such as `Writing` or `Launch research`. That name becomes a searchable result containing 2 to 25 apps, files or links. Open its Actions menu and choose **Review and edit items** to adjust the group before opening it or saving a new workspace. Workspaces are local, capped at 20, and removable from their Actions menu.
@@ -127,7 +133,7 @@ Candidates are the top 13 fuzzy matches from the merged local sources (30 when t
 **Questions**, all in one `questions` object:
 
 1. `target`: Choice over `c0` to `cN` plus `none`. Which entry is the item they intend to open or run, treating `query` as a possibly incomplete prefix or paraphrase and matching on meaning. The full distribution is used: each row's percentage is `probabilities[cK]`.
-2. `action`: Choice over `open_app`, `open_file`, `open_url`, `web_search`, `calculate`, `system_toggle`, `run_shortcut`, `unclear`, each with a one-line rubric. A candidate whose `kind` matches the chosen action gets a ranking boost.
+2. `action`: Choice over `open_app`, `open_file`, `open_url`, `web_search`, `calculate`, `system_toggle`, `run_shortcut`, `send`, `remind`, `unclear`, each with a one-line rubric. A candidate whose `kind` matches the chosen action gets a ranking boost.
 3. `ready`: Noul. The launcher is about to run the best candidate the instant Enter is pressed; is `query` already unambiguous enough for that? The top row gets the green ↵ when this is at least 0.6, or when Jev gives one target at least 90%. The second rule exists because on the PDF query `ready` hedges around 0.4 while `target` is 98 to 100% on the newest file.
 4. `scope`: Choice between `one` and `all`, described above.
 5. `match_cN`: one Noul per real candidate (synthetic calculator and web rows excluded), described above.
@@ -159,9 +165,10 @@ The `ready` wording went through several rounds against the five queries plus de
 - **Personal library** (`PersonalLibrary.swift`): at most 200 local records, eight query aliases per record and 20 workspaces, persisted as Codable data in `UserDefaults` under `launcher.library.v1`. No file contents are stored.
 - **Time windows** (`TimeWindow.swift`): relative (`past 24 hours`, `last 3 days`, `a couple of weeks ago`), named (`today`, `yesterday`, `this week`, `last month`, `this morning`, `tonight`, `last night`, `just now`, `recently`) and number words, resolved against the local calendar.
 - **System toggles** (`Executor.swift`): Dark Mode (AppleScript to System Events), Wi-Fi on/off (`networksetup -setairportpower`), Do Not Disturb (opens Focus settings), Sleep (AppleScript), Lock Screen (`CGSession -suspend`), Empty Trash (AppleScript to Finder), Show/Hide hidden files (`defaults write` plus `killall Finder`).
+- **Compound intents** (`Intents.swift`): `send | share | email | text | message | airdrop <item> to <person>` and `<verb> <person> <text>` are split by regular expression; the person is matched on first name, last name, full name and nickname against the address book (`PeopleAndReminders.swift`, at most 2,000 contacts, loaded once at launch); the item is matched against indexed files with a confidence floor, and treated as message text when no file clears it. `remind me to …` splits the task from `in 20 minutes`, `tomorrow`, `tonight`, weekdays, `at 9`, `9am`, `noon`; bare numbers with no time word stay in the title, and times already past today roll to tomorrow.
 - **Calculator** (`Calculator.swift`): a recursive-descent parser for `+ - * / ^ ( )`, `x` as multiply, `sqrt`, percentages (`15% of 240`, `200 * 10%`), with an optional `calc` or `=` prefix. No `NSExpression`, no eval.
 - **Fuzzy prefilter** (`Fuzzy.swift`): exact, prefix, word-initial and subsequence scoring over title and keywords, with natural-language filler (`the`, `open`, `pages`, `about`, `read`, and so on) stripped so it never crowds out the words that matter.
-- **Execution**: `NSWorkspace.open` for apps, files and web searches; URLs and URL groups go to Chrome when installed (default browser otherwise), passed as values, never through a shell; the calculator result is copied to the clipboard.
+- **Execution**: `NSWorkspace.open` for apps, files and web searches; URLs and URL groups go to Chrome when installed (default browser otherwise), passed as values, never through a shell; the calculator result is copied to the clipboard. Email, Messages and AirDrop go through `NSSharingService` (`composeEmail`, `composeMessage`, `sendViaAirDrop`) with the recipient and attachment passed as values, so the system compose window opens and the user presses Send. Reminders are saved with EventKit into the default list.
 
 ## Run
 
@@ -204,8 +211,9 @@ Errors appear as a compact header icon with a tooltip. Missing keys, HTTP errors
 
 - **Automation (Apple Events)**: the first Dark Mode, Sleep or Empty Trash toggle prompts to control System Events or Finder. `NSAppleEventsUsageDescription` is set in `project.yml`. The build is unsandboxed so it can read the folders it indexes.
 - **Wi-Fi** toggling uses `networksetup`, which may ask for an administrator password on some macOS versions.
+- **Contacts**: asked once at launch so `send … to sarah` can name a recipient; if declined, send rows simply never appear. **Reminders**: asked the first time a reminder row runs. Both usage strings are in `project.yml`.
 - **Folders**: macOS asks once for Downloads, Desktop and Documents. Chrome's history lives under `~/Library/Application Support`, which needs no prompt.
-- Nothing else: no Accessibility, Screen Recording or Full Disk Access.
+- Nothing else: no Accessibility, Screen Recording or Full Disk Access. Contact names, emails and phone numbers stay on the Mac; Jev only sees the assembled row title (`Email invoice-2026-08.pdf to Sarah Chen`) and its detail line.
 
 ## Build and test
 

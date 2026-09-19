@@ -9,6 +9,8 @@ enum ActionKind: String, CaseIterable, Codable, Sendable {
   case calculate = "calculate"
   case systemToggle = "system_toggle"
   case runShortcut = "run_shortcut"
+  case send = "send"
+  case remind = "remind"
   case unclear = "unclear"
 
   var label: String {
@@ -20,6 +22,8 @@ enum ActionKind: String, CaseIterable, Codable, Sendable {
     case .calculate: return "Calc"
     case .systemToggle: return "System"
     case .runShortcut: return "Shortcut"
+    case .send: return "Send"
+    case .remind: return "Remind"
     case .unclear: return "?"
     }
   }
@@ -35,6 +39,10 @@ enum ActionKind: String, CaseIterable, Codable, Sendable {
     case .systemToggle:
       return "Change a system setting: appearance, wi-fi, focus, sleep, lock, trash, hidden files."
     case .runShortcut: return "Run a user-created macOS Shortcut by name."
+    case .send:
+      return
+        "Send something to a person or device: email or message a file or some text to a contact, or AirDrop a file."
+    case .remind: return "Create a reminder for the task named in the query, at the time it names."
     case .unclear: return "Too little typed or too ambiguous to tell what kind of action is meant."
     }
   }
@@ -50,6 +58,8 @@ struct Candidate: Identifiable, Hashable, Codable, Sendable {
     case calculation(expression: String, result: String)
     case toggle(SystemToggle)
     case shortcut(String)
+    case send(Delivery)
+    case reminder(Reminder)
     /// Several candidates opened together; synthesized by the ranker when Jev judges that the
     /// query describes a set rather than one item.
     indirect case group([Candidate])
@@ -95,6 +105,7 @@ struct Candidate: Identifiable, Hashable, Codable, Sendable {
   var fileURL: URL? {
     switch payload {
     case .app(let url), .file(let url): return url
+    case .send(let delivery): return delivery.attachment
     default: return nil
     }
   }
