@@ -438,6 +438,8 @@ final class TalkieModel: ObservableObject {
     panel.allowedContentTypes = [.audio]
     panel.message = "Audio is sent to OpenAI for transcription. Review the words before sending."
     panel.prompt = "Transcribe"
+    NSApplication.shared.activate(ignoringOtherApps: true)
+    panel.makeKeyAndOrderFront(nil)
     guard panel.runModal() == .OK, let url = panel.url else { return }
     stop()
     notice = nil
