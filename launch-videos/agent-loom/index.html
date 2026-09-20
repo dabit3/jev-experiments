@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Agent Loom</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+
+  <!-- Scene A: headline -->
+  <div id="headline" class="scene">
+    <img id="hlMark" class="mark" src="media/logo/mark-black.png" alt="">
+    <div class="hl-line" id="hl1"></div>
+    <div class="hl-line" id="hl2"></div>
+  </div>
+
+  <!-- Scene B: composer -->
+  <div id="composerCam" class="scene">
+    <div id="composer" class="window">
+      <div class="c-header c-part">
+        <div class="brand"><img src="media/logo/mark-black.png" alt=""><span>Devin</span></div>
+        <div class="seg"><span class="on">Agent</span><span>Ask</span></div>
+      </div>
+      <div class="c-body c-part">
+        <div id="cText" class="c-text"><span id="cTyped"></span><span id="caret" class="caret"></span></div>
+        <div id="cPlaceholder" class="c-placeholder">Ask Devin to build features, fix bugs, or work on your code</div>
+      </div>
+      <div class="c-footer c-part">
+        <div class="c-left">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+          <div id="hosted" class="hosted"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h16v9H4z"/><path d="M9 20h6"/></svg><span id="hostedLabel">Ubuntu</span></div>
+        </div>
+        <div class="c-right">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <div id="submit" class="submit"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div id="menu" class="menu">
+      <div class="m-title">Hosted</div>
+      <div class="m-item" id="mUbuntu"><span class="dot ub"></span>Ubuntu<svg class="check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+      <div class="m-item" id="mMac"><span class="dot ap"></span>macOS<svg class="check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+      <div class="m-item"><span class="dot win"></span>Windows</div>
+    </div>
+  </div>
+
+  <!-- Scene C: session -->
+  <div id="sessionCam" class="scene">
+    <div id="session" class="window">
+      <div class="s-top">
+        <div class="s-top-left">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          <span id="sTitle" class="s-title">Silverroom for iPhone</span>
+          <span class="chip"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h16v9H4z"/><path d="M9 20h6"/></svg>macOS</span>
+        </div>
+        <div class="s-tabs"><span>Progress</span><span>Changes</span><span class="on">Computer</span></div>
+      </div>
+      <div class="s-chat">
+        <div id="uMsg1" class="u-msg"></div>
+        <div id="dMsg1" class="d-msg"><img src="media/logo/mark-black.png" alt=""><div></div></div>
+        <div id="steps1" class="steps"></div>
+        <div id="uMsg2" class="u-msg"></div>
+        <div id="dMsg2" class="d-msg"><img src="media/logo/mark-black.png" alt=""><div></div></div>
+        <div id="steps2" class="steps"></div>
+        <div class="s-input">
+          <div class="s-ph">Ask Devin to build features, fix bugs, or work on your code</div>
+          <div class="s-in-foot">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="s-model">Hosted on macOS</span>
+            <div class="submit small"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="s-pane">
+        <div id="editor" class="editor">
+          <div class="e-tab">Models.swift</div>
+          <pre id="code"></pre>
+        </div>
+        <div id="computer" class="computer">
+          <svg id="threads" viewBox="0 0 1060 880" preserveAspectRatio="none">
+            <path id="thBlue" class="thread blue" d="M 120 -20 C 60 200, 210 320, 150 480 S 110 760, 190 920"/>
+            <path id="thInk" class="thread ink" d="M 940 -20 C 1000 220, 860 340, 910 520 S 960 760, 880 920"/>
+          </svg>
+          <div id="phoneWrap">
+            <div id="phoneP" class="phone portrait"><div class="island"></div><div class="screen"><img id="imgSilver" alt=""></div></div>
+            <div id="phoneL" class="phone landscape"><div class="island"></div><div class="screen"><img id="imgRtx" alt=""></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene D: weave and outcomes -->
+  <div id="weave" class="scene">
+    <svg id="weaveSvg" viewBox="0 0 1920 1080"></svg>
+    <div id="outcomes">
+      <div class="phone portrait"><div class="island"></div><div class="screen"><img id="outSilver" alt=""></div></div>
+      <div class="phone landscape"><div class="island"></div><div class="screen"><img id="outRtx" alt=""></div></div>
+    </div>
+    <div id="outText" class="out-text"></div>
+  </div>
+
+  <!-- Scene E: end card -->
+  <div id="endcard" class="scene">
+    <img id="lockup" src="media/logo/lockup-black.png" alt="">
+    <div id="url">devin.ai</div>
+  </div>
+
+  <!-- cursor -->
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.5L9.5 19z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+</div>
+<script src="config.js"></script>
+<script src="comp.js"></script>
+</body>
+</html>
