@@ -15,10 +15,10 @@ final class LiveJevTests: XCTestCase {
       "set TYPESAFE_API_KEY and JEV_LIVE=1 to run live probes")
   }
 
-  private func judge(_ query: String, index: [Candidate]) async throws -> (
-    [RankedHit], JevJudgment, Ranker.Prefiltered, Int, Double
-  ) {
-    let prefiltered = Ranker.prefilter(query: query, index: index)
+  private func judge(_ query: String, index: [Candidate], contacts: [Contact] = [])
+    async throws -> ([RankedHit], JevJudgment, Ranker.Prefiltered, Int, Double)
+  {
+    let prefiltered = Ranker.prefilter(query: query, index: index, contacts: contacts)
     let request = JevQuestions.buildRequest(
       query: query, context: context, candidates: prefiltered.candidates,
       window: prefiltered.window)
@@ -107,5 +107,44 @@ final class LiveJevTests: XCTestCase {
       XCTAssertEqual(hits.first?.candidate.kind, kind)
       XCTAssertFalse(hits.first?.isGroup ?? true)
     }
+  }
+
+  func testSendTheInvoiceToSarahPicksTheEmailRow() async throws {
+    let index = Fixtures.index
+    let query = "send the invoice to sarah"
+    let (hits, judgment, _, tokens, ms) = try await judge(
+      query, index: index, contacts: PeopleFixtures.all)
+    report(query, hits, judgment, tokens, ms)
+    XCTAssertEqual(judgment.action, .send)
+    let top = try XCTUnwrap(hits.first)
+    guard case .send(let delivery) = top.candidate.payload else {
+      return XCTFail("expected a send row on top, got \(top.candidate.title)")
+    }
+    XCTAssertEqual(delivery.channel, .email)
+    XCTAssertEqual(delivery.recipient, PeopleFixtures.sarah)
+    XCTAssertEqual(delivery.attachment, Fixtures.invoice.fileURL)
+  }
+
+  func testTextMomPicksTheMessageRow() async throws {
+    let index = Fixtures.index
+    let query = "text mom I'm running late"
+    let (hits, judgment, _, tokens, ms) = try await judge(
+      query, index: index, contacts: PeopleFixtures.all)
+    report(query, hits, judgment, tokens, ms)
+    XCTAssertEqual(judgment.action, .send)
+    guard case .send(let delivery) = hits.first?.candidate.payload else {
+      return XCTFail("expected a send row on top")
+    }
+    XCTAssertEqual(delivery.channel, .message)
+    XCTAssertEqual(delivery.body, "I'm running late")
+  }
+
+  func testRemindMePicksTheReminderRow() async throws {
+    let index = Fixtures.index
+    let query = "remind me to call the dentist tomorrow at 9"
+    let (hits, judgment, _, tokens, ms) = try await judge(query, index: index)
+    report(query, hits, judgment, tokens, ms)
+    XCTAssertEqual(judgment.action, .remind)
+    XCTAssertEqual(hits.first?.candidate.kind, .remind)
   }
 }

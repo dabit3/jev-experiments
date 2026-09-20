@@ -46,6 +46,8 @@ final class LauncherModel: ObservableObject {
   private var index: [Candidate] = []
   private var spotlightCandidates: [Candidate] = []
   private var libraryCandidates: [Candidate] = []
+  private var contacts: [Contact] = []
+  private var contactsTask: Task<Void, Never>?
   private var prefiltered = Ranker.Prefiltered(candidates: [], fuzzy: [:])
   private var sequence = 0
   private var queryGeneration = 0
@@ -181,6 +183,21 @@ final class LauncherModel: ObservableObject {
     libraryCandidates = library.candidates()
     refreshResults()
     rebuildIndex()
+    loadContacts()
+  }
+
+  private func loadContacts() {
+    guard contacts.isEmpty, contactsTask == nil else { return }
+    contactsTask = Task { [weak self] in
+      let loaded = await ContactsIndex.load()
+      guard let self else { return }
+      self.contacts = loaded
+      self.contactsTask = nil
+      guard !loaded.isEmpty, !self.isEmptyQuery else { return }
+      let previous = self.prefiltered
+      self.refreshResults()
+      if previous != self.prefiltered { self.requestJudgment() }
+    }
   }
 
   func rebuildIndex() {
@@ -471,7 +488,8 @@ final class LauncherModel: ObservableObject {
       return
     }
     prefiltered = Ranker.prefilter(
-      query: query, index: all, scope: scope, boosts: library.boosts(query: query))
+      query: query, index: all, scope: scope, boosts: library.boosts(query: query),
+      contacts: contacts)
     updateHits()
   }
 

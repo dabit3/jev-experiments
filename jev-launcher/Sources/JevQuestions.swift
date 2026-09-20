@@ -165,7 +165,7 @@ enum JevQuestions {
           detail: candidate.subtitle, recency: recency))
       targetCriteria[shortID] =
         "\(candidate.kind.label): \(candidate.title) — \(candidate.subtitle)"
-      guard candidate.kind != .webSearch, candidate.kind != .calculate else { continue }
+      guard ![.webSearch, .calculate, .send, .remind].contains(candidate.kind) else { continue }
       questions[matchKey(index)] = JevRequest.Question(
         type: "noul",
         instructions:
@@ -179,20 +179,20 @@ enum JevQuestions {
     let target = JevRequest.Question(
       type: "choice",
       instructions:
-        "The user typed `query` into a launcher. Which entry in `candidates` is the item they intend to open or run? Treat `query` as a possibly incomplete prefix or paraphrase. Match on meaning: for \"the pdf I just downloaded\", prefer a PDF in Downloads added most recently, using modification age only when added metadata is absent; for \"the pdf I last opened\", use opened age, never modification age; for \"wifi off\", choose the candidate that disables Wi-Fi. A named saved workspace is one candidate that opens its saved members. Use `context.frontmost_app` and `context.recent_apps` only to break ties. Pick `none` when no candidate plausibly matches.",
+        "The user typed `query` into a launcher. Which entry in `candidates` is the item they intend to open or run? Treat `query` as a possibly incomplete prefix or paraphrase. Match on meaning: for \"the pdf I just downloaded\", prefer a PDF in Downloads added most recently, using modification age only when added metadata is absent; for \"the pdf I last opened\", use opened age, never modification age; for \"wifi off\", choose the candidate that disables Wi-Fi. A `send` candidate already pairs a file or text with a person and a channel: for \"send the invoice to sarah\" prefer the send row naming the invoice file and Sarah over the bare file, the Mail app or a web search; prefer email over message unless `query` says text or message. A `remind` candidate already carries the task and time, so prefer it for \"remind me to …\". A named saved workspace is one candidate that opens its saved members. Use `context.frontmost_app` and `context.recent_apps` only to break ties. Pick `none` when no candidate plausibly matches.",
       criteria: .options(targetCriteria))
 
     let action = JevRequest.Question(
       type: "choice",
       instructions:
-        "What kind of action does `query` ask the launcher to perform? Judge from the words in `query` and, when `query` names one of the `candidates`, that candidate's `kind`. If `query` is a bare arithmetic expression choose calculate. If it reads like a question or a topic with no matching local candidate choose web_search.",
+        "What kind of action does `query` ask the launcher to perform? Judge from the words in `query` and, when `query` names one of the `candidates`, that candidate's `kind`. If `query` is a bare arithmetic expression choose calculate. If it starts with send, share, email, text, message or airdrop and names a person or file choose send; if it starts with remind me choose remind. If it reads like a question or a topic with no matching local candidate choose web_search.",
       criteria: .options(
         Dictionary(uniqueKeysWithValues: ActionKind.allCases.map { ($0.rawValue, $0.rubric) })))
 
     let ready = JevRequest.Question(
       type: "noul",
       instructions:
-        "The launcher is about to run the best-matching candidate the instant the user presses Enter. Is `query` already unambiguous enough for that? `candidates` is the complete list of everything the launcher could do for this query; the web_search entry is only a fallback for when nothing local fits. Short input is fine: \"empty tr\" unambiguously means the Empty Trash toggle if no other local candidate fits it, while a single letter that several local candidates start with is ambiguous.",
+        "The launcher is about to run the best-matching candidate the instant the user presses Enter. Is `query` already unambiguous enough for that? `candidates` is the complete list of everything the launcher could do for this query; the web_search entry is only a fallback for when nothing local fits. Short input is fine: \"empty tr\" unambiguously means the Empty Trash toggle if no other local candidate fits it, while a single letter that several local candidates start with is ambiguous. Two send rows that differ only in channel are not ambiguous: email is the default for send and share, message for text; a remind row that names the task and time is unambiguous.",
       criteria: .yesNo(
         yes:
           "One local candidate is the obvious meaning of `query` and the remaining candidates are not plausible; running it on Enter would not surprise the user.",

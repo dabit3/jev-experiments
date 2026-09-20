@@ -348,12 +348,25 @@ struct CandidateIcon: View {
     case .calculate: return "equal"
     case .systemToggle: return "switch.2"
     case .runShortcut: return "command"
+    case .send: return sendSymbol
+    case .remind: return "bell.badge.fill"
     case .unclear: return "questionmark"
+    }
+  }
+
+  private var sendSymbol: String {
+    guard case .send(let delivery) = candidate.payload else { return "paperplane.fill" }
+    switch delivery.channel {
+    case .email: return "envelope.fill"
+    case .message: return "message.fill"
+    case .airDrop: return "dot.radiowaves.left.and.right"
     }
   }
 
   private var tint: Color {
     switch candidate.kind {
+    case .send: return Color(red: 0.25, green: 0.60, blue: 0.95)
+    case .remind: return Color(red: 0.90, green: 0.35, blue: 0.35)
     case .calculate: return Color(red: 0.95, green: 0.55, blue: 0.25)
     case .webSearch: return Color(red: 0.30, green: 0.55, blue: 0.95)
     case .openURL: return Color(red: 0.25, green: 0.62, blue: 0.85)
