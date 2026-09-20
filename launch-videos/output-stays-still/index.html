@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud: The Output Stays Still</title>
+<style>
+  /* ------------------------------------------------------------------ */
+  /* Editable constants (colors). Timings and text live in the script.  */
+  /* ------------------------------------------------------------------ */
+  :root {
+    --paper: #f7f7f7;
+    --ink: #111111;
+    --ink-2: #3d3d3d;
+    --muted: #7a7a7a;
+    --hair: rgba(0, 0, 0, 0.08);
+    --white: #ffffff;
+    --hover: #eeeeee;
+    --panel: #111111;
+    --send: #262626;
+    --blue: #3b6ff5;
+    --new-bg: #dfe8ff;
+    --new-fg: #2f5fd8;
+    --font: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", Menlo, monospace;
+  }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+  body { font-family: var(--font); color: var(--ink); letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #world { position: absolute; inset: 0; transform-origin: 1480px 540px; }
+  .abs { position: absolute; }
+  svg { display: block; }
+
+  /* Composer act (left column, 49 percent of the frame width) */
+  #composerGroup { left: 80px; top: 302px; width: 940px; }
+  #lockupRow { display: flex; align-items: center; justify-content: space-between; height: 44px; }
+  #lockupRow img { height: 40px; transform-origin: 0 0; }
+  #modeToggle { display: flex; background: #ececec; border-radius: 999px; padding: 4px; font-size: 20px; font-weight: 500; }
+  #modeToggle span { padding: 5px 20px; border-radius: 999px; color: var(--muted); }
+  #modeToggle span.on { background: var(--white); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  #heading { margin-top: 36px; font-size: 56px; line-height: 64px; font-weight: 600; letter-spacing: -0.03em; white-space: nowrap; height: 64px; transform-origin: 0 0; }
+  #heading span { display: inline-block; margin-right: 15px; }
+  #card { margin-top: 32px; height: 300px; background: var(--white); border-radius: 28px; box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,0.08); position: relative; overflow: visible; transform-origin: 50% 100%; }
+  #promptText { position: absolute; left: 32px; right: 32px; top: 30px; font-size: 34px; line-height: 46px; color: var(--ink); min-height: 92px; letter-spacing: -0.015em; }
+  #promptText.placeholder { color: #9a9a9a; }
+  #caret { display: inline-block; width: 3px; height: 38px; background: var(--ink); vertical-align: -7px; margin-left: 2px; }
+  #cardBottom { position: absolute; left: 24px; right: 24px; bottom: 24px; height: 56px; display: flex; align-items: center; gap: 12px; }
+  .pill { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; border-radius: 12px; font-size: 22px; color: var(--ink-2); font-weight: 500; }
+  .pill.icon { width: 48px; padding: 0; justify-content: center; }
+  .pill.pressed { background: var(--hover); }
+  .pill svg { transform: scale(1.25); }
+  #envChip { padding-right: 14px; }
+  #spacer { flex: 1; }
+  #send { display: flex; height: 56px; background: var(--send); border-radius: 999px; color: #fff; align-items: center; overflow: hidden; margin-left: 4px; }
+  #send > div { display: flex; align-items: center; justify-content: center; height: 100%; }
+  #send .up { width: 64px; }
+  #send .dn { width: 48px; border-left: 1px solid rgba(255,255,255,0.14); }
+  #send svg { transform: scale(1.25); }
+
+  .menu { position: absolute; background: var(--white); border-radius: 18px; box-shadow: 0 0 0 1px var(--hair), 0 20px 50px rgba(0,0,0,0.10); padding: 10px; transform-origin: top left; }
+  .menu .row { display: flex; align-items: center; height: 60px; padding: 0 16px; border-radius: 12px; font-size: 24px; color: var(--ink); gap: 14px; white-space: nowrap; }
+  .menu .row.hl { background: var(--hover); }
+  .menu .row .k { color: var(--muted); }
+  .menu .row .v { margin-left: auto; color: var(--ink-2); display: flex; align-items: center; gap: 10px; }
+  .menu .head { height: 48px; display: flex; align-items: center; padding: 0 16px; font-size: 20px; color: var(--muted); }
+  .menu .row .ic { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+  .menu .row .ic svg { transform: scale(1.25); }
+  .menu .row .tag { font-size: 17px; font-weight: 500; background: var(--new-bg); color: var(--new-fg); border-radius: 7px; padding: 2px 9px; margin-left: 2px; }
+  .menu .row .chk { margin-left: auto; }
+  #menu1 { left: 100px; top: 310px; width: 440px; }
+  #menu2 { left: 560px; top: 310px; width: 380px; }
+
+  #pointer { width: 36px; height: 43px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25)); pointer-events: none; z-index: 30; }
+
+  /* Dark control panel: fills the left column edge to edge (magnifier view, not a card) */
+  #panel { left: 0; top: 0; width: 1060px; height: 1080px; background: var(--panel); overflow: hidden; box-shadow: 30px 0 90px rgba(0,0,0,0.18); z-index: 5; }
+  #cropImg { position: absolute; transform-origin: 0 0; }
+  #codeLayer { position: absolute; inset: 0; background: var(--panel); }
+  #codeHead { height: 64px; display: flex; align-items: center; padding: 0 40px; gap: 14px; color: #9a9a9a; font-size: 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  #codeHead b { color: #f0f0f0; font-weight: 500; }
+  #codeHead img { height: 24px; }
+  #code { padding: 20px 40px; font-family: var(--mono); font-size: 26px; line-height: 40px; color: #e8e8e8; white-space: pre; }
+  .kw { color: #fc5fa3; } .ty { color: #d0a8ff; } .st { color: #fc6a5d; } .nu { color: #d0bf69; } .fn { color: #67b7a4; } .pr { color: #a167e6; } .cm { color: #6c7986; }
+
+  /* Anchored Devin Simulator pane + iPhone */
+  #pane { left: 1120px; top: 100px; width: 720px; height: 880px; background: var(--white); border-radius: 24px; box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,0.07); z-index: 10; }
+  #paneHead { height: 56px; display: flex; align-items: center; padding: 0 18px; gap: 6px; font-size: 17px; color: var(--muted); border-bottom: 1px solid var(--hair); }
+  #paneHead .tab { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 11px; border-radius: 8px; white-space: nowrap; }
+  #paneHead .tab.on { background: #efefef; color: var(--ink); font-weight: 500; }
+  #paneHead .grow { flex: 1; }
+  #paneFoot { position: absolute; left: 18px; right: 18px; bottom: 0; height: 52px; display: flex; align-items: center; gap: 14px; font-size: 16px; color: var(--ink-2); }
+  #progress { flex: 1; display: flex; gap: 4px; }
+  #progress i { flex: 1; height: 5px; border-radius: 3px; background: #cfdcff; }
+  #progress i.on { background: var(--blue); }
+  #live { display: flex; align-items: center; gap: 7px; }
+  #live::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #e5484d; }
+
+  /* iPhone: 706 px tall (65 percent of the frame). Screen keeps the take's 1206x2622 ratio. */
+  #phone { left: 190px; top: 89px; width: 340px; height: 706px; border-radius: 58px; background: linear-gradient(160deg, #3c3c3f, #17171a 40%, #0d0d0f); box-shadow: 0 30px 60px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.25); }
+  #phone::before { content: ""; position: absolute; inset: 2px; border-radius: 56px; background: #0a0a0b; }
+  #screen { position: absolute; left: 14px; top: 14px; width: 312px; height: 678px; border-radius: 44px; overflow: hidden; background: #000; }
+  #screen img { position: absolute; left: 0; top: 0; width: 312px; height: 678px; }
+  .btn { position: absolute; background: #34343a; border-radius: 2px; }
+  .btn.l { left: -2.5px; width: 2.5px; }
+  .btn.r { right: -2.5px; width: 2.5px; }
+
+  /* Opening lockup (large, resolves into the composer header) */
+  #openLockup { left: 88px; top: 400px; width: 520px; }
+
+  /* Outro: lockup content is 40 percent of the frame width */
+  /* lockup PNG has transparent padding: content spans 184..2690 of 2984 wide, 136..888 of 1024 tall */
+  #outroLockup { left: 90px; top: 337px; width: 915px; }
+  #outroUrl { left: 146px; width: 768px; text-align: center; top: 646px; font-size: 48px; line-height: 56px; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="world">
+
+  <!-- Act 1: Devin composer -->
+  <div id="composerGroup" class="abs">
+    <div id="lockupRow">
+      <img src="assets/devin-lockup-black.png" alt="Devin" />
+      <div id="modeToggle"><span class="on">Agent</span><span>Ask</span></div>
+    </div>
+    <div id="heading"></div>
+    <div id="card">
+      <div id="promptText" class="placeholder"></div>
+      <div id="cardBottom">
+        <div class="pill icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#3d3d3d" stroke-width="1.8" stroke-linecap="round"><path d="M11 4v14M4 11h14"/></svg></div>
+        <div class="pill"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#3d3d3d" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h14M3 14h14"/><circle cx="8" cy="6" r="2.2" fill="#fff"/><circle cx="12" cy="14" r="2.2" fill="#fff"/></svg><span>Fusion</span></div>
+        <div class="pill" id="envChip"><span id="envIcon"></span><span id="envLabel">Ubuntu</span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#7a7a7a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5l4 4 4-4"/></svg></div>
+        <div id="spacer"></div>
+        <div class="pill icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#3d3d3d" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="3" width="6" height="11" rx="3"/><path d="M5 11a6 6 0 0 0 12 0M11 17v2"/></svg></div>
+        <div id="send"><div class="up"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 18V4M5 10l6-6 6 6"/></svg></div><div class="dn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></div></div>
+      </div>
+      <div id="menu1" class="menu">
+        <div class="row" id="m1r1"><span class="k">Virtual environment</span><span class="v"><span id="m1env">Ubuntu</span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#7a7a7a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l4 4-4 4"/></svg></span></div>
+        <div class="row"><span class="k">Security profile</span><span class="v">Default<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#7a7a7a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l4 4-4 4"/></svg></span></div>
+      </div>
+      <div id="menu2" class="menu">
+        <div class="head">Hosted</div>
+        <div class="row" id="m2ubuntu"><span class="ic" id="ubIcon"></span>Ubuntu<span class="chk" id="chkUbuntu"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5l4 4 8-9"/></svg></span></div>
+        <div class="row" id="m2mac"><span class="ic" id="apIcon"></span>macOS<span class="tag">New</span><span class="chk" id="chkMac" style="opacity:0"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5l4 4 8-9"/></svg></span></div>
+        <div class="row"><span class="ic" id="winIcon"></span>Windows</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Act 2: dark control panel -->
+  <div id="panel" class="abs">
+    <img id="cropImg" alt="" />
+    <div id="codeLayer">
+      <div id="codeHead"><img src="assets/devin-avatar-white.png" alt="" /><b>ImageEngine.swift</b><span>Silverroom</span></div>
+      <div id="code"></div>
+    </div>
+  </div>
+
+  <!-- Opening lockup -->
+  <img id="openLockup" class="abs" src="assets/devin-lockup-black.png" alt="Devin" />
+
+  <!-- Act 3: outro -->
+  <img id="outroLockup" class="abs" src="assets/devin-lockup-black.png" alt="Devin" />
+  <div id="outroUrl" class="abs">devin.ai</div>
+
+  <!-- Pointer -->
+  <svg id="pointer" class="abs" viewBox="0 0 30 36"><path d="M4 2 L4 28 L11 21 L16 33 L21 31 L16 19 L26 19 Z" fill="#000" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+
+</div>
+
+<!-- The anchor: Devin Simulator pane with the iPhone. Never moves, never scales. -->
+<div id="pane" class="abs">
+  <div id="paneHead">
+    <span class="tab"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5 8h6M8 5v6"/></svg>Changes</span>
+    <span class="tab"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="8.5" rx="1.5"/><path d="M6 13.5h4"/></svg>Computer</span>
+    <span class="tab on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4.5" y="1.5" width="7" height="13" rx="1.8"/><path d="M7 12.5h2"/></svg>iOS Simulator</span>
+    <span class="tab"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4.5h10M3 8h10M3 11.5h7"/></svg>Tasks</span>
+    <span class="tab"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 10V7M8 10V5.5M10.5 10V8.5"/></svg>Progress</span>
+    <span class="grow"></span>
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7a7a7a" stroke-width="1.5"><path d="M3 3h12v12H3zM9 3v12"/></svg>
+  </div>
+  <div id="phone" class="abs">
+    <span class="btn l" style="top:140px;height:24px"></span>
+    <span class="btn l" style="top:186px;height:50px"></span>
+    <span class="btn l" style="top:246px;height:50px"></span>
+    <span class="btn r" style="top:214px;height:78px"></span>
+    <div id="screen"><img id="phoneImg" alt="" /></div>
+  </div>
+  <div id="paneFoot">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7a7a7a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L6 9l5 5"/></svg>
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7a7a7a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l5 5-5 5"/></svg>
+    <span id="live">Live</span>
+    <div id="progress"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ==================================================================== */
+/*  EDITABLE CONSTANTS: timings (seconds), text, media                   */
+/* ==================================================================== */
+const FPS = 30;
+const DURATION = 27.0;                       // total length, seconds
+const TAKE_FRAMES_DIR = 'media/frames/';     // extracted from media/silverroom-take.mp4 at 30 fps
+const TAKE_FRAME_COUNT = 525;                // number of extracted frames
+const TAKE_START = 7.4;                      // composition time at which the take starts playing (1x, no cuts)
+
+const HEADING = 'macOS in Devin Cloud';
+const PROMPT = 'Build Silverroom, a photo darkroom for iPhone with Noir and Silver looks, then test it in the Simulator';
+const PLACEHOLDER = 'Ask Devin to build features, fix bugs, or work on your code';
+
+// Act 1: composer
+const T = {
+  // opening: large lockup + 80 px headline, then both resolve into the composer header
+  lockupBigIn: [0.00, 0.60],
+  headingStart: 0.35, headingStep: 0.14, headingDur: 0.45,
+  resolve: [1.55, 2.10],
+  cardIn: [1.95, 2.50],
+  pointerIn: [2.45, 2.65],
+  pointerToChip: [2.50, 2.90],
+  chipClick: 2.95,
+  menu1In: [2.97, 3.25],
+  pointerToEnv: [3.12, 3.50],
+  menu2In: [3.53, 3.80],
+  pointerToMac: [3.77, 4.12],
+  macClick: 4.17,
+  menusOut: [4.19, 4.44],
+  pointerToText: [4.22, 4.60],
+  typing: [4.45, 5.95],
+  pointerToSend: [5.70, 6.10],
+  sendClick: 6.15,
+  composerOut: [6.25, 6.80],
+  headingOutStart: 6.35, headingOutStep: 0.08, headingOutDur: 0.36,
+  pointerOut: [6.20, 6.42],
+
+  // Act 2: control panel
+  panelIn: [6.50, 7.15],
+  codeTyping: [7.00, 9.20],
+  codeToCrop: [9.20, 9.75],
+  panelOut: [24.85, 25.45],
+
+  // Act 3: outro
+  lockupIn: [25.15, 25.75],
+  urlIn: [25.35, 25.95],
+};
+
+// Opening geometry: where the big lockup and 80 px headline sit before they resolve
+// into the composer header (lockup 40 px tall, heading 56 px).
+const OPEN = { lockupX: 88, lockupY: 400, lockupW: 520, headingX: 120, headingY: 575, headingScale: 80 / 56 };
+
+// Camera crop keyframes inside the control panel. Coordinates are normalized to the
+// iPhone screen (0..1). zoom 1 = the whole screen fits the panel height. Each entry
+// eases from the previous target over `dur` seconds starting at time `t`.
+const CROP = [
+  { t: 0.00,  dur: 0.01, x: 0.50, y: 0.50, z: 1.00 },
+  { t: 9.25,  dur: 0.60, x: 0.50, y: 0.735, z: 2.25 },   // Looks strip, Noir
+  { t: 10.55, dur: 0.55, x: 0.50, y: 0.52,  z: 2.15 },   // photo turns to Noir
+  { t: 11.45, dur: 0.50, x: 0.50, y: 0.67,  z: 2.35 },   // Adjust tab
+  { t: 13.05, dur: 0.55, x: 0.46, y: 0.775, z: 2.40 },   // exposure slider
+  { t: 13.75, dur: 1.55, x: 0.58, y: 0.775, z: 2.40 },   // follow the drag
+  { t: 16.45, dur: 0.65, x: 0.50, y: 0.42,  z: 2.25 },   // hold to compare
+  { t: 19.75, dur: 0.55, x: 0.68, y: 0.62,  z: 2.35 },   // Frame tab
+  { t: 20.80, dur: 0.50, x: 0.30, y: 0.735, z: 2.35 },   // Rotate
+  { t: 22.45, dur: 0.55, x: 0.72, y: 0.735, z: 2.35 },   // Square
+  { t: 23.75, dur: 0.85, x: 0.50, y: 0.50,  z: 1.00 },   // pull back
+];
+
+// Continuous camera drift (scale on everything except the anchor); reverses at act boundaries.
+const DRIFT = [
+  { t: 0.0,  s: 1.000 },
+  { t: 6.50, s: 1.030 },
+  { t: 24.9, s: 1.000 },
+  { t: 27.0, s: 1.030 },
+];
+
+// Swift shown in the building moment (from the real Silverroom source).
+const CODE = [
+  [['kw','import'],['pl',' CoreImage.CIFilterBuiltins']],
+  [['pl','']],
+  [['kw','final class'],['pl',' '],['ty','ImageEngine'],['pl',' {']],
+  [['pl','  '],['kw','private let'],['pl',' context =']],
+  [['pl','    '],['ty','CIContext'],['pl','(options: [.cacheIntermediates: '],['kw','false'],['pl','])']],
+  [['pl','']],
+  [['pl','  '],['kw','func'],['pl',' '],['fn','filtered'],['pl','(_ source: '],['ty','CIImage'],['pl',',']],
+  [['pl','                settings raw: '],['ty','EditSettings'],['pl',') -> '],['ty','CIImage'],['pl',' {']],
+  [['pl','    '],['kw','let'],['pl',' settings = raw.normalized']],
+  [['pl','    '],['kw','var'],['pl',' image = source']],
+  [['pl','    '],['kw','if'],['pl',' settings.exposure != '],['nu','0'],['pl',' {']],
+  [['pl','      image = image.'],['fn','applyingFilter'],['pl','('],['st','"CIExposureAdjust"'],['pl',',']],
+  [['pl','        parameters: [kCIInputEVKey: settings.exposure])']],
+  [['pl','    }']],
+  [['pl','    '],['kw','let'],['pl',' saturation: '],['ty','Double'],['pl',' = '],['kw','switch'],['pl',' settings.film {']],
+  [['pl','      '],['kw','case'],['pl',' .silver, .noir: '],['nu','0']],
+  [['pl','      '],['kw','case'],['pl',' .dune: '],['nu','0.82']],
+  [['pl','      '],['kw','case'],['pl',' .faded: '],['nu','0.65']],
+  [['pl','      '],['kw','case'],['pl',' .original: '],['nu','1']],
+  [['pl','    }']],
+  [['pl','    image = image.'],['fn','applyingFilter'],['pl','('],['st','"CIColorControls"'],['pl',',']],
+  [['pl','      parameters: [kCIInputSaturationKey: saturation])']],
+  [['pl','    '],['kw','return'],['pl',' image']],
+  [['pl','  }']],
+];
+
+// Layout of the enlarged crop viewport (matches #panel CSS)
+const PANEL = { w: 1060, h: 1080 };
+const TAKE = { w: 1206, h: 2622 };
+
+/* ==================================================================== */
+/*  Easing helpers                                                       */
+/* ==================================================================== */
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const easeOut = p => 1 - Math.pow(1 - p, 3);              // fast-out gentle-in
+const easeInOut = p => p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3) / 2;
+const prog = (t, [a, b], ease = easeOut) => ease(clamp01((t - a) / (b - a)));
+const lerp = (a, b, p) => a + (b - a) * p;
+
+/* ==================================================================== */
+/*  Static icons                                                        */
+/* ==================================================================== */
+const APPLE = (s, c) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${c}"><path d="M16.37 12.68c.02 2.7 2.36 3.6 2.39 3.61-.02.06-.37 1.28-1.23 2.53-.74 1.08-1.51 2.16-2.72 2.18-1.19.02-1.58-.71-2.94-.71s-1.79.69-2.92.73c-1.17.04-2.06-1.17-2.81-2.25-1.53-2.21-2.7-6.24-1.13-8.96.78-1.35 2.17-2.2 3.69-2.23 1.15-.02 2.24.78 2.94.78.7 0 2.02-.96 3.41-.82.58.02 2.21.23 3.26 1.77-.08.05-1.95 1.14-1.94 3.37M14.16 5.5c.62-.75 1.04-1.8.93-2.85-.9.04-1.98.6-2.63 1.35-.58.66-1.08 1.73-.95 2.75 1 .08 2.03-.51 2.65-1.25"/></svg>`;
+const UBUNTU = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2" fill="none" stroke="#e95420" stroke-width="2.6"/><circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="0" /><g fill="#e95420"><circle cx="3.6" cy="12" r="2.7"/><circle cx="16.2" cy="4.7" r="2.7"/><circle cx="16.2" cy="19.3" r="2.7"/></g><g fill="#fff"><circle cx="3.6" cy="12" r="4.2" opacity="0"/></g><path d="M6.3 12h3.2M14.4 6.9l1.6-2.8M14.4 17.1l1.6 2.8" stroke="#fff" stroke-width="2.2"/></svg>`;
+const WIN = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><rect x="2" y="2" width="9.5" height="9.5" fill="#f25022"/><rect x="12.5" y="2" width="9.5" height="9.5" fill="#7fba00"/><rect x="2" y="12.5" width="9.5" height="9.5" fill="#00a4ef"/><rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#ffb900"/></svg>`;
+
+const $ = id => document.getElementById(id);
+$('ubIcon').innerHTML = UBUNTU(22);
+$('apIcon').innerHTML = APPLE(22, '#111');
+$('winIcon').innerHTML = WIN(20);
+$('envIcon').innerHTML = UBUNTU(20);
+
+// heading words
+const headingEl = $('heading');
+HEADING.split(' ').forEach(w => { const s = document.createElement('span'); s.textContent = w; headingEl.appendChild(s); });
+const headingWords = [...headingEl.children];
+
+// Fixed layout points (in #world coordinates) used by the pointer
+const G = { x: 80, y: 302 };                        // composer group origin
+const CARD_Y = G.y + 44 + 36 + 64 + 32;              // card top
+const CHIP = { x: G.x + 24 + 48 + 12 + 140 + 12 + 80, y: CARD_Y + 300 - 24 - 28 };
+const MENU1_ROW1 = { x: G.x + 100 + 10 + 200, y: CARD_Y + 310 + 10 + 30 };
+const MENU2_MAC = { x: G.x + 560 + 10 + 270, y: CARD_Y + 310 + 10 + 48 + 60 + 30 };
+const TEXT_POINT = { x: G.x + 520, y: CARD_Y + 150 };
+const SEND = { x: G.x + 940 - 24 - 112 + 32, y: CARD_Y + 300 - 24 - 28 };
+const POINTER_START = { x: G.x + 470, y: CARD_Y + 440 };
+
+function pointerPos(t) {
+  const segs = [
+    [T.pointerToChip, POINTER_START, CHIP],
+    [T.pointerToEnv, CHIP, MENU1_ROW1],
+    [T.pointerToMac, MENU1_ROW1, MENU2_MAC],
+    [T.pointerToText, MENU2_MAC, TEXT_POINT],
+    [T.pointerToSend, TEXT_POINT, SEND],
+  ];
+  let pos = POINTER_START;
+  for (const [rng, a, b] of segs) {
+    if (t >= rng[0]) { const p = prog(t, rng, easeInOut); pos = { x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p) }; }
+  }
+  return pos;
+}
+
+function typedText(t) {
+  const p = clamp01((t - T.typing[0]) / (T.typing[1] - T.typing[0]));
+  return PROMPT.slice(0, Math.round(p * PROMPT.length));
+}
+
+function renderCode(t) {
+  const total = CODE.reduce((n, l) => n + l.reduce((m, s) => m + s[1].length, 0) + 1, 0);
+  const p = clamp01((t - T.codeTyping[0]) / (T.codeTyping[1] - T.codeTyping[0]));
+  let budget = Math.floor(easeOut(p) * total);
+  let html = '';
+  for (const line of CODE) {
+    if (budget <= 0) break;
+    for (const [cls, txt] of line) {
+      if (budget <= 0) break;
+      const piece = txt.slice(0, budget); budget -= piece.length;
+      html += `<span class="${cls}">${piece.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>`;
+    }
+    html += '\n'; budget -= 1;
+  }
+  $('code').innerHTML = html;
+}
+
+function cropState(t) {
+  let cur = { x: CROP[0].x, y: CROP[0].y, z: CROP[0].z };
+  for (let i = 1; i < CROP.length; i++) {
+    const k = CROP[i];
+    if (t < k.t) break;
+    const p = prog(t, [k.t, k.t + k.dur], easeOut);
+    const prev = { x: CROP[i-1].x, y: CROP[i-1].y, z: CROP[i-1].z };
+    // previous target might still be animating; sample prev as fully arrived
+    cur = { x: lerp(prev.x, k.x, p), y: lerp(prev.y, k.y, p), z: lerp(prev.z, k.z, p) };
+  }
+  return cur;
+}
+
+function driftScale(t) {
+  for (let i = 1; i < DRIFT.length; i++) {
+    if (t <= DRIFT[i].t) {
+      const p = easeInOut(clamp01((t - DRIFT[i-1].t) / (DRIFT[i].t - DRIFT[i-1].t)));
+      return lerp(DRIFT[i-1].s, DRIFT[i].s, p);
+    }
+  }
+  return DRIFT[DRIFT.length - 1].s;
+}
+
+const pad4 = n => String(n).padStart(4, '0');
+function takeFrame(t) {
+  const i = Math.floor((t - TAKE_START) * FPS);
+  return Math.max(0, Math.min(TAKE_FRAME_COUNT - 1, i)) + 1;
+}
+
+/* ==================================================================== */
+/*  seek(t): set every element for composition time t                    */
+/* ==================================================================== */
+window.seek = async function seek(t) {
+  // camera drift
+  $('world').style.transform = `scale(${driftScale(t)})`;
+
+  // ---- Opening + Act 1: composer
+  const cg = $('composerGroup');
+  const outP = prog(t, T.composerOut);
+  cg.style.opacity = 1 - outP;
+  cg.style.transformOrigin = '50% 100%';
+  cg.style.transform = `translateY(${lerp(0, 46, outP)}px) scale(${lerp(1, 0.94, outP)})`;
+  cg.style.display = t > T.composerOut[1] + 0.05 ? 'none' : 'block';
+
+  // big lockup slides in, then resolves (moves + shrinks) into the composer header lockup
+  const lbIn = prog(t, T.lockupBigIn), rs = prog(t, T.resolve, easeInOut);
+  const smallLockup = $('lockupRow').querySelector('img');
+  const smallW = 40 * 2984 / 1024;
+  const ol = $('openLockup');
+  ol.style.opacity = lbIn;
+  ol.style.transform = `translateX(${lerp(-70, 0, lbIn)}px)`;
+  ol.style.display = rs > 0 ? 'none' : 'block';
+  const lx = lerp(OPEN.lockupX - G.x, 0, rs), ly = lerp(OPEN.lockupY - G.y, 0, rs), ls = lerp(OPEN.lockupW / smallW, 1, rs);
+  smallLockup.style.transform = `translate(${lx}px, ${ly}px) scale(${ls})`;
+  smallLockup.style.opacity = rs <= 0 ? 0 : 1;
+  const hx = lerp(OPEN.headingX - G.x, 0, rs), hy = lerp(OPEN.headingY - (G.y + 44 + 36), 0, rs), hs = lerp(OPEN.headingScale, 1, rs);
+  headingEl.style.transform = `translate(${hx}px, ${hy}px) scale(${hs})`;
+
+  // card and mode toggle rise in after the header settles
+  const cIn = prog(t, T.cardIn);
+  const card = $('card');
+  card.style.opacity = cIn;
+  card.style.transform = `translateY(${lerp(72, 0, cIn)}px) scale(${lerp(0.96, 1, cIn)})`;
+  $('modeToggle').style.opacity = cIn;
+
+  headingWords.forEach((w, i) => {
+    const a = T.headingStart + i * T.headingStep;
+    const pi = prog(t, [a, a + T.headingDur]);
+    const n = headingWords.length;
+    const b = T.headingOutStart + (n - 1 - i) * T.headingOutStep;
+    const po = prog(t, [b, b + T.headingOutDur]);
+    w.style.opacity = Math.min(pi, 1 - po);
+    w.style.transform = `translateY(${lerp(18, 0, pi) + lerp(0, 14, po)}px)`;
+  });
+
+  // prompt text
+  const typed = typedText(t);
+  const pt = $('promptText');
+  if (t < T.typing[0]) {
+    pt.className = 'placeholder'; pt.textContent = PLACEHOLDER;
+    if (t >= T.pointerToText[1] - 0.05) pt.innerHTML = `<span id="caret"></span>` + PLACEHOLDER;
+  } else {
+    pt.className = '';
+    const caret = (t < T.typing[1] + 0.35 || Math.floor(t * 2) % 2 === 0) ? '<span id="caret"></span>' : '';
+    pt.textContent = typed; pt.innerHTML = pt.innerHTML + caret;
+  }
+
+  // environment chip + menus
+  const macSelected = t >= T.macClick;
+  $('envIcon').innerHTML = macSelected ? APPLE(20, '#111') : UBUNTU(20);
+  $('envLabel').textContent = macSelected ? 'macOS' : 'Ubuntu';
+  $('m1env').textContent = macSelected ? 'macOS' : 'Ubuntu';
+  $('envChip').classList.toggle('pressed', (t >= T.chipClick - 0.04 && t < T.menusOut[0]));
+  $('chkUbuntu').style.opacity = macSelected ? 0 : 1;
+  $('chkMac').style.opacity = macSelected ? 1 : 0;
+
+  const m1 = $('menu1'), m2 = $('menu2');
+  const m1in = prog(t, T.menu1In), m2in = prog(t, T.menu2In), mout = prog(t, T.menusOut);
+  for (const [el, pin] of [[m1, m1in], [m2, m2in]]) {
+    const o = Math.min(pin, 1 - mout);
+    el.style.opacity = o;
+    el.style.display = o <= 0 ? 'none' : 'block';
+    el.style.transform = `translateY(${lerp(-8, 0, pin)}px) scale(${lerp(0.97, 1, pin)})`;
+  }
+  $('m1r1').classList.toggle('hl', t >= T.pointerToEnv[1] - 0.05 && t < T.menusOut[0]);
+  $('m2ubuntu').classList.toggle('hl', t >= T.menu2In[0] && t < T.pointerToMac[1] - 0.12);
+  $('m2mac').classList.toggle('hl', t >= T.pointerToMac[1] - 0.12 && t < T.menusOut[0]);
+
+  // send button press
+  const sp = t >= T.sendClick && t < T.sendClick + 0.24 ? Math.sin(Math.PI * (t - T.sendClick) / 0.24) : 0;
+  $('send').style.transform = `scale(${1 - 0.08 * sp})`;
+
+  // pointer
+  const ptr = $('pointer');
+  const pin = prog(t, T.pointerIn), pout = prog(t, T.pointerOut);
+  const pp = pointerPos(t);
+  const clickSq = (c) => (t >= c && t < c + 0.18) ? 1 - 0.12 * Math.sin(Math.PI * (t - c) / 0.18) : 1;
+  const ps = clickSq(T.chipClick) * clickSq(T.macClick) * clickSq(T.sendClick);
+  ptr.style.opacity = Math.min(pin, 1 - pout);
+  ptr.style.left = pp.x + 'px'; ptr.style.top = pp.y + 'px';
+  ptr.style.transform = `scale(${ps})`; ptr.style.transformOrigin = '4px 2px';
+
+  // ---- Act 2: control panel
+  const panel = $('panel');
+  const pIn = prog(t, T.panelIn), pOut = prog(t, T.panelOut);
+  const px = lerp(760, 0, pIn) + lerp(0, 760, pOut);
+  panel.style.transform = `translateX(${px}px)`;
+  panel.style.opacity = Math.min(prog(t, T.panelIn, easeInOut) * 1.6, 1 - prog(t, T.panelOut, easeInOut) * 1.6, 1);
+  panel.style.display = (t < T.panelIn[0] || t > T.panelOut[1] + 0.05) ? 'none' : 'block';
+
+  renderCode(t);
+  const cl = $('codeLayer');
+  const c2c = prog(t, T.codeToCrop, easeInOut);
+  cl.style.opacity = 1 - c2c;
+  cl.style.display = c2c >= 1 ? 'none' : 'block';
+
+  // crop viewport
+  const cs = cropState(t);
+  const baseH = PANEL.h, baseW = baseH * TAKE.w / TAKE.h;
+  const w = baseW * cs.z, h = baseH * cs.z;
+  let left = PANEL.w / 2 - cs.x * w, top = PANEL.h / 2 - cs.y * h;
+  // clamp so the crop never shows the panel background when the image is big enough
+  if (w >= PANEL.w) left = Math.min(0, Math.max(PANEL.w - w, left)); else left = (PANEL.w - w) / 2;
+  if (h >= PANEL.h) top = Math.min(0, Math.max(PANEL.h - h, top)); else top = (PANEL.h - h) / 2;
+  const ci = $('cropImg');
+  ci.style.width = w + 'px'; ci.style.height = h + 'px';
+  ci.style.left = left + 'px'; ci.style.top = top + 'px';
+
+  // take frame (both the anchored phone and the panel crop show the same frame)
+  const src = TAKE_FRAMES_DIR + pad4(takeFrame(t)) + '.jpg';
+  const imgs = [$('phoneImg'), ci];
+  for (const im of imgs) if (im.getAttribute('src') !== src) im.src = src;
+
+  // ---- Act 3: outro
+  const lIn = prog(t, T.lockupIn), uIn = prog(t, T.urlIn);
+  const lk = $('outroLockup'), url = $('outroUrl');
+  lk.style.opacity = lIn; lk.style.transform = `translateX(${lerp(-70, 0, lIn)}px)`;
+  url.style.opacity = uIn; url.style.transform = `translateX(${lerp(-36, 0, uIn)}px)`;
+
+  await Promise.all(imgs.map(im => im.decode().catch(() => {})));
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+};
+
+// Preview helper: ?t=seconds, or play with ?play
+const params = new URLSearchParams(location.search);
+if (params.has('play')) {
+  const t0 = performance.now();
+  (async function loop() { await seek(Math.min(DURATION, (performance.now() - t0) / 1000)); requestAnimationFrame(loop); })();
+} else {
+  seek(parseFloat(params.get('t') || '0'));
+}
+</script>
+</body>
+</html>
