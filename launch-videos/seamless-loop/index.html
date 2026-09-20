@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud, seamless loop</title>
+<style>
+  @font-face { font-family: "Brand"; src: url("assets/fonts/InterTight.ttf"); font-weight: 100 900; }
+  @font-face { font-family: "UI"; src: url("assets/fonts/Inter.ttf"); font-weight: 100 900; }
+
+  :root {
+    --paper: #fcfcfc;
+    --surface: #ffffff;
+    --ink: #191919;
+    --text: #363636;
+    --muted: rgba(25, 25, 25, 0.56);
+    --faint: rgba(25, 25, 25, 0.38);
+    --line: rgba(0, 0, 0, 0.08);
+    --accent: #2200ff;
+    --pane: #f6f6f6;
+  }
+
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: "UI", "Inter", "Helvetica Neue", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); transform-origin: 0 0; }
+  .abs { position: absolute; }
+  .hidden { display: none !important; }
+  .nowrap { white-space: nowrap; }
+
+  /* lockup */
+  #lockup { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+  #lockup img { display: block; width: 100%; height: auto; }
+
+  /* composer */
+  #composer { position: absolute; left: 340px; top: 380px; width: 1240px; }
+  #agentToggle { position: absolute; right: 0; top: -84px; display: flex; gap: 4px; padding: 5px; background: #efefef; border-radius: 999px; font-size: 24px; font-weight: 500; }
+  #agentToggle span { padding: 8px 26px; border-radius: 999px; color: var(--muted); }
+  #agentToggle span.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  #card { position: absolute; left: 0; top: 0; width: 1240px; height: 262px; background: var(--surface); border-radius: 24px; box-shadow: 0 0 0 1px var(--line), 0 14px 40px rgba(0,0,0,0.06); transform-origin: 50% 40%; }
+  #field { position: absolute; left: 34px; top: 28px; right: 34px; font-size: 38px; line-height: 1.32; font-weight: 400; color: var(--ink); letter-spacing: -0.01em; }
+  #field .ph { color: var(--faint); }
+  #caret { display: inline-block; width: 2px; height: 40px; background: var(--ink); vertical-align: -6px; margin-left: 2px; }
+  #toolbar { position: absolute; left: 24px; right: 24px; bottom: 22px; height: 56px; display: flex; align-items: center; gap: 18px; }
+  #toolbar .ico { width: 44px; height: 44px; display: grid; place-items: center; color: #5a5a5a; }
+  #toolbar .ico svg { width: 30px; height: 30px; }
+  #toolbar .fusion { display: flex; align-items: center; gap: 8px; font-size: 24px; color: #5a5a5a; padding: 6px 10px; }
+  #toolbar .spacer { flex: 1; }
+  #send { width: 54px; height: 54px; border-radius: 999px; background: #262626; display: grid; place-items: center; transform-origin: 50% 50%; }
+  #send svg { width: 26px; height: 26px; }
+  #envRow { position: absolute; left: 12px; top: 290px; display: flex; align-items: center; gap: 12px; font-size: 26px; color: var(--text); font-weight: 500; padding: 10px 14px; border-radius: 12px; }
+  #envRow.active { background: rgba(0,0,0,0.05); }
+  #envRow svg { width: 28px; height: 28px; }
+
+  /* menus */
+  .menu { position: absolute; background: var(--surface); border-radius: 18px; box-shadow: 0 0 0 1px var(--line), 0 18px 50px rgba(0,0,0,0.10); padding: 10px; transform-origin: 20px 0; }
+  .menu .item { display: flex; align-items: center; gap: 14px; height: 62px; padding: 0 18px; border-radius: 12px; font-size: 26px; color: var(--ink); white-space: nowrap; }
+  .menu .item.hover { background: rgba(0,0,0,0.05); }
+  .menu .item .lead { color: var(--ink); }
+  .menu .item .val { margin-left: auto; color: var(--muted); }
+  .menu .item .chev { color: var(--muted); width: 22px; height: 22px; margin-left: 6px; }
+  .menu .item svg.li { width: 28px; height: 28px; }
+  .menu .head { font-size: 20px; color: var(--muted); padding: 10px 18px 6px; letter-spacing: 0.01em; }
+  .menu .item .check { margin-left: auto; width: 24px; height: 24px; opacity: 0; }
+  .menu .item .check.on { opacity: 1; }
+  #menu { left: 352px; top: 740px; width: 520px; }
+  #submenu { left: 886px; top: 740px; width: 400px; }
+
+  /* cursor */
+  #cursor { position: absolute; left: 0; top: 0; width: 34px; height: 46px; transform-origin: 6px 4px; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
+
+  /* session view */
+  #session { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: var(--paper); transform-origin: 50% 50%; }
+  #topbar { position: absolute; left: 0; top: 0; width: 1920px; height: 78px; border-bottom: 1px solid #ececec; background: var(--paper); }
+  #topbar .left { position: absolute; left: 30px; top: 0; height: 78px; display: flex; align-items: center; gap: 22px; font-size: 26px; font-weight: 500; color: var(--ink); }
+  #topbar .left svg { width: 30px; height: 30px; color: #6b6b6b; }
+  #topbar .pill { display: flex; align-items: center; gap: 10px; background: #e9eefc; color: #2f5fdc; border-radius: 10px; padding: 8px 14px; font-size: 24px; font-weight: 500; }
+  #topbar .pill svg { width: 26px; height: 26px; color: #2f5fdc; }
+  #tabs { position: absolute; left: 740px; top: 0; height: 78px; display: flex; align-items: center; gap: 8px; }
+  #tabs .tab { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 10px; font-size: 24px; color: var(--muted); font-weight: 500; }
+  #tabs .tab svg { width: 26px; height: 26px; }
+  #tabs .tab.on { color: var(--ink); background: rgba(0,0,0,0.05); }
+  #chat { position: absolute; left: 0; top: 79px; width: 700px; height: 1001px; border-right: 1px solid #ececec; background: var(--paper); }
+  #chat .user { position: absolute; left: 30px; right: 30px; top: 34px; background: #f0f0f0; border-radius: 18px; padding: 20px 24px; font-size: 25px; line-height: 1.4; color: var(--ink); }
+  #chat .msgs { position: absolute; left: 30px; right: 30px; top: 232px; display: flex; flex-direction: column; gap: 30px; }
+  #chat .msg { display: flex; gap: 16px; align-items: flex-start; font-size: 25px; line-height: 1.4; color: var(--ink); }
+  #chat .msg img { width: 34px; height: 34px; margin-top: 1px; }
+  #chat .msg .t { padding-top: 0; }
+  #pane { position: absolute; left: 701px; top: 79px; width: 1219px; height: 1001px; background: var(--pane); overflow: hidden; }
+
+  /* code view */
+  #code { position: absolute; left: 90px; top: 60px; width: 1040px; height: 880px; background: #fff; border-radius: 18px; box-shadow: 0 0 0 1px var(--line), 0 14px 40px rgba(0,0,0,0.05); overflow: hidden; transform-origin: 50% 50%; }
+  #code .fh { height: 62px; display: flex; align-items: center; gap: 12px; padding: 0 26px; border-bottom: 1px solid #eee; font-size: 22px; color: var(--muted); font-weight: 500; }
+  #code .fh svg { width: 24px; height: 24px; }
+  #code pre { margin: 0; padding: 24px 30px; font: 26px/1.55 "SF Mono", Menlo, monospace; color: #1d1d1d; }
+  #code .ln { display: block; white-space: pre; }
+  .k { color: #9b2393; } .ty { color: #3f6e74; } .s { color: #c41a16; } .c { color: #6b7a86; } .n { color: #1c00cf; } .f { color: #326d74; }
+
+  /* phone */
+  #phoneWrap { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; }
+  #phone { position: relative; width: 405px; height: 848px; border-radius: 66px; background: #0d0d0e; box-shadow: 0 0 0 2px #2a2a2c, 0 30px 70px rgba(0,0,0,0.22); }
+  #screen { position: absolute; left: 14px; top: 14px; width: 377px; height: 820px; border-radius: 54px; overflow: hidden; background: #000; }
+  #screen img { display: block; width: 377px; height: 820px; }
+  #island { position: absolute; left: 50%; top: 26px; width: 106px; height: 32px; margin-left: -53px; border-radius: 999px; background: #000; }
+  #screenBorder { position: absolute; left: 14px; top: 14px; width: 377px; height: 820px; border-radius: 54px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); pointer-events: none; }
+
+  /* headline + close */
+  #headline { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; display: flex; align-items: center; justify-content: center; gap: 0.26em; font-family: "Brand", "Inter Tight", "Helvetica Neue", sans-serif; font-weight: 500; font-size: 104px; letter-spacing: -0.035em; color: var(--ink); }
+  #headline span { display: inline-block; }
+  #devinai { position: absolute; left: 0; width: 1920px; text-align: center; font-family: "Brand", "Inter Tight", "Helvetica Neue", sans-serif; font-weight: 500; font-size: 46px; letter-spacing: -0.02em; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- Session view (Devin web app) -->
+  <div id="session" class="hidden">
+    <div id="topbar">
+      <div class="left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+        <span>Build Silverroom for iPhone</span>
+        <span class="pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M2 19h20"/></svg>
+          macOS
+        </span>
+      </div>
+      <div id="tabs">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Progress</div>
+        <div class="tab" id="tabChanges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>Changes</div>
+        <div class="tab" id="tabSim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5h3"/></svg>Simulator</div>
+      </div>
+    </div>
+    <div id="chat">
+      <div class="user" id="userMsg"></div>
+      <div class="msgs" id="msgs"></div>
+    </div>
+    <div id="pane">
+      <div id="code">
+        <div class="fh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Silverroom/Models.swift</div>
+        <pre id="codeLines"></pre>
+      </div>
+      <div id="phoneWrap">
+        <div id="phone">
+          <div id="screen"><img id="shot" alt="" /></div>
+          <div id="screenBorder"></div>
+          <div id="island"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Composer -->
+  <div id="composer" class="hidden">
+    <div id="agentToggle"><span class="on">Agent</span><span>Ask</span></div>
+    <div id="card">
+      <div id="field"><span id="typed"></span><span id="caret"></span></div>
+      <div id="toolbar">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M14 7l-4 10"/></svg></div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg></div>
+        <div class="fusion"><span>Fusion</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h2M8 8v8M12 5v14M16 8v8M20 12h-2"/></svg></div>
+        <div id="send"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+      </div>
+    </div>
+    <div id="envRow">
+      <span id="envIcon"></span>
+      <span id="envName">Ubuntu</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+
+  <div id="menu" class="menu hidden">
+    <div class="item" id="miEnv"><span class="lead">Virtual environment</span><span class="val" id="miEnvVal">Ubuntu</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+    <div class="item" id="miSec"><span class="lead">Security profile</span><span class="val">Default</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+  </div>
+  <div id="submenu" class="menu hidden">
+    <div class="head">Hosted</div>
+    <div class="item" id="smUbuntu"><span class="li-ubuntu"></span><span>Ubuntu</span><svg class="check on" id="ckUbuntu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div>
+    <div class="item" id="smMac"><span class="li-mac"></span><span>macOS</span><svg class="check" id="ckMac" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div>
+    <div class="item" id="smWin"><span class="li-win"></span><span>Windows</span><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5L20 7"/></svg></div>
+  </div>
+
+  <!-- Headline and closing -->
+  <div id="headline" class="hidden"></div>
+  <div id="devinai" class="hidden">devin.ai</div>
+
+  <!-- Lockup lives above everything so it can travel between scenes -->
+  <div id="lockup"><img src="assets/devin-lockup-black.png" alt="Devin" /></div>
+
+  <svg id="cursor" class="hidden" viewBox="0 0 34 46"><path d="M6 3 L6 37 L14.5 29 L21 43 L27.5 40 L21 26.5 L32 26 Z" fill="#111" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>
+</div>
+
+<script>
+/* ==========================================================================
+   EDITABLE CONSTANTS
+   Every timing is in seconds of composition time. FPS is 30. The renderer
+   asks for frames at t = i / FPS for i in [0, FRAMES). Frame FRAMES-1 is
+   t = T and must be pixel identical to frame 0 (the loop point).
+   ========================================================================== */
+const FPS = 30;
+const T = 29.9;                          // total duration in seconds
+const FRAMES = Math.round(T * FPS) + 1;  // inclusive of the final loop frame
+
+const PROMPT = "Build Silverroom, a photo darkroom for iPhone with Noir and Silver looks, then test it in the Simulator";
+const HEADLINE = ["macOS", "in", "Devin", "Cloud."];
+const RECORDING_FRAMES_DIR = "frames/";  // 30 fps JPEG sequence extracted from the take
+const RECORDING_IN = 14.0;               // seconds into the raw take where the composition starts playing it
+const DEMO_LENGTH = 18.28;               // seconds of the take that play, at 1x, uncut (to the end of the take)
+
+const TL = {
+  cardOut:     [0.25, 0.45],   // opening card headline and devin.ai leave
+  lockupMove:  [0.35, 0.70],   // start, duration
+  card:        [0.75, 0.60],
+  field:       [0.95, 0.50],
+  envRow:      [1.12, 0.50],
+  cursorIn:    [1.40, 0.65],
+  clickEnv:     2.05,
+  menuOpen:    [2.08, 0.34],
+  hoverEnv:     2.50,
+  submenuOpen: [2.68, 0.32],
+  clickMac:     3.50,
+  menuClose:   [3.56, 0.30],
+  clickField:   4.05,
+  typing:      [4.18, 0.019],  // start, seconds per character
+  clickSend:    6.50,
+  composerOut: [6.62, 0.55],
+  sessionIn:   [6.80, 0.55],
+  codeStart:    6.95,          // first Swift line appears
+  codeLine:     0.05,          // seconds per line
+  simTab:      [8.05, 0.45],   // code pane leaves, phone arrives
+  demoStart:    8.45,          // composition time at which take time RECORDING_IN is shown
+  productOut:  [26.85, 0.55],
+  lockupBack:  [27.35, 0.60],  // lockup eases into its exact opening pose
+  headlineIn:  [27.55, 0.16],  // first word, stagger per word
+  devinaiIn:   [28.35, 0.45],  // end card is complete by 28.8 and drifts until T
+};
+
+// Opening / closing card: lockup (center x, center y, width), headline center y, devin.ai top
+const LOCKUP_OPEN = { x: 960, y: 430, w: 420 };
+const LOCKUP_HEADER = { x: 415, y: 322, w: 150 };
+const HEADLINE_Y = 614;
+const DEVINAI_TOP = 714;
+const DRIFT = { ax: 6, ay: 5 };           // px amplitude of the slow brand drift, one period per loop
+
+// Devin chat messages during the session (composition time, text)
+const MESSAGES = [
+  [7.05, "Building Silverroom with SwiftUI and Core Image."],
+  [8.15, "Build succeeded. Running it in the iOS Simulator."],
+  [10.95, "Applying the Noir look."],
+  [14.60, "Adjusting exposure."],
+  [18.40, "Holding to compare with the original."],
+  [22.20, "Rotating and cropping to square."],
+  [26.70, "Tested in the Simulator. Silverroom is ready."],
+];
+
+// Swift shown in the Changes pane (real lines from silverroom/Silverroom/Models.swift)
+const CODE = [
+  '<span class="k">import</span> Foundation',
+  '',
+  '<span class="k">enum</span> <span class="ty">Film</span>: <span class="ty">String</span>, <span class="ty">Codable</span>, <span class="ty">CaseIterable</span>,',
+  '  <span class="ty">Identifiable</span>, <span class="ty">Sendable</span>',
+  '{',
+  '  <span class="k">case</span> original, silver, noir, dune, faded',
+  '',
+  '  <span class="k">var</span> id: <span class="ty">String</span> { rawValue }',
+  '',
+  '  <span class="k">var</span> title: <span class="ty">String</span> {',
+  '    <span class="k">switch</span> <span class="k">self</span> {',
+  '    <span class="k">case</span> .original: <span class="s">"Original"</span>',
+  '    <span class="k">case</span> .silver: <span class="s">"Silver"</span>',
+  '    <span class="k">case</span> .noir: <span class="s">"Noir"</span>',
+  '    <span class="k">case</span> .dune: <span class="s">"Dune"</span>',
+  '    <span class="k">case</span> .faded: <span class="s">"Faded"</span>',
+  '    }',
+  '  }',
+  '',
+  '  <span class="k">var</span> caption: <span class="ty">String</span> {',
+  '    <span class="k">switch</span> <span class="k">self</span> {',
+  '    <span class="k">case</span> .original: <span class="s">"Light, exactly as you found it."</span>',
+  '    <span class="k">case</span> .silver: <span class="s">"Soft silver tones. Quiet, luminous detail."</span>',
+  '    <span class="k">case</span> .noir: <span class="s">"Deep blacks. A little more drama."</span>',
+  '    <span class="k">case</span> .dune: <span class="s">"Sun-warmed color. Gentle nostalgia."</span>',
+  '    <span class="k">case</span> .faded: <span class="s">"Lifted shadows. Color with a softer voice."</span>',
+  '    }',
+  '  }',
+  '}',
+];
+
+// Phone placement inside the Simulator pane (pane coords are stage coords)
+const PHONE = { x: 1310, y: 574 };        // center of the phone in stage coordinates
+const SCREEN = { w: 377, h: 820 };
+function screenPt(u, v) {                  // normalized screen coords -> stage coords
+  return { x: PHONE.x - SCREEN.w / 2 + u * SCREEN.w, y: PHONE.y - SCREEN.h / 2 + v * SCREEN.h };
+}
+function pushPt(u, v) {                    // camera target for a push: biased left so the chat stays in frame
+  const p = screenPt(u, v);
+  return { x: p.x - 200, y: p.y };
+}
+
+// Camera keyframes: {t, x, y, s}. Between keys we ease; camera is identity at t=0 and t=T.
+const CAM = [
+  { t: 0.00,  x: 960, y: 540, s: 1.00 },
+  { t: 1.45,  x: 960, y: 540, s: 1.00 },
+  { t: 2.05,  x: 700, y: 640, s: 1.22 },
+  { t: 2.55,  x: 820, y: 760, s: 1.34 },
+  { t: 3.00,  x: 1000, y: 800, s: 1.42 },
+  { t: 3.50,  x: 1040, y: 820, s: 1.46 },
+  { t: 4.10,  x: 940, y: 520, s: 1.20 },
+  { t: 6.40,  x: 990, y: 540, s: 1.28 },
+  { t: 6.80,  x: 1300, y: 560, s: 1.22 },          // Changes pane, Swift
+  { t: 7.90,  x: 1330, y: 600, s: 1.28 },
+  { t: 8.70,  x: 960, y: 540, s: 1.00 },            // full session view, phone lands
+  { t: 9.80,  x: 985, y: 550, s: 1.03 },            // photo opens, whole phone in view
+  { t: 11.60, x: 1010, y: 560, s: 1.06 },           // Noir chosen
+  { t: 12.60, ...pushPt(0.50, 0.74), s: 1.26 },     // exposure slider
+  { t: 14.60, ...pushPt(0.50, 0.75), s: 1.30 },
+  { t: 16.30, ...pushPt(0.50, 0.70), s: 1.28 },
+  { t: 17.10, ...pushPt(0.50, 0.42), s: 1.18 },     // hold to compare, photo
+  { t: 18.90, ...pushPt(0.50, 0.44), s: 1.15 },
+  { t: 20.90, x: 1080, y: 560, s: 1.06 },           // back to the whole phone
+  { t: 21.70, ...pushPt(0.50, 0.72), s: 1.26 },     // Frame tools, rotate
+  { t: 23.00, ...pushPt(0.50, 0.72), s: 1.30 },
+  { t: 23.80, ...pushPt(0.50, 0.42), s: 1.18 },     // rotated photo
+  { t: 25.20, ...pushPt(0.50, 0.70), s: 1.28 },     // square crop
+  { t: 26.40, x: 1040, y: 560, s: 1.06 },           // the result, whole phone
+  { t: 26.90, x: 960, y: 540, s: 1.02 },
+  { t: 27.60, x: 960, y: 540, s: 1.00 },
+  { t: T,     x: 960, y: 540, s: 1.00 },
+];
+
+// Cursor keyframes and click times (stage coords, tip of the arrow)
+const ENV_ROW_PT = { x: 440, y: 712 };
+const MI_ENV_PT = { x: 530, y: 782 };
+const SM_MAC_PT = { x: 980, y: 864 };
+const FIELD_PT = { x: 620, y: 470 };
+const SEND_PT = { x: 1529, y: 592 };
+const CUR = [
+  { t: TL.cursorIn[0], x: 1080, y: 1000 },
+  { t: TL.clickEnv - 0.06, ...ENV_ROW_PT },
+  { t: TL.hoverEnv - 0.36, ...ENV_ROW_PT },
+  { t: TL.hoverEnv, ...MI_ENV_PT },
+  { t: TL.hoverEnv + 0.42, ...MI_ENV_PT },
+  { t: TL.clickMac - 0.08, ...SM_MAC_PT },
+  { t: TL.clickMac + 0.22, ...SM_MAC_PT },
+  { t: TL.clickField - 0.06, ...FIELD_PT },
+  { t: TL.clickField + 2.3, x: 640, y: 480 },
+  { t: TL.clickSend - 0.06, ...SEND_PT },
+  { t: TL.composerOut[0] + 0.4, x: 1560, y: 660 },
+];
+const CLICKS = [TL.clickEnv, TL.clickMac, TL.clickField, TL.clickSend];
+
+/* ========================== easing + helpers ============================ */
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const easeOut = (x) => 1 - Math.pow(1 - x, 4);            // fast out, gentle in
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const easeIn = (x) => x * x * x;
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, [t0, d], ease = easeOut) => ease(clamp01((t - t0) / d));
+const between = (t, a, b) => t >= a && t < b;
+const $ = (id) => document.getElementById(id);
+const show = (el, on) => el.classList.toggle("hidden", !on);
+const px = (v) => `${v.toFixed(3)}px`;
+
+function keyframed(keys, t, ease = easeInOut) {
+  if (t <= keys[0].t) return { ...keys[0] };
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (t >= a.t && t <= b.t) {
+      const k = b.t === a.t ? 1 : ease(clamp01((t - a.t) / (b.t - a.t)));
+      const out = {};
+      for (const key of Object.keys(a)) out[key] = typeof a[key] === "number" ? lerp(a[key], b[key], k) : a[key];
+      return out;
+    }
+  }
+  return { ...keys[keys.length - 1] };
+}
+
+function drift(t) {
+  const p = (2 * Math.PI * t) / T;
+  const z = (v) => (Math.abs(v) < 1e-9 ? 0 : v);   // exact zero at t = 0 and t = T so the loop frames match
+  return { dx: z(DRIFT.ax * Math.sin(p)), dy: z(DRIFT.ay * (Math.cos(p) - 1)) };
+}
+
+/* ============================ static setup ============================== */
+const UBUNTU_SVG = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e95420"/><circle cx="12" cy="12" r="4" fill="none" stroke="#fff" stroke-width="2.6"/><circle cx="12" cy="4.4" r="1.9" fill="#fff" stroke="#e95420" stroke-width="1.2"/><circle cx="5.4" cy="15.8" r="1.9" fill="#fff" stroke="#e95420" stroke-width="1.2"/><circle cx="18.6" cy="15.8" r="1.9" fill="#fff" stroke="#e95420" stroke-width="1.2"/></svg>`;
+const APPLE_SVG = `<svg viewBox="0 0 24 24" fill="#191919"><path d="M16.37 12.7c.02 2.36 2.07 3.15 2.1 3.16-.02.06-.33 1.13-1.09 2.23-.65.95-1.33 1.9-2.4 1.92-1.05.02-1.39-.62-2.59-.62s-1.58.6-2.57.64c-1.03.04-1.82-1.03-2.48-1.98-1.35-1.95-2.38-5.5-1-7.9.69-1.19 1.92-1.95 3.25-1.97 1.01-.02 1.97.68 2.59.68.62 0 1.78-.84 3-.72.51.02 1.95.21 2.87 1.56-.07.05-1.71 1-1.68 3zM14.3 6.9c.55-.67.92-1.6.82-2.52-.79.03-1.75.53-2.32 1.19-.51.59-.96 1.54-.84 2.44.88.07 1.79-.45 2.34-1.11z"/></svg>`;
+const WIN_SVG = `<svg viewBox="0 0 24 24" fill="#2f7ae5"><path d="M3 5.5l7.5-1v7H3zM11.5 4.3L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg>`;
+document.querySelector("#smUbuntu .li-ubuntu").innerHTML = UBUNTU_SVG;
+document.querySelector("#smMac .li-mac").innerHTML = APPLE_SVG;
+document.querySelector("#smWin .li-win").innerHTML = WIN_SVG;
+for (const el of document.querySelectorAll(".li-ubuntu svg, .li-mac svg, .li-win svg")) el.classList.add("li");
+$("userMsg").textContent = PROMPT;
+
+const headlineEl = $("headline");
+for (const w of HEADLINE) { const s = document.createElement("span"); s.textContent = w; headlineEl.appendChild(s); }
+const headlineWords = [...headlineEl.children];
+
+const msgsEl = $("msgs");
+const msgEls = MESSAGES.map(([, text]) => {
+  const d = document.createElement("div"); d.className = "msg";
+  d.innerHTML = `<img src="assets/devin-avatar-black.png" alt="" /><div class="t">${text}</div>`;
+  msgsEl.appendChild(d); return d;
+});
+const codeEl = $("codeLines");
+const codeLineEls = CODE.map((html) => { const s = document.createElement("span"); s.className = "ln"; s.innerHTML = html || " "; codeEl.appendChild(s); return s; });
+
+const shot = $("shot");
+let pendingShot = null;
+function setShot(frameIndex) {
+  const name = `${RECORDING_FRAMES_DIR}${String(frameIndex).padStart(5, "0")}.jpg`;
+  if (shot.dataset.name === name) return Promise.resolve();
+  shot.dataset.name = name;
+  shot.src = name;
+  pendingShot = shot.decode().catch(() => {});
+  return pendingShot;
+}
+
+/* ============================== render(t) =============================== */
+function render(t) {
+  const stage = $("stage");
+  const d = drift(t);
+
+  // ---- camera ----
+  const cam = keyframed(CAM, t);
+  stage.style.transform = `translate(960px, 540px) scale(${cam.s.toFixed(5)}) translate(${(-cam.x).toFixed(3)}px, ${(-cam.y).toFixed(3)}px)`;
+
+  // ---- lockup ----
+  const lockup = $("lockup");
+  let L, driftK;
+  if (t < TL.lockupBack[0]) {
+    const k = seg(t, TL.lockupMove);
+    L = { x: lerp(LOCKUP_OPEN.x, LOCKUP_HEADER.x, k), y: lerp(LOCKUP_OPEN.y, LOCKUP_HEADER.y, k), w: lerp(LOCKUP_OPEN.w, LOCKUP_HEADER.w, k), o: 1 };
+    if (t >= TL.composerOut[0]) L.o = 1 - seg(t, TL.composerOut, easeInOut);
+    driftK = 1 - k;                        // header lockup does not drift
+  } else {
+    const k = seg(t, TL.lockupBack);
+    L = { x: LOCKUP_OPEN.x, y: lerp(LOCKUP_OPEN.y + 44, LOCKUP_OPEN.y, k), w: lerp(LOCKUP_OPEN.w * 0.95, LOCKUP_OPEN.w, k), o: k };
+    driftK = 1;
+  }
+  const lw = L.w, lh = (L.w * 1024) / 2984;
+  lockup.style.width = px(lw);
+  lockup.style.opacity = L.o.toFixed(4);
+  lockup.style.transform = `translate(${px(L.x - lw / 2 + d.dx * driftK)}, ${px(L.y - lh / 2 + d.dy * driftK)})`;
+  show(lockup, L.o > 0.001);
+
+  // ---- composer ----
+  const composer = $("composer");
+  const composerOn = between(t, TL.card[0], TL.composerOut[0] + TL.composerOut[1]);
+  show(composer, composerOn);
+  if (composerOn) {
+    const out = t >= TL.composerOut[0] ? seg(t, TL.composerOut, easeInOut) : 0;
+    composer.style.opacity = (1 - out).toFixed(4);
+    const kc = seg(t, TL.card);
+    $("card").style.opacity = kc.toFixed(4);
+    $("card").style.transform = `translateY(${px((1 - kc) * 28)}) scale(${(0.985 + 0.015 * kc).toFixed(5)})`;
+    $("agentToggle").style.opacity = kc.toFixed(4);
+    $("agentToggle").style.transform = `translateY(${px((1 - kc) * 14)})`;
+    const kf = seg(t, TL.field);
+    $("field").style.opacity = kf.toFixed(4);
+    $("field").style.transform = `translateY(${px((1 - kf) * 12)})`;
+    $("toolbar").style.opacity = kf.toFixed(4);
+    const ke = seg(t, TL.envRow);
+    const env = $("envRow");
+    env.style.opacity = ke.toFixed(4);
+    env.style.transform = `translateY(${px((1 - ke) * 12)})`;
+    const menuOpenState = t >= TL.clickEnv && t < TL.menuClose[0] + TL.menuClose[1] * 0.5;
+    env.classList.toggle("active", menuOpenState);
+    const isMac = t >= TL.clickMac;
+    $("envIcon").innerHTML = isMac ? APPLE_SVG : UBUNTU_SVG;
+    $("envName").textContent = isMac ? "macOS" : "Ubuntu";
+    $("miEnvVal").textContent = isMac ? "macOS" : "Ubuntu";
+    $("ckUbuntu").classList.toggle("on", !isMac);
+    $("ckMac").classList.toggle("on", isMac);
+
+    // typed prompt
+    const typedEl = $("typed");
+    const focused = t >= TL.clickField;
+    let n = 0;
+    if (t >= TL.typing[0]) n = Math.min(PROMPT.length, Math.floor((t - TL.typing[0]) / TL.typing[1]));
+    if (n > 0) { typedEl.textContent = PROMPT.slice(0, n); typedEl.className = ""; }
+    else { typedEl.textContent = "Give Devin a task to work on"; typedEl.className = "ph"; }
+    show($("caret"), focused);
+    // send button press
+    const sp = t >= TL.clickSend ? 1 - Math.abs(clamp01((t - TL.clickSend) / 0.24) * 2 - 1) : 0;
+    $("send").style.transform = `scale(${(1 - 0.10 * sp).toFixed(4)})`;
+    $("send").style.background = n > 0 ? "#191919" : "#262626";
+  }
+
+  // ---- menus ----
+  const menu = $("menu"), submenu = $("submenu");
+  const menuVisible = between(t, TL.menuOpen[0], TL.menuClose[0] + TL.menuClose[1]);
+  show(menu, menuVisible);
+  if (menuVisible) {
+    let k = seg(t, TL.menuOpen);
+    if (t >= TL.menuClose[0]) k = 1 - seg(t, TL.menuClose, easeInOut);
+    menu.style.opacity = k.toFixed(4);
+    menu.style.transform = `translateY(${px((1 - k) * -10)}) scale(${(0.97 + 0.03 * k).toFixed(5)})`;
+    $("miEnv").classList.toggle("hover", t >= TL.hoverEnv);
+  }
+  const subVisible = between(t, TL.submenuOpen[0], TL.menuClose[0] + TL.menuClose[1]);
+  show(submenu, subVisible);
+  if (subVisible) {
+    let k = seg(t, TL.submenuOpen);
+    if (t >= TL.menuClose[0]) k = 1 - seg(t, TL.menuClose, easeInOut);
+    submenu.style.opacity = k.toFixed(4);
+    submenu.style.transform = `translateX(${px((1 - k) * -10)}) scale(${(0.97 + 0.03 * k).toFixed(5)})`;
+    $("smMac").classList.toggle("hover", t >= TL.clickMac - 0.12);
+  }
+
+  // ---- cursor ----
+  const cursor = $("cursor");
+  const cursorOn = between(t, TL.cursorIn[0], TL.composerOut[0] + TL.composerOut[1]);
+  show(cursor, cursorOn);
+  if (cursorOn) {
+    const c = keyframed(CUR, t);
+    let press = 0;
+    for (const ct of CLICKS) if (t >= ct && t < ct + 0.22) press = 1 - Math.abs(((t - ct) / 0.22) * 2 - 1);
+    const o = Math.min(seg(t, [TL.cursorIn[0], 0.3]), t >= TL.composerOut[0] ? 1 - seg(t, TL.composerOut, easeInOut) : 1);
+    cursor.style.opacity = o.toFixed(4);
+    cursor.style.transform = `translate(${px(c.x - 6)}, ${px(c.y - 4)}) scale(${(1 - 0.12 * press).toFixed(4)})`;
+  }
+
+  // ---- session view ----
+  const session = $("session");
+  const sessionOn = between(t, TL.sessionIn[0], TL.productOut[0] + TL.productOut[1]);
+  show(session, sessionOn);
+  if (sessionOn) {
+    const kin = seg(t, TL.sessionIn);
+    const kout = t >= TL.productOut[0] ? seg(t, TL.productOut, easeInOut) : 0;
+    session.style.opacity = (kin * (1 - kout)).toFixed(4);
+    session.style.transform = `scale(${(0.985 + 0.015 * kin - 0.06 * kout).toFixed(5)}) translateY(${px(-40 * kout)})`;
+
+    // messages
+    MESSAGES.forEach(([mt], i) => {
+      const k = seg(t, [mt, 0.45]);
+      msgEls[i].style.opacity = k.toFixed(4);
+      msgEls[i].style.transform = `translateY(${px((1 - k) * 14)})`;
+    });
+
+    // code pane vs simulator pane
+    const simK = seg(t, TL.simTab, easeInOut);
+    $("tabChanges").classList.toggle("on", simK < 0.5);
+    $("tabSim").classList.toggle("on", simK >= 0.5);
+    const code = $("code");
+    show(code, simK < 0.999);
+    if (simK < 0.999) {
+      const kc = seg(t, [TL.sessionIn[0] + 0.1, 0.5]);
+      code.style.opacity = (kc * (1 - simK)).toFixed(4);
+      code.style.transform = `translateY(${px((1 - kc) * 20 - simK * 30)}) scale(${(1 - 0.03 * simK).toFixed(5)})`;
+      const lines = t < TL.codeStart ? 0 : Math.min(CODE.length, Math.floor((t - TL.codeStart) / TL.codeLine) + 1);
+      codeLineEls.forEach((el, i) => { el.style.opacity = i < lines ? "1" : "0"; });
+    }
+    const phoneWrap = $("phoneWrap");
+    show(phoneWrap, simK > 0.001);
+    if (simK > 0.001) {
+      const pw = 405, ph = 848;
+      phoneWrap.style.opacity = simK.toFixed(4);
+      phoneWrap.style.transform = `translate(${px(PHONE.x - 701 - pw / 2)}, ${px(PHONE.y - 79 - ph / 2 + (1 - simK) * 60)}) scale(${(0.96 + 0.04 * simK).toFixed(5)})`;
+      const takeT = RECORDING_IN + Math.max(0, Math.min(DEMO_LENGTH, t - TL.demoStart));
+      setShot(Math.floor(takeT * FPS + 1e-6));
+    }
+  }
+
+  // ---- headline (opening card leaves, closing card builds word by word) ----
+  const opening = t < TL.cardOut[0] + TL.cardOut[1];
+  const closing = t >= TL.headlineIn[0];
+  show(headlineEl, opening || closing);
+  if (opening || closing) {
+    headlineEl.style.transform = `translate(${px(d.dx)}, ${px(HEADLINE_Y - 540 + d.dy)})`;
+    headlineWords.forEach((w, i) => {
+      let k = 1, dy = 0;
+      if (opening) { k = 1 - seg(t, TL.cardOut, easeInOut); dy = 0 - (1 - k) * 30; }
+      else { k = seg(t, [TL.headlineIn[0] + i * TL.headlineIn[1], 0.5]); dy = (1 - k) * 34; }
+      w.style.opacity = k.toFixed(4);
+      w.style.transform = `translateY(${px(dy)})`;
+    });
+  }
+
+  // ---- devin.ai ----
+  const dai = $("devinai");
+  const daiOpening = t < TL.cardOut[0] + TL.cardOut[1] * 0.9;
+  const daiClosing = t >= TL.devinaiIn[0];
+  show(dai, daiOpening || daiClosing);
+  if (daiOpening || daiClosing) {
+    const k = daiOpening ? 1 - seg(t, [TL.cardOut[0], TL.cardOut[1] * 0.9], easeInOut) : seg(t, TL.devinaiIn);
+    dai.style.opacity = k.toFixed(4);
+    dai.style.top = px(DEVINAI_TOP + (1 - k) * 18 + d.dy);
+    dai.style.transform = `translateX(${px(d.dx)})`;
+  }
+
+  return pendingShot || Promise.resolve();
+}
+
+window.COMP = { FPS, T, FRAMES, render, RECORDING_IN, DEMO_LENGTH };
+if (location.hash.startsWith("#t=")) render(parseFloat(location.hash.slice(3)) || 0);
+else render(0);
+</script>
+</body>
+</html>

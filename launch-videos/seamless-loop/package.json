@@ -1,0 +1,13 @@
+{
+  "name": "seamless-loop-launch-video",
+  "private": true,
+  "type": "module",
+  "description": "Devin launch video, direction 10: The Seamless Launch Loop (macOS in Devin Cloud)",
+  "scripts": {
+    "render": "node render.mjs",
+    "preview": "node preview.mjs 0 2.4 5.5 8.6 12 19 24.5 27.9 29.9"
+  },
+  "dependencies": {
+    "puppeteer": "^25.11.0"
+  }
+}
