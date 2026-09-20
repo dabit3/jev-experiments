@@ -332,14 +332,8 @@ struct PrivacySettingsView: View {
         PermissionRow(
           title: "Accessibility", detail: "Read controls and act in your apps.",
           status: model.accessGranted ? "Allowed" : "Not enabled",
-          button: model.accessGranted ? "Manage…" : "Allow…"
-        ) {
-          if model.accessGranted {
-            openPrivacy("Privacy_Accessibility")
-          } else {
-            DesktopAccess.requestTrust()
-          }
-        }
+          button: "Open Settings…"
+        ) { model.recover(.accessibilitySettings) }
         PermissionRow(
           title: "Screen Recording", detail: "Optional. Read text in apps with limited access.",
           status: model.screenGranted ? "Allowed" : "Not enabled",

@@ -154,6 +154,43 @@ final class AppExperienceTests: SayTestCase {
     XCTAssertEqual(preferences.openAIKey, "fixture-key")
   }
 
+  func testAccessibilityRecoveryOpensOnlyAfterAnExplicitAction() throws {
+    var opened: [URL] = []
+    let model = try makeModel(
+      connected: true,
+      openSystemSettings: {
+        opened.append($0)
+        return true
+      })
+    model.quickReply = Message(error: SayError.accessibilityRequired)
+    XCTAssertTrue(opened.isEmpty)
+    var dismissed = false
+    model.dismissQuick = { dismissed = true }
+    model.recover(.accessibilitySettings)
+    XCTAssertEqual(
+      opened.map(\.absoluteString),
+      [
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+      ])
+    XCTAssertTrue(dismissed)
+    XCTAssertFalse(model.listening)
+    XCTAssertFalse(model.busy)
+    XCTAssertFalse(model.accessGranted)
+  }
+
+  func testFailedSystemSettingsOpenShowsManualInstructions() throws {
+    let model = try makeModel(openSystemSettings: { _ in false })
+    var presented = false
+    var dismissed = false
+    model.showWindow = { presented = true }
+    model.dismissQuick = { dismissed = true }
+    model.recover(.accessibilitySettings)
+    XCTAssertTrue(presented)
+    XCTAssertFalse(dismissed)
+    XCTAssertTrue(model.notice?.contains("Privacy & Security → Accessibility") ?? false)
+    XCTAssertFalse(model.listening)
+  }
+
   private func perform(_ item: NSMenuItem) throws {
     let action = try XCTUnwrap(item.action)
     XCTAssertNotNil(item.target)

@@ -88,7 +88,7 @@ final class DesktopAccess {
       return
     }
     guard Self.trusted else {
-      throw SayError("Allow Say in System Settings → Privacy & Security → Accessibility.")
+      throw SayError.accessibilityRequired
     }
     guard NSWorkspace.shared.frontmostApplication?.processIdentifier == targetPID else {
       throw SayError(

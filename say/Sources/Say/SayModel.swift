@@ -17,6 +17,7 @@ final class SayModel: ObservableObject {
   let desktop = DesktopAccess()
   private let historyStore: HistoryStore
   private let permissions: () -> PermissionSnapshot
+  private let openSystemSettings: (URL) -> Bool
   @Published var conversations: [Conversation] = []
   @Published var currentID = UUID()
   @Published var mode = Mode.auto
@@ -52,11 +53,13 @@ final class SayModel: ObservableObject {
 
   init(
     preferences: Preferences? = nil, historyStore: HistoryStore? = nil,
-    permissions: (() -> PermissionSnapshot)? = nil
+    permissions: (() -> PermissionSnapshot)? = nil,
+    openSystemSettings: ((URL) -> Bool)? = nil
   ) {
     self.preferences = preferences ?? Preferences()
     self.historyStore = historyStore ?? HistoryStore()
     self.permissions = permissions ?? { .current() }
+    self.openSystemSettings = openSystemSettings ?? { NSWorkspace.shared.open($0) }
     refreshPermissions()
     let preferences = self.preferences
     if preferences.keepHistory { conversations = self.historyStore.load() }
@@ -175,6 +178,18 @@ final class SayModel: ObservableObject {
     showListener?()
   }
 
+  func recover(_ action: RecoveryAction) {
+    stop()
+    if openSystemSettings(action.systemSettingsURL) {
+      notice = nil
+      dismissQuick?()
+    } else {
+      notice =
+        "Could not open System Settings. Open Privacy & Security → Accessibility and enable Say."
+      showWindow?()
+    }
+  }
+
   func dismissListener() {
     stop()
     notice = nil
@@ -256,9 +271,7 @@ final class SayModel: ObservableObject {
         return
       } catch {
         guard token == runID else { return }
-        let message = Message(
-          role: "assistant", text: error.localizedDescription, activities: activities,
-          isError: true)
+        let message = Message(error: error, activities: activities)
         quickReply = message
         append(message)
         showWindow?()
@@ -303,7 +316,7 @@ final class SayModel: ObservableObject {
     }
     if selected == "act" {
       guard DesktopAccess.trusted else {
-        throw SayError("Enable Accessibility in Settings so I can operate your Mac.")
+        throw SayError.accessibilityRequired
       }
       guard preferences.screenContext else {
         throw SayError(

@@ -135,7 +135,9 @@ struct QuickView: View {
         ScrollView { NoticeBar(text: notice) { model.notice = nil } }
       } else if let reply = model.quickReply {
         Divider()
-        ScrollView { MessageView(message: reply, compact: true).padding(.trailing, 4) }
+        ScrollView {
+          MessageView(message: reply, compact: true, recover: model.recover).padding(.trailing, 4)
+        }
       } else if !model.connected {
         Divider()
         HStack {

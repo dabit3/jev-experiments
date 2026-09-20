@@ -25,7 +25,11 @@ class SayTestCase: XCTestCase {
   func makeModel(
     connected: Bool = false,
     permissions: PermissionSnapshot = PermissionSnapshot(
-      microphone: .notDetermined, accessibility: false, screenRecording: false)
+      microphone: .notDetermined, accessibility: false, screenRecording: false),
+    openSystemSettings: @escaping (URL) -> Bool = { _ in
+      XCTFail("System Settings must not open during an unrelated test")
+      return false
+    }
   ) throws -> SayModel {
     let directory = FileManager.default.temporaryDirectory
       .appendingPathComponent("SayTests-\(UUID().uuidString)", isDirectory: true)
@@ -37,6 +41,6 @@ class SayTestCase: XCTestCase {
     return SayModel(
       preferences: try makePreferences(connected: connected),
       historyStore: HistoryStore(url: directory.appendingPathComponent("conversations.json")),
-      permissions: { permissions })
+      permissions: { permissions }, openSystemSettings: openSystemSettings)
   }
 }

@@ -83,6 +83,26 @@ final class InterfaceRenderingTests: SayTestCase {
     XCTAssertFalse(model.listening)
   }
 
+  func testAccessibilityRecoveryButtonRendersWithoutOpeningSettings() throws {
+    var opened = false
+    let model = try makeModel(
+      connected: true,
+      openSystemSettings: { _ in
+        opened = true
+        return true
+      })
+    model.quickReply = Message(error: SayError.accessibilityRequired)
+    for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+      try save(
+        try render(
+          QuickView(model: model), size: CGSize(width: model.quickWidth, height: model.quickHeight),
+          appearance: appearance),
+        as: "accessibility-recovery-\(appearance == .aqua ? "light" : "dark")")
+    }
+    XCTAssertFalse(opened)
+    XCTAssertFalse(model.listening)
+  }
+
   func testNativeSettingsToolbarPreservesPaneSizeAndTitle() throws {
     _ = NSApplication.shared
     let model = try makeModel(connected: true)

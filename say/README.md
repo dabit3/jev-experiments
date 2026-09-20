@@ -16,7 +16,7 @@ Open the DMG and drag Say into Applications. Eject the disk image, then open Say
 
 1. Open Say to see Settings, or choose Settings from its menu-bar icon.
 2. In Connections, use Add Key to save a [TypeSafe](https://typesafe.ai/) key and an OpenAI key with `gpt-live-transcribe` access.
-3. Allow Microphone access when you first record, and enable Accessibility so Say can operate your apps.
+3. Allow Microphone access when you first record. If Say needs Accessibility, click Open Accessibility Settings in its message and enable Say.
 
 Opening Say never starts recording. Hold the shortcut, or choose Open Listener from the menu bar and click its microphone. Try saying “Open Calculator.”
 

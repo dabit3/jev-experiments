@@ -209,7 +209,7 @@ struct Transcript: View {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 24) {
           ForEach(model.messages) { message in
-            MessageView(message: message).id(message.id)
+            MessageView(message: message, recover: model.recover).id(message.id)
           }
           if model.busy {
             HStack(spacing: 10) {
@@ -263,6 +263,7 @@ struct NoticeBar: View {
 struct MessageView: View {
   let message: Message
   var compact = false
+  let recover: (RecoveryAction) -> Void
   @State private var expanded = false
 
   var body: some View {
@@ -289,6 +290,14 @@ struct MessageView: View {
         }
         Text(.init(message.text)).textSelection(.enabled)
           .fixedSize(horizontal: false, vertical: true)
+        if message.isError, let recovery = message.recovery {
+          Button {
+            recover(recovery)
+          } label: {
+            Label(recovery.title, systemImage: "gearshape")
+          }
+          .buttonStyle(.borderedProminent).padding(.vertical, 6)
+        }
         if !message.sources.isEmpty {
           VStack(alignment: .leading, spacing: 4) {
             ForEach(message.sources, id: \.url) { source in
