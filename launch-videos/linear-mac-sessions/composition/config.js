@@ -25,7 +25,6 @@ export const MEDIA = {
 
 export const BRAND = {
   field: '#0A0A0C',
-  fieldGlow: 'rgba(38, 44, 92, 0.32)',
   text: '#ECECEE',
   textSecondary: '#8B8B94',
   textMuted: '#5E5E66',

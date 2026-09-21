@@ -15,7 +15,7 @@ body { width: 1920px; height: 1080px; font-family: var(--sans); color: var(--tex
 #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--field); }
 #field {
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 40%, var(--fieldGlow), transparent 70%);
+  background: var(--field);
 }
 
 .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; will-change: transform, opacity; }
@@ -75,7 +75,7 @@ body { width: 1920px; height: 1080px; font-family: var(--sans); color: var(--tex
 .ln-activity { margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--lnBorder); }
 .ln-act-head { display: flex; align-items: center; gap: 16px; font-size: 26px; font-weight: 600; letter-spacing: -0.015em; }
 .ln-unsub { font-size: 21px; font-weight: 400; color: var(--lnTextSecondary); }
-.ln-avatar { border-radius: 50%; background: linear-gradient(145deg, #C98A5A, #6E4A33); color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: none; }
+.ln-avatar { border-radius: 50%; background: #A8714B; color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: none; }
 .ln-avatar-sm { width: 34px; height: 34px; font-size: 13px; }
 .ln-avatar-xs { width: 28px; height: 28px; font-size: 11px; }
 .ln-act-row { margin-top: 26px; display: flex; align-items: center; gap: 14px; font-size: 21px; color: var(--lnTextSecondary); }
@@ -156,8 +156,10 @@ body { width: 1920px; height: 1080px; font-family: var(--sans); color: var(--tex
 .build { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); display: flex; flex-direction: column; align-items: center; width: 760px; }
 .build-ring { position: relative; width: 168px; height: 168px; display: flex; align-items: center; justify-content: center; }
 .build-ring img { width: 84px; height: 84px; position: relative; z-index: 1; }
-.build-arc { position: absolute; inset: 0; border-radius: 50%; will-change: transform, background; }
-.build-arc::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--panel); }
+.build-arc { position: absolute; inset: 0; width: 168px; height: 168px; transform: rotate(-90deg); will-change: transform; }
+.build-arc circle { fill: none; stroke-width: 3; }
+.build-track { stroke: rgba(255, 255, 255, 0.07); }
+#buildArc { stroke-linecap: round; }
 .build-status { margin-top: 44px; height: 56px; position: relative; width: 100%; text-align: center; font-size: 40px; font-weight: 500; letter-spacing: -0.02em; color: var(--text); }
 .build-status div { position: absolute; left: 0; right: 0; top: 0; will-change: opacity, transform; }
 .build-status .done { color: var(--success); }
@@ -166,10 +168,7 @@ body { width: 1920px; height: 1080px; font-family: var(--sans); color: var(--tex
 
 .mac-screen {
   position: absolute; border-radius: 10px; overflow: hidden;
-  background:
-    radial-gradient(ellipse 60% 50% at 30% 20%, rgba(70, 60, 140, 0.55), transparent 65%),
-    radial-gradient(ellipse 50% 60% at 80% 85%, rgba(20, 90, 110, 0.5), transparent 65%),
-    linear-gradient(180deg, #14142A 0%, #0B0B17 100%);
+  background: #101020;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 .menubar { height: var(--menuBarHeight); display: flex; align-items: center; gap: 22px; padding: 0 18px; font-size: 20px; color: rgba(255, 255, 255, 0.86); background: rgba(10, 10, 16, 0.55); }

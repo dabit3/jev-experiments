@@ -353,7 +353,11 @@ async function seek(t) {
   const arcDeg = lerp(72, 360, doneP);
   const arcColor = done ? BRAND.success : BRAND.text;
   const spin = (t * 150) % 360;
-  $('buildArc').style.background = `conic-gradient(from ${spin}deg, ${arcColor} 0deg ${arcDeg}deg, rgba(255,255,255,0.07) ${arcDeg}deg 360deg)`;
+  const arc = $('buildArc');
+  const circ = 2 * Math.PI * 82.5;
+  arc.setAttribute('stroke', arcColor);
+  arc.setAttribute('stroke-dasharray', `${(arcDeg / 360) * circ} ${circ}`);
+  arc.setAttribute('transform', `rotate(${spin} 84 84)`);
   const buildStart = BUILD[0].t - 0.3, buildEnd = BUILD[BUILD.length - 1].t + 0.3;
   $('buildFill').style.width = `${easeInOut(prog(t, buildStart, buildEnd - buildStart)) * 100}%`;
   $('buildFill').style.background = done ? BRAND.success : BRAND.text;
