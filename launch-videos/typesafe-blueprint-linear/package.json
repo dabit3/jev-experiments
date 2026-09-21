@@ -1,0 +1,13 @@
+{
+  "name": "typesafe-blueprint-linear-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node scripts/render.mjs",
+    "stills": "node scripts/render.mjs --stills",
+    "encode": "bash scripts/encode.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}

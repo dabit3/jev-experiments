@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>@devin !mac from Linear: TypeSafe Motion Blueprint</title>
+<script>
+/* ------------------------------------------------------------------ */
+/*  EDITABLE CONSTANTS                                                 */
+/* ------------------------------------------------------------------ */
+window.CONFIG = {
+  fps: 30,
+  duration: 28.6,               // seconds
+  cell: 120,                    // pixel-block cell size (1920/120 = 16 x 9 grid)
+
+  color: {
+    bone:   '#F7F6F5',
+    grid:   '#E8E6E3',
+    ink:    '#191919',
+    accent: '#2200FF',          // Devin brand accent (Figma: bg-[#20f])
+    deep:   '#14126B',
+    mid:    '#5C5C5C',
+    faint:  '#A7A7A7',
+    card:   '#FCFCFC',
+    panel:  '#EFEFEF',
+    black:  '#000000',
+  },
+
+  text: {
+    headline1: '@devin !mac',
+    headline2: 'Now in Linear.',
+    mention: '@devin',
+    command: ' !mac Build VoxelHearth for macOS and iPhone with shared worlds, and run both',
+    issueId: 'NAD-37',
+    issueTitle: 'Build VoxelHearth for macOS and iPhone with shared worlds',
+    issueIn: 'In macos-experiments',
+    author: 'Nader Dabit',
+    sessionTitle: 'Build VoxelHearth for macOS and iPhone',
+    captionBuild:  'Devin is building',
+    captionPhone:  'Runs it in the iOS Simulator',
+    captionTest:   'Plays and tests it, live',
+    captionMac:    'Runs it on the Mac desktop',
+    captionShared: 'Mac and iPhone, one shared world',
+    buildStages: [
+      ['Clone',       'macos-experiments'],
+      ['Build',       'VoxelHearth for macOS'],
+      ['Build',       'VoxelHearth for iPhone'],
+      ['Run',         'both, one shared world'],
+    ],
+    buildTag: 'macOS  ·  Devin Cloud  ·  started from Linear',
+    devinCode:  'Building VoxelHearth on my Mac: the shared world first, then the macOS and iPhone targets.',
+    devinPhone: 'The iPhone build is running in the Simulator. Testing it now in the shared world.',
+    devinMac:   'The macOS build is running on the desktop. Both apps are live in one shared world.',
+    devinDone:  'Both builds run and pass the play test. Ready for your review.',
+    url: 'devin.ai',
+    endTag: '@devin !mac   ·   @devin !windows',
+  },
+
+  // seconds
+  t: {
+    titleIn: 0.0,
+    toLinear: 3.0,
+    cursorToBox: 3.4,
+    clickBox: 4.0,
+    zoomIn: 4.0,
+    mentionStart: 4.25, mentionEnd: 4.85,
+    pickDevin: 5.35,
+    cmdStart: 5.6, cmdEnd: 7.5,
+    cursorToSend: 7.45,
+    send: 7.9,
+    devinStart: 8.5,
+    zoomOut: 8.0,
+    toBuild: 9.8,
+    buildStart: 10.2, buildStage: 0.9,
+    toPhone: 14.0,
+    captionTest: 15.7,
+    phoneZoomIn: 16.9,
+    toMac: 19.6,
+    captionShared: 21.4,
+    devinDone: 22.0,
+    macZoomIn: 22.4,
+    toBlack: 25.4,
+    logoIn: 25.7,
+    urlIn: 26.5,
+  },
+
+  media: {
+    macFrames: '../typesafe-blueprint/assets/frames/mac/',       // 1600x1200 jpg, 30fps, starts at toMac
+    phoneFrames: '../typesafe-blueprint/assets/frames/iphone/',  // 603x1311 jpg, 30fps, starts at toPhone
+    frameCount: 211,
+    desktop: '../typesafe-blueprint/assets/mac-desktop.png',
+    lockupBlack: '../typesafe-blueprint/assets/logo/devin-lockup-black.png',
+    lockupWhite: '../typesafe-blueprint/assets/logo/devin-lockup-white.png',
+    markBlack: '../typesafe-blueprint/assets/logo/devin-mark-black.png',
+    fonts: '../typesafe-blueprint/assets/fonts/',
+  },
+};
+</script>
+<style>
+@font-face { font-family: 'Inter Tight'; src: url('../typesafe-blueprint/assets/fonts/InterTight-var.ttf') format('truetype'); font-weight: 100 900; }
+@font-face { font-family: 'JetBrains Mono'; src: url('../typesafe-blueprint/assets/fonts/JetBrainsMono-var.ttf') format('truetype'); font-weight: 100 800; }
+
+:root {
+  --bone: #F7F6F5; --grid: #E8E6E3; --ink: #191919; --accent: #2200FF; --deep: #14126B;
+  --mid: #5C5C5C; --faint: #A7A7A7; --card: #FCFCFC; --panel: #EFEFEF;
+  --lin-bg: #F9F9FA; --lin-ink: #282A30; --lin-mid: #6B6F76; --lin-faint: #9DA0A8; --lin-line: rgba(0,0,0,0.075); --lin-indigo: #5E6AD2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+body { font-family: 'Inter Tight', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bone); }
+.scene { position: absolute; inset: 0; overflow: hidden; }
+.hidden { display: none !important; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+
+/* blueprint paper */
+.paper {
+  background-color: var(--bone);
+  background-image:
+    linear-gradient(to right, var(--grid) 0 2px, transparent 2px),
+    linear-gradient(to bottom, var(--grid) 0 2px, transparent 2px);
+  background-size: 120px 120px;
+  background-position: -1px -1px;
+}
+.cam { position: absolute; inset: 0; will-change: transform; }
+
+/* corner ticks: top-right + bottom-left */
+.ticks { position: absolute; pointer-events: none; }
+.ticks::before, .ticks::after { content: ''; position: absolute; width: 18px; height: 18px; border: 0 solid var(--ink); }
+.ticks::before { top: -22px; right: -22px; border-top-width: 2.5px; border-right-width: 2.5px; }
+.ticks::after  { bottom: -22px; left: -22px; border-bottom-width: 2.5px; border-left-width: 2.5px; }
+
+/* ---------------- Title ---------------- */
+#title .mark { position: absolute; left: 50%; top: 168px; height: 270px; width: 787px; margin-left: -393px; will-change: transform, opacity; }
+#title .h { position: absolute; left: 50%; top: 486px; font-size: 168px; line-height: 0.96; font-weight: 500; letter-spacing: -0.035em; white-space: nowrap; text-align: center; }
+#title .h .w { display: inline-block; will-change: transform, opacity; }
+#title .h .l1 { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 500; letter-spacing: -0.06em; font-size: 150px; }
+#title .h .l1 .w { color: var(--accent); }
+#title .lead { position: absolute; left: 50%; top: 440px; width: 2px; height: 0; margin-left: -1px; background: var(--ink); transform-origin: top; }
+
+/* ---------------- Captions ---------------- */
+.caption { position: absolute; left: 120px; top: 26px; font-size: 64px; line-height: 1; font-weight: 500; letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+.caption .w { display: inline-block; }
+
+/* ---------------- Window shell ---------------- */
+.win {
+  position: absolute; left: 120px; top: 130px; width: 1680px; height: 890px;
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(20,18,107,0.06), 0 36px 90px rgba(20,18,107,0.16);
+  overflow: hidden;
+}
+.ico { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------------- Linear reconstruction ---------------- */
+.lin { background: var(--lin-bg); color: var(--lin-ink); font-size: 17px; letter-spacing: -0.005em; }
+.lin > * { zoom: 1.18; }
+.lside { position: absolute; left: 0; top: 0; width: 250px; bottom: 0; padding: 14px 14px; color: var(--lin-ink); }
+.lside .ws { display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 6px; font-weight: 500; font-size: 16px; }
+.lside .ws .av { width: 20px; height: 20px; border-radius: 5px; background: #2E8B57; color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.lside .ws .sp { margin-left: auto; display: flex; gap: 10px; color: var(--lin-mid); }
+.lside .grp { margin-top: 18px; padding: 0 6px; font-size: 14px; color: var(--lin-mid); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.lside .row { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 8px; border-radius: 6px; font-size: 16px; color: var(--lin-ink); }
+.lside .row.on { background: rgba(0,0,0,0.06); }
+.lside .row .ico { width: 17px; height: 17px; color: var(--lin-mid); }
+.lside .row .n { margin-left: auto; color: var(--lin-mid); font-size: 14px; }
+.lside .team { width: 18px; height: 18px; border-radius: 5px; background: #6C8DFF; }
+.lside .sub { padding-left: 24px; }
+
+.lmain { position: absolute; left: 250px; top: 0; right: 0; bottom: 0; background: #fff; border-left: 1px solid var(--lin-line); }
+.lhead { position: absolute; left: 0; right: 0; top: 0; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 22px; border-bottom: 1px solid var(--lin-line); font-size: 16px; color: var(--lin-ink); }
+.lhead .crumb { color: var(--lin-mid); }
+.lhead .sep { color: var(--lin-faint); }
+.lhead .ttl { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 560px; }
+.lhead .ic { display: flex; gap: 14px; color: var(--lin-mid); margin-left: 10px; }
+.lhead .rt { margin-left: auto; display: flex; gap: 16px; color: var(--lin-mid); }
+
+.lbody { position: absolute; left: 0; top: 53px; right: 400px; bottom: 0; overflow: hidden; }
+.lscroll { position: absolute; left: 70px; right: 60px; top: 30px; will-change: transform; }
+.lscroll h1 { font-size: 30px; font-weight: 500; line-height: 1.25; letter-spacing: -0.02em; color: var(--lin-ink); }
+.lscroll .in { margin-top: 14px; font-size: 17px; color: var(--lin-mid); display: flex; align-items: center; gap: 8px; }
+.lscroll .in .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--lin-faint); }
+.lscroll .actions { margin-top: 26px; display: flex; gap: 22px; color: var(--lin-mid); font-size: 15px; align-items: center; }
+.lscroll .actions .bt { display: inline-flex; align-items: center; gap: 7px; }
+.lscroll .actions .ico { width: 16px; height: 16px; }
+.lscroll .hr { height: 1px; background: var(--lin-line); margin: 26px 0 22px 0; }
+.sec { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; color: var(--lin-ink); }
+.sec .chev { color: var(--lin-mid); }
+.sec .rt { margin-left: auto; display: flex; align-items: center; gap: 10px; color: var(--lin-mid); font-weight: 400; font-size: 15px; }
+.rescard { margin-top: 12px; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 12px; border: 1px solid var(--lin-line); border-radius: 8px; font-size: 16px; background: #fff; }
+.rescard .tm { margin-left: auto; color: var(--lin-mid); font-size: 15px; }
+.rescard .mk { width: 20px; height: 20px; }
+.act { margin-top: 20px; display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--lin-mid); }
+.act .av, .cm .av { width: 22px; height: 22px; border-radius: 50%; background: #3C4A8A; color: #fff; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: none; }
+.act b { color: var(--lin-ink); font-weight: 500; }
+.act .mk { width: 20px; height: 20px; }
+.cm { margin-top: 18px; border: 1px solid var(--lin-line); border-radius: 10px; background: #fff; padding: 12px 16px 14px 16px; }
+.cm .hd { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--lin-mid); margin-bottom: 8px; }
+.cm .hd b { color: var(--lin-ink); font-weight: 500; }
+.cm .tx { font-size: 17px; line-height: 1.45; color: var(--lin-ink); }
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 1px 7px 1px 5px; border-radius: 6px; background: #EEF0FB; color: var(--lin-indigo); font-weight: 500; }
+.pill .mk { width: 15px; height: 15px; }
+.dv .row1 { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--lin-mid); }
+.dv .row1 .mk { width: 22px; height: 22px; }
+.dv .row1 b { color: var(--lin-ink); font-weight: 500; }
+.dv .row2 { margin-top: 12px; display: flex; align-items: center; gap: 12px; font-size: 16px; color: var(--lin-ink); }
+.dv .st { display: inline-flex; align-items: center; gap: 7px; padding: 2px 9px; border-radius: 6px; background: #FFF3E5; color: #B25E09; font-size: 14px; font-weight: 500; }
+.dv .st i { width: 8px; height: 8px; border-radius: 50%; background: #F0A64A; }
+.dv .row2 .tm { margin-left: auto; color: var(--lin-mid); font-variant-numeric: tabular-nums; }
+.dv .row2 .chev { color: var(--lin-mid); }
+
+.cboxwrap { position: relative; margin-top: 18px; }
+.cbox { border: 1px solid var(--lin-line); border-radius: 10px; background: #fff; padding: 14px 16px 12px 16px; min-height: 108px; }
+.cbox.focus { box-shadow: 0 0 0 1px rgba(94,106,210,0.35), 0 6px 22px rgba(0,0,0,0.06); border-color: rgba(94,106,210,0.5); }
+.cbox .tx { font-size: 20px; line-height: 1.45; color: var(--lin-ink); min-height: 44px; }
+.cbox .tx .ph { color: var(--lin-faint); }
+.cbox .tools { display: flex; align-items: center; gap: 12px; margin-top: 14px; color: var(--lin-mid); }
+.cbox .tools .ico { width: 17px; height: 17px; }
+.cbox .send { margin-left: auto; width: 30px; height: 30px; border-radius: 50%; background: #E3E4E8; display: flex; align-items: center; justify-content: center; }
+.cbox .send.ready { background: var(--lin-indigo); }
+.cbox .send svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.caret { display: inline-block; width: 2px; height: 24px; background: var(--lin-ink); vertical-align: -5px; margin-left: 1px; }
+
+.mention { position: absolute; left: 14px; top: 58px; width: 420px; background: #fff; border-radius: 10px; border: 1px solid var(--lin-line); box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 14px 40px rgba(0,0,0,0.13); padding: 8px; font-size: 17px; transform-origin: top left; }
+.mention .hd { font-size: 13px; color: var(--lin-mid); padding: 6px 10px 4px 10px; font-weight: 500; }
+.mention .it { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; }
+.mention .it.hi { background: rgba(0,0,0,0.05); }
+.mention .it .mk { width: 20px; height: 20px; }
+.mention .it .av { width: 20px; height: 20px; border-radius: 50%; background: #3C4A8A; }
+.mention .badge { margin-left: 8px; padding: 1px 7px; border-radius: 5px; background: #EEF0FB; color: var(--lin-indigo); font-size: 13px; font-weight: 500; }
+.mention .lbl { width: 12px; height: 12px; border-radius: 50%; background: #5E6AD2; }
+
+.lprops { position: absolute; right: 0; top: 53px; width: 400px; bottom: 0; border-left: 1px solid var(--lin-line); padding: 26px 26px; }
+.lprops .ph { font-size: 15px; color: var(--lin-mid); font-weight: 500; display: flex; align-items: center; }
+.lprops .ph .rt { margin-left: auto; display: flex; gap: 12px; }
+.lprops .pr { display: flex; align-items: center; gap: 12px; height: 36px; margin-top: 8px; font-size: 16px; color: var(--lin-ink); }
+.lprops .pr .ico { width: 17px; height: 17px; color: var(--lin-mid); }
+.lprops .pr.dim { color: var(--lin-mid); }
+.lprops .pr .av { width: 20px; height: 20px; border-radius: 50%; background: #3C4A8A; color: #fff; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.lprops .pr .mk { width: 20px; height: 20px; }
+.lprops .pr.sub { padding-left: 29px; margin-top: 0; }
+.lprops .pr.sub .ln { width: 12px; height: 16px; border-left: 1.5px solid var(--lin-faint); border-bottom: 1.5px solid var(--lin-faint); border-radius: 0 0 0 4px; margin-top: -10px; }
+.lprops .bl { width: 15px; height: 15px; border-radius: 50%; border: 2px dashed var(--lin-faint); }
+.lprops .prio { display: grid; grid-template-columns: repeat(4, 3px); gap: 2px; align-items: end; }
+.lprops .prio i { display: block; width: 3px; background: var(--lin-faint); border-radius: 1px; }
+.lprops .hr { height: 1px; background: var(--lin-line); margin: 18px 0 14px 0; }
+
+.cursor { position: absolute; width: 28px; height: 38px; pointer-events: none; z-index: 50; }
+
+/* ---------------- Build scene ---------------- */
+#build .mark { position: absolute; left: 50%; top: 170px; width: 132px; height: 132px; margin-left: -66px; }
+#build .tag { position: absolute; left: 0; right: 0; top: 330px; text-align: center; font-size: 30px; color: var(--mid); letter-spacing: -0.01em; white-space: nowrap; }
+#build .stages { position: absolute; left: 120px; top: 440px; width: 1680px; display: flex; gap: 60px; }
+#build .stage { width: 375px; position: relative; }
+#build .box { width: 375px; height: 200px; position: relative; border: 2.5px solid var(--ink); background: #fff; }
+#build .box .cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(8, 1fr); }
+#build .box .cells i { display: block; background: var(--accent); opacity: 0; }
+#build .box .num { position: absolute; left: 16px; top: 12px; font-size: 26px; color: var(--ink); }
+#build .box .chk { position: absolute; right: 14px; top: 12px; width: 32px; height: 32px; stroke: #fff; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+#build .stage .verb { margin-top: 26px; font-size: 36px; font-weight: 500; letter-spacing: -0.03em; color: var(--ink); }
+#build .stage .what { margin-top: 6px; font-size: 28px; color: var(--mid); letter-spacing: -0.01em; }
+#build .stage.pending .box { border-color: rgba(25,25,25,0.22); }
+#build .stage.pending .verb, #build .stage.pending .what, #build .stage.pending .num { color: var(--faint); }
+#build .rail { position: absolute; left: 120px; right: 120px; top: 920px; height: 8px; display: flex; gap: 6px; }
+#build .rail i { flex: 1; background: rgba(25,25,25,0.12); }
+#build .rail i.on { background: var(--accent); }
+#build .status { position: absolute; left: 120px; top: 962px; font-size: 32px; color: var(--ink); white-space: nowrap; }
+#build .status .cur { display: inline-block; width: 12px; height: 32px; background: var(--accent); vertical-align: -5px; margin-left: 6px; }
+
+/* ---------------- Devin session UI ---------------- */
+.win .topbar { position: absolute; left: 0; top: 0; right: 0; height: 56px; display: flex; align-items: center; font-size: 17px; font-weight: 450; color: var(--ink); }
+.win .topbar .left { width: 620px; display: flex; align-items: center; gap: 14px; padding-left: 24px; }
+.win .topbar .right { flex: 1; display: flex; align-items: center; gap: 6px; padding-left: 12px; }
+.win .topbar .ttl { font-weight: 500; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 6px; background: #EDF0FB; color: #2F4FD6; font-size: 15px; font-weight: 500; }
+.tab { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 8px; color: #444; font-size: 17px; }
+.tab.on { background: #F0F0F0; color: var(--ink); }
+.win .vsep { position: absolute; left: 620px; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.08); }
+
+.chat { position: absolute; left: 0; top: 56px; width: 620px; bottom: 0; padding: 22px 26px 0 26px; font-size: 19px; line-height: 1.4; color: var(--ink); }
+.bubble { margin-left: auto; width: fit-content; max-width: 500px; background: #F2F2F2; border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; }
+.bubble .pill { font-size: 17px; }
+.via { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 15px; color: #777; margin-bottom: 26px; }
+.via .lg { width: 16px; height: 16px; border-radius: 4px; background: var(--lin-indigo); }
+.msg { margin-bottom: 16px; }
+.msg .avatar { display: inline-block; width: 24px; height: 24px; vertical-align: -5px; margin-right: 10px; }
+.steps { border-left: 1px solid rgba(0,0,0,0.1); margin-left: 8px; padding-left: 20px; margin-bottom: 18px; }
+.step { color: #555; font-size: 17px; line-height: 1.3; margin: 0 0 9px 0; }
+.composer { position: absolute; left: 26px; right: 26px; bottom: 26px; height: 118px; background: #fff; border: 1px solid rgba(0,0,0,0.12); border-radius: 20px; box-shadow: 0 6px 24px rgba(0,0,0,0.06); padding: 18px 22px; font-size: 17px; color: #8a8a8a; }
+.composer .row { position: absolute; left: 20px; right: 16px; bottom: 14px; height: 34px; display: flex; align-items: center; gap: 14px; color: #6b6b6b; font-size: 16px; }
+.composer .send { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; }
+.composer .send svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; }
+.status { position: absolute; left: 26px; bottom: 156px; display: flex; align-items: center; gap: 10px; font-size: 16px; color: #555; }
+.status .d { width: 9px; height: 9px; border-radius: 50%; background: #EF8A3C; }
+
+.pane { position: absolute; left: 621px; top: 56px; right: 0; bottom: 0; background: #fff; }
+.pane .body { position: absolute; left: 18px; right: 18px; top: 8px; bottom: 74px; display: flex; align-items: center; justify-content: center; }
+.pane .bar { position: absolute; left: 18px; right: 18px; bottom: 44px; height: 6px; background: #E6E9FF; border-radius: 3px; overflow: hidden; }
+.pane .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #2F5BFF; border-radius: 3px; }
+.pane .ctl { position: absolute; left: 18px; bottom: 6px; display: flex; align-items: center; gap: 14px; color: #444; }
+.pane .live { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid rgba(0,0,0,0.12); border-radius: 999px; font-size: 15px; color: var(--ink); }
+.pane .live i { width: 8px; height: 8px; border-radius: 50%; background: #E5484D; }
+
+.macscreen { position: relative; width: 1000px; height: 750px; border-radius: 10px; overflow: hidden; background: #000; }
+.macscreen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+
+.phone { position: absolute; width: 306px; height: 640px; left: 347px; top: 62px; border-radius: 50px; background: #0b0b0c; box-shadow: 0 0 0 2px #2a2a2c, 0 22px 50px rgba(0,0,0,0.45); }
+.phone .screen { position: absolute; left: 10px; top: 10px; right: 10px; bottom: 10px; border-radius: 42px; overflow: hidden; background: #000; }
+.phone .screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.phone .island { position: absolute; left: 50%; top: 22px; width: 90px; height: 26px; margin-left: -45px; border-radius: 14px; background: #000; }
+.phone .btn { position: absolute; background: #2a2a2c; border-radius: 2px; }
+.simbar { position: absolute; left: 50%; top: -54px; margin-left: -140px; width: 280px; height: 40px; border-radius: 10px; background: rgba(40,40,44,0.92); display: flex; align-items: center; gap: 7px; padding: 0 12px; color: #fff; font-size: 14px; }
+.simbar .tl { width: 11px; height: 11px; border-radius: 50%; }
+
+/* ---------------- End card ---------------- */
+#end { background: #000; }
+#end .floor { position: absolute; inset: 0; }
+#end .lockup { position: absolute; left: 50%; top: 50%; width: 820px; margin-left: -410px; margin-top: -255px; will-change: transform, opacity; }
+#end .url { position: absolute; left: 0; right: 0; top: 636px; text-align: center; color: #fff; font-size: 58px; font-weight: 500; letter-spacing: -0.02em; }
+#end .tag { position: absolute; left: 0; right: 0; top: 760px; text-align: center; color: #8F88FF; font-size: 34px; white-space: pre; }
+#end .ret { position: absolute; left: 50%; top: 50%; width: 900px; height: 360px; margin-left: -450px; margin-top: -266px; }
+#end .ret i { position: absolute; width: 26px; height: 26px; border: 0 solid #fff; }
+#end .ret .tl { left: 0; top: 0; border-left-width: 2.5px; border-top-width: 2.5px; }
+#end .ret .tr { right: 0; top: 0; border-right-width: 2.5px; border-top-width: 2.5px; }
+#end .ret .bl { left: 0; bottom: 0; border-left-width: 2.5px; border-bottom-width: 2.5px; }
+#end .ret .br { right: 0; bottom: 0; border-right-width: 2.5px; border-bottom-width: 2.5px; }
+
+#maskcanvas { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- SCENE 1: TITLE -->
+  <section id="title" class="scene paper">
+    <div class="cam">
+      <img class="mark" id="titleMark" alt="" />
+      <div class="lead" id="titleLead"></div>
+      <div class="h" id="titleH">
+        <div class="l1" id="titleL1"></div>
+        <div class="l2" id="titleL2"></div>
+      </div>
+      <div class="ticks" id="titleTicks"></div>
+    </div>
+  </section>
+
+  <!-- SCENE 2: LINEAR ISSUE -->
+  <section id="linear" class="scene paper">
+    <div class="cam" id="linearCam">
+      <div class="win lin">
+        <div class="lside">
+          <div class="ws"><span class="av">NW</span>Nader's Workspace <svg class="ico" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            <span class="sp"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div>
+          <div style="height:12px"></div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h5l2 3h4l2-3h5"/><path d="M5 5h14l2 7v7H3v-7z"/></svg>Inbox<span class="n" id="inboxN">1</span></div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>My issues</div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Reviews</div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="3"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/></svg>Agent</div>
+          <div class="grp">Workspace <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg>Projects</div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Views</div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>More</div>
+          <div class="grp">Your teams <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row"><span class="team"></span>Nader's Works… <svg class="ico" style="width:12px;height:12px;margin-left:auto" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row sub"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>Home</div>
+          <div class="row sub on"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Issues</div>
+          <div class="row sub"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg>Projects</div>
+          <div class="row sub"><svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Views</div>
+          <div class="grp">Try <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Import issues</div>
+          <div class="row"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>Invite people</div>
+        </div>
+
+        <div class="lmain">
+          <div class="lhead">
+            <span class="crumb">My issues</span><span class="sep">›</span>
+            <span class="crumb" id="hIssueId"></span><span class="sep">›</span>
+            <span class="ttl" id="hIssueTitle"></span>
+            <span class="ic"><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.4 6.4 20.4l1.1-6.3L3 9.7l6.2-.9z"/></svg><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></span>
+            <span class="rt"><svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></svg></span>
+          </div>
+
+          <div class="lbody">
+            <div class="lscroll" id="lscroll">
+              <h1 id="issueTitle"></h1>
+              <div class="in"><span class="dot"></span><span id="issueIn"></span></div>
+              <div class="actions">
+                <span class="bt"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add sub-issues</span>
+                <span class="bt"><svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Add attachment</span>
+              </div>
+              <div class="hr"></div>
+
+              <div id="resources" class="hidden">
+                <div class="sec"><svg class="ico chev" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>Resources</div>
+                <div class="rescard"><img class="mk" id="resMk" alt="" />Devin Session<span class="tm">now</span><svg class="ico" style="width:16px;height:16px;color:#6B6F76" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></div>
+                <div class="hr"></div>
+              </div>
+
+              <div class="sec">Activity<span class="rt"><span>Unsubscribe</span><span class="av" style="width:20px;height:20px;border-radius:50%;background:#3C4A8A;display:inline-block"></span></span></div>
+              <div class="act"><span class="av">ND</span><b id="actAuthor"></b>created the issue · 2h ago</div>
+
+              <div class="cm hidden" id="postedCm">
+                <div class="hd"><span class="av">ND</span><b id="cmAuthor"></b><span>now</span></div>
+                <div class="tx" id="cmText"></div>
+              </div>
+
+              <div class="cm dv hidden" id="devinCard">
+                <div class="row1"><img class="mk" id="dvMk" alt="" /><b>Devin</b><span>started by <b id="dvAuthor"></b></span><span style="margin-left:auto">now</span></div>
+                <div class="row2"><span class="st"><i></i>working</span><span>Devin is working on your request…</span><span class="tm" id="dvTimer">00:01</span><svg class="ico chev" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+              </div>
+
+              <div class="cboxwrap">
+                <div class="cbox" id="cbox">
+                  <div class="tx" id="cboxText"><span class="ph">Leave a comment…</span></div>
+                  <div class="tools">
+                    <svg class="ico" viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9-9a3.5 3.5 0 0 1 5 5l-9 9a1.5 1.5 0 0 1-2.1-2.1l8.3-8.3"/></svg>
+                    <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+                    <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h14"/></svg>
+                    <span class="send" id="cboxSend"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+                  </div>
+                </div>
+                <div class="mention" id="mention">
+                  <div class="hd">Users</div>
+                  <div class="it hi"><img class="mk" id="mnMk" alt="" />Devin<span class="badge">Agent</span></div>
+                  <div class="hd">Labels</div>
+                  <div class="it"><span class="lbl"></span>Devin Playbooks</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lprops">
+            <div class="ph">Properties<span class="rt"><svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></span></div>
+            <div class="pr"><span class="bl"></span>Backlog</div>
+            <div class="pr dim"><span class="prio"><i style="height:5px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:14px"></i></span>Set priority</div>
+            <div class="pr dim" id="prAssignEmpty"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Assign</div>
+            <div class="pr hidden" id="prAssignNader"><span class="av">ND</span><span id="prAuthor"></span></div>
+            <div class="pr sub hidden" id="prAssignDevin"><span class="ln"></span><img class="mk" id="prMk" alt="" />Devin</div>
+            <div class="hr"></div>
+            <div class="ph">Labels</div>
+            <div class="pr dim"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add label</div>
+            <div class="hr"></div>
+            <div class="ph">Project</div>
+            <div class="pr dim"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16"/></svg>Add to project</div>
+          </div>
+        </div>
+      </div>
+      <svg class="cursor" id="cursor" viewBox="0 0 22 30"><path d="M2 1.5 L2 24 L8 18.5 L12 27.5 L15.5 26 L11.6 17.5 L19 17.5 Z" fill="#000" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+  <!-- SCENE 3: DEVIN IS BUILDING -->
+  <section id="build" class="scene paper">
+    <div class="cam" id="buildCam">
+      <img class="mark" id="buildMark" alt="" />
+      <div class="tag mono" id="buildTag"></div>
+      <div class="stages" id="stages"></div>
+      <div class="rail" id="rail"></div>
+      <div class="status mono" id="buildStatus"></div>
+    </div>
+    <div class="caption" id="buildCap"></div>
+    <div class="ticks" id="buildTicks"></div>
+  </section>
+
+  <!-- SCENE 4/5: SESSION (phone, mac) -->
+  <section id="session" class="scene paper">
+    <div class="cam" id="sessionCam">
+      <div class="win">
+        <div class="topbar">
+          <div class="left">
+            <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+            <span class="ttl" id="sessTitle"></span>
+            <span class="chip"><svg class="ico" style="width:14px;height:14px" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/></svg>macOS</span>
+          </div>
+          <div class="right">
+            <span class="tab" id="tabProgress"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Progress</span>
+            <span class="tab" id="tabChanges"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Changes</span>
+            <span class="tab on" id="tabComputer"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Computer</span>
+            <span style="margin-left:auto;display:flex;gap:18px;padding-right:18px;color:#444">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></svg>
+            </span>
+          </div>
+        </div>
+        <div class="vsep"></div>
+        <div class="chat">
+          <div class="bubble" id="chatPrompt"></div>
+          <div class="via"><span class="lg"></span>via Linear · <span id="viaIssue"></span></div>
+          <div class="msg" id="msgCode"></div>
+          <div class="steps" id="stepsCode"></div>
+          <div class="msg" id="msgRun"></div>
+          <div class="steps" id="stepsRun"></div>
+          <div class="msg" id="msgDone"></div>
+          <div class="status" id="statusLine"><span class="d"></span><span id="statusText">Devin is working</span></div>
+          <div class="composer">
+            <span>Ask Devin to build features, fix bugs, or work on your code</span>
+            <div class="row">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 15l6-6"/></svg>
+              <span>Fusion</span>
+              <span class="send"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane">
+          <div class="body" id="computerBody">
+            <div class="macscreen" id="macscreen">
+              <img id="deskImg" alt="" />
+              <img id="macImg" alt="" />
+              <div class="phone" id="phone">
+                <div class="simbar"><span class="tl" style="background:#FF5F57"></span><span class="tl" style="background:#FEBC2E"></span><span class="tl" style="background:#28C840"></span><span style="margin-left:8px;font-weight:600">iPhone 17</span><span style="opacity:.7">iOS 26</span></div>
+                <div class="screen"><img id="phoneImg" alt="" /></div>
+                <div class="island"></div>
+                <div class="btn" style="left:-4px;top:120px;width:4px;height:28px"></div>
+                <div class="btn" style="left:-4px;top:164px;width:4px;height:52px"></div>
+                <div class="btn" style="left:-4px;top:226px;width:4px;height:52px"></div>
+                <div class="btn" style="right:-4px;top:184px;width:4px;height:80px"></div>
+              </div>
+            </div>
+          </div>
+          <div class="bar" id="paneBar"><i id="paneFill"></i></div>
+          <div class="ctl" id="paneCtl">
+            <svg class="ico" style="width:20px;height:20px" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+            <svg class="ico" style="width:20px;height:20px" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <span class="live"><i></i>Live</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption" id="cap"></div>
+    <div class="ticks" id="capTicks"></div>
+  </section>
+
+  <!-- SCENE 6: END -->
+  <section id="end" class="scene">
+    <svg class="floor" id="floor" viewBox="0 0 1920 1080" preserveAspectRatio="none"></svg>
+    <div class="ret" id="ret"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+    <img class="lockup" id="lockup" alt="" />
+    <div class="url" id="url"></div>
+    <div class="tag mono" id="endTag"></div>
+  </section>
+
+</div>
+<canvas id="maskcanvas" width="1920" height="1080"></canvas>
+
+<script>
+/* ------------------------------------------------------------------ */
+/*  RUNTIME                                                            */
+/* ------------------------------------------------------------------ */
+const C = window.CONFIG, T = C.t, TX = C.text;
+const W = 1920, H = 1080, CELL = C.cell, COLS = W / CELL, ROWS = H / CELL;
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const expo = p => p >= 1 ? 1 : 1 - Math.pow(2, -10 * p);
+const quint = p => 1 - Math.pow(1 - p, 5);
+const over = p => { const c = 1.70158 * 0.8; p = p - 1; return p * p * ((c + 1) * p + c) + 1; };
+const prog = (t, t0, dur) => clamp((t - t0) / dur, 0, 1);
+const E = (t, t0, dur, fn = expo) => fn(prog(t, t0, dur));
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+/* deterministic shuffle for pixel-block order */
+function seeded(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function orderRandom(seed, n = COLS * ROWS) { const r = seeded(seed), a = [...Array(n).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } const rank = new Array(a.length); a.forEach((c, i) => rank[c] = i / a.length); return rank; }
+function orderAperture(cx, cy, seed) { const r = seeded(seed); const d = []; for (let i = 0; i < COLS * ROWS; i++) { const x = (i % COLS + 0.5) * CELL, y = (Math.floor(i / COLS) + 0.5) * CELL; d.push(Math.hypot(x - cx, y - cy) + r() * 90); } const mx = Math.max(...d), mn = Math.min(...d); return d.map(v => (v - mn) / (mx - mn + 1)); }
+function orderSweep(seed) { const r = seeded(seed); const d = []; for (let i = 0; i < COLS * ROWS; i++) { const x = i % COLS, y = Math.floor(i / COLS); d.push((x + y * 0.35) / (COLS + ROWS * 0.35) * 0.8 + r() * 0.2); } return d; }
+
+const ORD = {
+  toLinear: orderSweep(11),
+  toBuild: orderRandom(23),
+  toPhone: orderAperture(1215, 560, 37),
+  toMac: orderRandom(41),
+  toBlack: orderSweep(57),
+};
+
+const mc = $('maskcanvas'), mctx = mc.getContext('2d');
+function applyMask(el, rank, p) {
+  if (p <= 0) { el.classList.add('hidden'); el.style.webkitMaskImage = ''; return; }
+  el.classList.remove('hidden');
+  if (p >= 1) { el.style.webkitMaskImage = ''; el.style.maskImage = ''; return; }
+  mctx.clearRect(0, 0, W, H); mctx.fillStyle = '#fff';
+  for (let i = 0; i < rank.length; i++) if (rank[i] < p) mctx.fillRect((i % COLS) * CELL, Math.floor(i / COLS) * CELL, CELL, CELL);
+  const u = `url(${mc.toDataURL()})`;
+  el.style.webkitMaskImage = u; el.style.maskImage = u;
+  el.style.webkitMaskSize = '100% 100%'; el.style.maskSize = '100% 100%';
+}
+const TR = 0.42;     // pixel-block transition length (s)
+const TR_END = 0.4;  // closing wipe to black
+
+/* ---------- helpers for word reveals ---------- */
+function words(el, text, cls = 'w') { el.innerHTML = ''; const ws = text.split(' '); ws.forEach((w, i) => { const s = document.createElement('span'); s.className = cls; s.textContent = w + (i < ws.length - 1 ? '\u00A0' : ''); el.appendChild(s); }); return [...el.children]; }
+function landWords(spans, t, t0, stagger = 0.11, dur = 0.42, dy = 60) {
+  spans.forEach((s, i) => { const p = E(t, t0 + i * stagger, dur, quint); s.style.opacity = p; s.style.transform = `translateY(${(1 - p) * dy}px)`; });
+  return E(t, t0 + (spans.length - 1) * stagger, dur);
+}
+function ticksTo(tk, el, on) {
+  if (!on) { tk.style.opacity = 0; return; }
+  tk.style.left = el.offsetLeft + 'px'; tk.style.top = el.offsetTop + 'px'; tk.style.width = el.offsetWidth + 'px'; tk.style.height = el.offsetHeight + 'px'; tk.style.opacity = 1;
+}
+function fadeUp(el, p, dy = 14) { el.style.opacity = p; el.style.transform = `translateY(${(1 - p) * dy}px)`; }
+
+/* ---------- static setup ---------- */
+$('titleMark').src = C.media.lockupBlack;
+$('lockup').src = C.media.lockupWhite;
+$('buildMark').src = C.media.markBlack;
+for (const id of ['resMk', 'dvMk', 'mnMk', 'prMk']) $(id).src = C.media.markBlack;
+$('deskImg').src = C.media.desktop;
+$('sessTitle').textContent = TX.sessionTitle;
+$('url').textContent = TX.url;
+$('endTag').textContent = TX.endTag;
+$('buildTag').textContent = TX.buildTag;
+$('hIssueId').textContent = TX.issueId; $('hIssueTitle').textContent = TX.issueTitle;
+$('issueTitle').textContent = TX.issueTitle; $('issueIn').textContent = TX.issueIn;
+for (const id of ['actAuthor', 'cmAuthor', 'dvAuthor', 'prAuthor']) $(id).textContent = TX.author;
+$('viaIssue').textContent = TX.issueId;
+const PILL = `<span class="pill"><img class="mk" src="${C.media.markBlack}" alt=""/>Devin</span>`;
+$('cmText').innerHTML = PILL + esc(TX.command);
+$('chatPrompt').innerHTML = PILL + esc(TX.command);
+const L1 = words($('titleL1'), TX.headline1), L2 = words($('titleL2'), TX.headline2);
+const capSpans = { phone: TX.captionPhone, test: TX.captionTest, mac: TX.captionMac, shared: TX.captionShared };
+function msgHTML(text) { return `<img class="avatar" src="${C.media.markBlack}" alt=""/>${text}`; }
+$('msgCode').innerHTML = msgHTML(TX.devinCode);
+$('msgRun').innerHTML = msgHTML(TX.devinPhone);
+$('msgDone').innerHTML = msgHTML(TX.devinDone);
+const STEPS_CODE = ['Created Sources/Game.swift', 'Created Sources/NativeViewport.swift', 'Built VoxelHearth for macOS', 'Built VoxelHearth for iPhone'];
+const STEPS_RUN = ['Booted iPhone Simulator', 'Placed blocks and moved the camera', 'Launched VoxelHearth on the Mac desktop', 'Second player visible from the iPhone'];
+function stepsHTML(list) { return list.map(s => `<div class="step">${s}</div>`).join(''); }
+$('stepsCode').innerHTML = stepsHTML(STEPS_CODE);
+$('stepsRun').innerHTML = stepsHTML(STEPS_RUN);
+
+// build scene: four stages, each a 15x8 block grid that fills in a deterministic order
+const STAGE_CELLS = 15 * 8, STAGE_ORD = [];
+TX.buildStages.forEach(([verb, what], i) => {
+  const el = document.createElement('div'); el.className = 'stage pending';
+  el.innerHTML = `<div class="box"><div class="cells">${'<i></i>'.repeat(STAGE_CELLS)}</div><span class="num mono">0${i + 1}</span><svg class="chk" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><div class="verb">${verb}</div><div class="what">${what}</div>`;
+  $('stages').appendChild(el); STAGE_ORD.push(orderRandom(101 + i, STAGE_CELLS));
+});
+const RAIL_N = 32; $('rail').innerHTML = '<i></i>'.repeat(RAIL_N);
+words($('buildCap'), TX.captionBuild);
+
+// end-card wireframe floor
+(function floor() {
+  const svg = $('floor'); let s = ''; const hz = 700, vp = 960;
+  for (let i = -14; i <= 14; i++) { const x0 = vp + i * 110; const x1 = vp + i * 1900; s += `<line x1="${x0}" y1="${hz}" x2="${x1}" y2="1080" stroke="#232323" stroke-width="1.5"/>`; }
+  for (let k = 0; k < 9; k++) { const y = hz + 380 * Math.pow(k / 8, 2.2); s += `<path d="M0 ${y + 10} Q 960 ${y - 10} 1920 ${y + 10}" stroke="#232323" stroke-width="1.5" fill="none"/>`; }
+  svg.innerHTML = s;
+})();
+
+/* ---------- frame images (preloaded) ---------- */
+const macFrames = [], phoneFrames = [];
+function pad(n) { return String(n).padStart(4, '0'); }
+async function preload() {
+  const jobs = [];
+  for (let i = 1; i <= C.media.frameCount; i++) {
+    const a = new Image(); a.src = C.media.macFrames + pad(i) + '.jpg'; macFrames.push(a); jobs.push(a.decode().catch(() => {}));
+    const b = new Image(); b.src = C.media.phoneFrames + pad(i) + '.jpg'; phoneFrames.push(b); jobs.push(b.decode().catch(() => {}));
+  }
+  for (const id of ['titleMark', 'lockup', 'buildMark', 'deskImg', 'resMk']) jobs.push($(id).decode().catch(() => {}));
+  await Promise.all(jobs); await document.fonts.ready;
+  $('titleH').style.marginLeft = (-$('titleH').offsetWidth / 2) + 'px';
+  measureLinear();
+  cloneSessions();
+  window.READY = true;
+}
+
+/* The session scene is instantiated twice (phone / mac) so the cut between
+   them can use a pixel-block transition like every other cut. */
+const SESSIONS = {};
+function cloneSessions() {
+  const tpl = $('session');
+  for (const mode of ['phone', 'mac']) {
+    const el = tpl.cloneNode(true); el.id = 'session-' + mode; el.dataset.mode = mode;
+    tpl.parentNode.insertBefore(el, $('end')); SESSIONS[mode] = el;
+  }
+  tpl.remove();
+}
+function frameAt(arr, t, t0) { const i = clamp(Math.round((t - t0) * C.fps), 0, arr.length - 1); return arr[i].src; }
+
+/* ---------- camera ---------- */
+function cam(el, s, ox, oy) { el.style.transformOrigin = `${ox}px ${oy}px`; el.style.transform = `scale(${s})`; }
+// scale s about stage point (cx, cy) and bring that point to screen point (sx, sy)
+function camTo(el, s, cx, cy, sx = 960, sy = 540) { el.style.transformOrigin = '0 0'; el.style.transform = `translate(${sx - s * cx}px, ${sy - s * cy}px) scale(${s})`; }
+
+// stage-space centres of the Linear targets (measured once, at scale 1, before any scroll)
+const LIN = { box: [960, 540], card: [960, 540], click: [960, 540], send: [960, 540] };
+const LZOOM = 1.18; // CSS zoom applied to the Linear UI
+function measureLinear() {
+  const st = $('stage').getBoundingClientRect();
+  const ctr = el => { const r = el.getBoundingClientRect(); return [r.left - st.left + r.width / 2, r.top - st.top + r.height / 2]; };
+  LIN.box = ctr($('cbox')); LIN.send = ctr($('cboxSend'));
+  { const r = $('cbox').getBoundingClientRect(); LIN.click = [r.right - st.left - 150, r.top - st.top + 34]; }
+  $('devinCard').classList.remove('hidden'); $('resources').classList.remove('hidden'); $('postedCm').classList.remove('hidden');
+  LIN.card = ctr($('devinCard'));
+  $('devinCard').classList.add('hidden'); $('resources').classList.add('hidden'); $('postedCm').classList.add('hidden');
+}
+
+/* ------------------------------------------------------------------ */
+/*  SEEK                                                               */
+/* ------------------------------------------------------------------ */
+window.seek = function (t) {
+  const scT = $('title'), scL = $('linear'), scB = $('build'), scE = $('end');
+  const sPhone = SESSIONS.phone, sMac = SESSIONS.mac;
+
+  /* ---- scene visibility + pixel-block transitions ---- */
+  scT.classList.toggle('hidden', t > T.toLinear + TR);
+  applyMask(scL, ORD.toLinear, prog(t, T.toLinear, TR)); if (t > T.toBuild + TR) scL.classList.add('hidden');
+  applyMask(scB, ORD.toBuild, prog(t, T.toBuild, TR)); if (t > T.toPhone + TR) scB.classList.add('hidden');
+  applyMask(sPhone, ORD.toPhone, prog(t, T.toPhone, TR)); if (t > T.toMac + TR) sPhone.classList.add('hidden');
+  applyMask(sMac, ORD.toMac, prog(t, T.toMac, TR)); if (t > T.toBlack + TR_END) sMac.classList.add('hidden');
+  applyMask(scE, ORD.toBlack, prog(t, T.toBlack, TR_END));
+
+  /* ---- 1. TITLE ---- */
+  if (!scT.classList.contains('hidden')) {
+    const mp = E(t, 0.05, 0.55, quint); $('titleMark').style.opacity = mp; $('titleMark').style.transform = `translateY(${(1 - mp) * -50}px) scale(${lerp(0.94, 1, mp)})`;
+    const lp = E(t, 0.4, 0.4); $('titleLead').style.height = (lp * 40) + 'px';
+    landWords(L1, t, 0.55); landWords(L2, t, 0.85);
+    ticksTo($('titleTicks'), $('titleH'), t > 1.75);
+    cam(scT.firstElementChild, 1 + 0.03 * prog(t, 0, T.toLinear + TR), 960, 540);
+  }
+
+  /* ---- 2. LINEAR ---- */
+  if (!scL.classList.contains('hidden')) {
+    const tl = Math.min(t, T.toBuild + TR); // freeze at the cut
+    const focused = tl >= T.clickBox && tl < T.send;
+    $('cbox').classList.toggle('focus', focused);
+    const blink = Math.floor(tl * 4) % 2 ? 0 : 1;
+    // comment text: "@devin" -> pill after pick -> command
+    let html;
+    if (tl >= T.send) html = '<span class="ph">Leave a comment…</span>';
+    else if (tl < T.clickBox) html = '<span class="ph">Leave a comment…</span>';
+    else if (tl < T.pickDevin) {
+      const n = Math.floor(TX.mention.length * prog(tl, T.mentionStart, T.mentionEnd - T.mentionStart));
+      html = esc(TX.mention.slice(0, n)) + `<span class="caret" style="opacity:${blink}"></span>`;
+    } else {
+      const n = Math.floor(TX.command.length * prog(tl, T.cmdStart, T.cmdEnd - T.cmdStart));
+      html = PILL + esc(TX.command.slice(0, n)) + `<span class="caret" style="opacity:${blink}"></span>`;
+    }
+    $('cboxText').innerHTML = html;
+    $('cboxSend').classList.toggle('ready', tl >= T.mentionStart + 0.1 && tl < T.send);
+    // mention popover: appears once "@" is typed, closes on pick
+    const showMn = tl >= T.mentionStart + 0.1 && tl < T.pickDevin;
+    const mp = showMn ? E(tl, T.mentionStart + 0.1, 0.28, over) : 0;
+    $('mention').style.opacity = showMn ? 1 : 0; $('mention').style.transform = `scale(${lerp(0.92, 1, mp)}) translateY(${(1 - mp) * 8}px)`;
+    // after send: posted comment, Devin card, resources, assignees, inbox
+    const posted = tl >= T.send, started = tl >= T.devinStart;
+    $('postedCm').classList.toggle('hidden', !posted); fadeUp($('postedCm'), E(tl, T.send, 0.4, quint));
+    $('devinCard').classList.toggle('hidden', !started); fadeUp($('devinCard'), E(tl, T.devinStart, 0.4, quint));
+    $('resources').classList.toggle('hidden', !started); $('resources').style.opacity = E(tl, T.devinStart + 0.15, 0.4, quint);
+    $('prAssignEmpty').classList.toggle('hidden', posted);
+    $('prAssignNader').classList.toggle('hidden', !posted);
+    $('prAssignDevin').classList.toggle('hidden', !started);
+    $('inboxN').textContent = started ? '2' : '1';
+    const secs = Math.floor(Math.max(0, tl - T.devinStart)) + 1; $('dvTimer').textContent = '00:0' + Math.min(secs, 9);
+    // simulated scroll so the new activity stays in view once the thread grows
+    const scroll = -E(tl, T.send + 0.1, 0.7) * 170 - E(tl, T.devinStart, 0.6) * 130; // stage px
+    $('lscroll').style.transform = `translateY(${scroll / LZOOM}px)`;
+    // cursor: idle -> comment box -> send button (hot-spot is the arrow tip at the svg's top-left)
+    const cx0 = 1500, cy0 = 980, cx1 = LIN.click[0] - 3, cy1 = LIN.click[1] - 2, cx2 = LIN.send[0] - 3, cy2 = LIN.send[1] - 2;
+    const p1 = E(tl, T.cursorToBox, 0.55, quint), p2 = E(tl, T.cursorToSend, 0.4, quint);
+    const cx = lerp(lerp(cx0, cx1, p1), cx2, p2), cy = lerp(lerp(cy0, cy1, p1), cy2, p2);
+    const click = (tl >= T.clickBox && tl < T.clickBox + 0.12) || (tl >= T.send - 0.05 && tl < T.send + 0.07) ? 0.88 : 1;
+    $('cursor').style.transform = `translate(${cx}px, ${cy}px) scale(${click})`;
+    $('cursor').style.opacity = E(tl, T.toLinear + TR, 0.3) * (1 - E(tl, T.send + 0.3, 0.3));
+    // camera: settle, push into the comment box while typing, then glide to the Devin session card
+    const zi = E(tl, T.zoomIn, 0.9), zo = E(tl, T.zoomOut, 0.9);
+    const s = lerp(lerp(1 + 0.03 * prog(tl, T.toLinear, 3), 1.6, zi), 1.35, zo);
+    const ccx = lerp(lerp(960, LIN.box[0], zi), LIN.card[0], zo);
+    const ccy = lerp(lerp(540, LIN.box[1], zi), LIN.card[1] + scroll, zo);
+    // comment box sits low in the frame so the mention popover above it has room
+    camTo($('linearCam'), s, ccx, ccy, 960, lerp(lerp(540, 560, zi), 600, zo));
+  }
+
+  /* ---- 3. BUILD ---- */
+  if (!scB.classList.contains('hidden')) {
+    const tb = Math.min(t, T.toPhone + TR);
+    const mp = E(tb, T.toBuild + 0.2, 0.5, quint); $('buildMark').style.opacity = mp; $('buildMark').style.transform = `scale(${lerp(0.9, 1, mp)})`;
+    fadeUp($('buildTag'), E(tb, T.toBuild + 0.45, 0.4, quint), 10);
+    const capDone = landWords([...$('buildCap').children], tb, T.toBuild + TR, 0.07, 0.36, 40);
+    ticksTo($('buildTicks'), $('buildCap'), capDone >= 0.999);
+    const stages = [...$('stages').children];
+    let overall = 0, statusTxt = '';
+    stages.forEach((el, i) => {
+      const t0 = T.buildStart + i * T.buildStage;
+      const inP = E(tb, T.toBuild + 0.5 + i * 0.09, 0.4, quint); fadeUp(el, inP, 24);
+      const p = prog(tb, t0, T.buildStage * 0.92);
+      const started = tb >= t0;
+      el.classList.toggle('pending', !started);
+      const cells = el.querySelectorAll('.cells i');
+      cells.forEach((c, k) => { c.style.opacity = STAGE_ORD[i][k] < p ? 1 : 0; });
+      el.querySelector('.chk').style.opacity = p >= 1 ? 1 : 0;
+      el.querySelector('.num').style.color = p >= 1 ? '#fff' : '';
+      overall += p / stages.length;
+      if (started && p < 1) statusTxt = `${TX.buildStages[i][0]}  ${TX.buildStages[i][1]}`;
+    });
+    if (!statusTxt) statusTxt = tb < T.buildStart ? 'Starting macOS session' : 'Both targets running';
+    [...$('rail').children].forEach((c, k) => c.classList.toggle('on', k / RAIL_N < overall));
+    $('buildStatus').innerHTML = `<span style="color:var(--accent)">›</span>  ${esc(statusTxt)}<span class="cur" style="opacity:${Math.floor(tb * 4) % 2 ? 0 : 1}"></span>`;
+    fadeUp($('buildStatus'), E(tb, T.toBuild + 0.7, 0.4, quint), 10);
+    $('rail').style.opacity = E(tb, T.toBuild + 0.7, 0.4, quint);
+    cam($('buildCam'), 1 + 0.035 * prog(tb, T.toBuild, T.toPhone - T.toBuild), 960, 560);
+  }
+
+  /* ---- 4/5. SESSION (two instances) ---- */
+  for (const mode of ['phone', 'mac']) if (!SESSIONS[mode].classList.contains('hidden')) renderSession(SESSIONS[mode], t, mode);
+
+  /* ---- 6. END ---- */
+  if (!scE.classList.contains('hidden')) {
+    const lp = E(t, T.logoIn, 0.6, over); $('lockup').style.opacity = clamp(lp * 1.6, 0, 1); $('lockup').style.transform = `scale(${lerp(0.92, 1, lp)})`;
+    const up = E(t, T.urlIn, 0.45, quint); $('url').style.opacity = up; $('url').style.transform = `translateY(${(1 - up) * 30}px)`;
+    const tp = E(t, T.urlIn + 0.35, 0.45, quint); $('endTag').style.opacity = tp; $('endTag').style.transform = `translateY(${(1 - tp) * 24}px)`;
+    const rp = E(t, T.logoIn + 0.45, 0.35, expo); $('ret').style.opacity = rp; $('ret').style.transform = `scale(${lerp(1.08, 1, rp)})`;
+    $('floor').style.opacity = E(t, T.toBlack, 1.0) * 0.9;
+  }
+};
+
+function renderSession(root, t, mode) {
+  const $ = id => root.querySelector('#' + id);
+  const isPhone = mode === 'phone', isMac = mode === 'mac';
+  if (isPhone) t = Math.min(t, T.toMac);
+  // caption: lands after each cut, swaps once, drops out before the camera pushes in
+  let capKey, capStart, capEnd;
+  if (isMac && t >= T.captionShared) { capKey = 'shared'; capStart = T.captionShared; capEnd = T.macZoomIn - 0.2; }
+  else if (isMac) { capKey = 'mac'; capStart = T.toMac + TR; capEnd = T.captionShared - 0.3; }
+  else if (t >= T.captionTest) { capKey = 'test'; capStart = T.captionTest; capEnd = T.phoneZoomIn - 0.2; }
+  else { capKey = 'phone'; capStart = T.toPhone + TR; capEnd = T.captionTest - 0.3; }
+  if ($('cap').dataset.key !== capKey) { words($('cap'), capSpans[capKey]); $('cap').dataset.key = capKey; }
+  const capDone = landWords([...$('cap').children], t, capStart, 0.07, 0.36, 40);
+  const capOut = E(t, capEnd, 0.3, quint);
+  $('cap').style.opacity = 1 - capOut; $('cap').style.transform = `translateY(${-capOut * 30}px)`;
+  ticksTo($('capTicks'), $('cap'), capDone >= 0.999 && capOut <= 0);
+  // chat progression (the build already happened, so its message and steps are in place)
+  $('msgCode').style.opacity = 1; [...$('stepsCode').children].forEach(s => s.style.opacity = 1);
+  const runP = E(t, T.toPhone + 0.4, 0.4, quint); fadeUp($('msgRun'), runP, 16);
+  [...$('stepsRun').children].forEach((s, i) => { const t0 = i < 2 ? T.toPhone + 1.2 + i * 1.1 : T.toMac + 0.6 + (i - 2) * 0.9; const p = E(t, t0, 0.3, quint); s.style.opacity = p; s.style.transform = `translateX(${(1 - p) * -10}px)`; });
+  fadeUp($('msgDone'), E(t, T.devinDone, 0.4, quint), 16);
+  $('statusText').textContent = t >= T.devinDone ? 'Devin is awaiting instructions' : 'Devin is working';
+  $('statusLine').querySelector('.d').style.background = t >= T.devinDone ? '#EF8A3C' : '#2F5BFF';
+  // computer pane content
+  $('phone').classList.toggle('hidden', isMac); $('deskImg').classList.toggle('hidden', isMac); $('macImg').classList.toggle('hidden', isPhone);
+  if (isPhone) $('phoneImg').src = frameAt(phoneFrames, t, T.toPhone); else $('macImg').src = frameAt(macFrames, t, T.toMac);
+  $('paneFill').style.width = (lerp(28, 96, prog(t, T.toPhone, T.toBlack - T.toPhone))) + '%';
+  // camera: push into the phone / the Mac game window and hold
+  let s = 1, ox = 1240, oy = 560;
+  if (isPhone) { s = lerp(1, 1.28, E(t, T.phoneZoomIn, 1.2)); ox = 1270; oy = 630; }
+  if (isMac) { s = lerp(1, 1.7, E(t, T.macZoomIn, 1.4)); ox = 1650; oy = 250; }
+  cam($('sessionCam'), s, ox, oy);
+}
+
+/* dev preview: ?t=seconds, or play with ?play */
+preload().then(() => {
+  const q = new URLSearchParams(location.search);
+  if (q.has('play')) { const st = performance.now(); (function loop() { const t = ((performance.now() - st) / 1000) % C.duration; seek(t); requestAnimationFrame(loop); })(); }
+  else seek(parseFloat(q.get('t') || '0'));
+});
+</script>
+</body>
+</html>
