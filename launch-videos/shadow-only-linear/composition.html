@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>macOS in Devin Cloud from Linear, shadow-only launch video</title>
+<style>
+@font-face { font-family: "Inter Tight"; src: url("fonts/InterTight.ttf"); font-weight: 100 900; }
+@font-face { font-family: "Inter"; src: url("fonts/Inter.ttf"); font-weight: 100 900; }
+
+:root {
+  --paper: #fbfbfa;
+  --ink: #191919;
+  --ink-2: #4a4a4a;
+  --muted: #8a8a8a;
+  --line: #ededed;
+  --blue: #467af6;
+  --blue-soft: #e9eefa;
+  --green: #2e9e5b;
+  /* Linear light theme */
+  --lin-side: #f9f9f8;
+  --lin-ink: #282a30;
+  --lin-ink-2: #3c3f44;
+  --lin-muted: #6b6f76;
+  --lin-faint: #9a9ea5;
+  --lin-line: #e7e8ea;
+  --lin-indigo: #5e6ad2;
+  --lin-indigo-soft: #eceefb;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+body { font-family: "Inter Tight", "Inter", "Helvetica Neue", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+#stage { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, #ffffff 0%, #f8f8f6 55%, #efefec 100%); }
+#world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+
+.abs { position: absolute; }
+.hidden { visibility: hidden; }
+
+/* ---------- shadow plane (softer than the first cut) ---------- */
+.shadow { position: absolute; top: -800px; left: 0; width: 1200px; height: 2700px; pointer-events: none;
+  transform-origin: 50% 50%;
+  background: linear-gradient(90deg,
+    rgba(28,30,38,0) 0%, rgba(28,30,38,0.05) 20%, rgba(28,30,38,0.16) 42%, rgba(28,30,38,0.18) 50%, rgba(28,30,38,0.16) 58%, rgba(28,30,38,0.05) 80%, rgba(28,30,38,0) 100%);
+}
+#shadowOuter { z-index: 50; }
+#shadowTop { z-index: 90; }
+
+/* ---------- scene 1: headline ---------- */
+#s1 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; }
+#s1 .lockup { width: 300px; }
+#s1 .line1 { font-size: 200px; font-weight: 600; letter-spacing: -0.05em; line-height: 0.95; }
+#s1 .line2 { font-size: 118px; font-weight: 500; letter-spacing: -0.04em; line-height: 1; color: var(--ink); }
+#s1 .line2 span { display: inline-block; margin-right: 0.22em; }
+#s1 .line2 span:last-child { margin-right: 0; }
+
+/* ---------- scene 2: Linear issue ---------- */
+#s2 { position: absolute; inset: 0; color: var(--lin-ink); font-family: "Inter", "Inter Tight", "Helvetica Neue", sans-serif; }
+#lin { position: absolute; left: 60px; top: 70px; width: 1800px; height: 940px; background: var(--lin-side); border-radius: 22px; box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 30px 80px rgba(20,20,30,0.10), 0 4px 14px rgba(20,20,30,0.04); display: flex; overflow: hidden; }
+#linSide { width: 250px; height: 100%; padding: 22px 14px 0 14px; font-size: 18px; color: var(--lin-ink-2); display: flex; flex-direction: column; }
+#linSide .ws { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px; font-weight: 500; }
+#linSide .ws .av { width: 28px; height: 28px; border-radius: 7px; background: #3fb46e; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; letter-spacing: 0.02em; }
+#linSide .ws .chev { width: 14px; height: 14px; }
+#linSide .ws .sp { flex: 1; }
+#linSide .ws svg.ic { width: 20px; height: 20px; }
+#linSide svg { stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+#linSide .row { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 10px; border-radius: 8px; }
+#linSide .row svg { width: 20px; height: 20px; }
+#linSide .row .n { margin-left: auto; color: var(--lin-faint); font-size: 16px; }
+#linSide .grp { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; margin-top: 18px; color: var(--lin-muted); font-size: 16px; font-weight: 500; }
+#linSide .grp svg { width: 10px; height: 10px; }
+#linSide .row.sub { padding-left: 34px; }
+#linSide .team { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 10px; }
+#linSide .team .tv { width: 20px; height: 20px; border-radius: 5px; border: 1.6px solid #3fb46e; display: flex; align-items: center; justify-content: center; }
+#linSide .team .tv i { width: 8px; height: 8px; border-radius: 2px; background: #3fb46e; }
+#linSide .team .chev { margin-left: auto; width: 12px; height: 12px; }
+#linSide .help { margin-top: auto; margin-bottom: 14px; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--lin-line); display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--lin-muted); background: #fff; }
+
+#linMain { position: relative; flex: 1; height: 100%; padding-top: 8px; padding-right: 8px; display: flex; flex-direction: column; }
+#linPage { position: relative; flex: 1; background: #fff; border: 1px solid var(--lin-line); border-radius: 10px; overflow: hidden; }
+#linTop { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 24px; font-size: 17px; color: var(--lin-muted); border-bottom: 1px solid var(--lin-line); }
+#linTop .key { color: var(--lin-ink); }
+#linTop .ttl { color: var(--lin-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 900px; }
+#linTop .sp { flex: 1; }
+#linTop svg { width: 18px; height: 18px; stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+#linTools { position: absolute; right: 26px; top: 76px; display: flex; gap: 10px; }
+#linTools div { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--lin-line); display: flex; align-items: center; justify-content: center; }
+#linTools svg { width: 18px; height: 18px; stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+#linBody { position: absolute; left: 0; right: 0; top: 56px; bottom: 0; display: flex; }
+#linCol { width: 860px; margin-left: 70px; padding-top: 62px; }
+#linTitle { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; color: var(--lin-ink); }
+#linDesc { margin-top: 26px; font-size: 21px; line-height: 1.5; color: var(--lin-ink); }
+#linIcons { margin-top: 30px; display: flex; gap: 22px; }
+#linIcons svg { width: 22px; height: 22px; stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#linSub { margin-top: 30px; font-size: 18px; color: var(--lin-muted); display: flex; align-items: center; gap: 8px; }
+#linRule { margin-top: 32px; height: 1px; background: var(--lin-line); }
+#linActHead { margin-top: 30px; display: flex; align-items: center; font-size: 22px; font-weight: 600; color: var(--lin-ink); }
+#linActHead .sp { flex: 1; }
+#linActHead .unsub { font-size: 17px; font-weight: 400; color: var(--lin-muted); margin-right: 18px; }
+.pav { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #f0b27a, #b9642e); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; letter-spacing: 0.02em; }
+.pav.sm { width: 22px; height: 22px; font-size: 9px; }
+#linAct { margin-top: 22px; font-size: 17px; color: var(--lin-muted); line-height: 1.45; }
+#linAct .ev { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+#linAct .ev b { font-weight: 500; color: var(--lin-ink-2); }
+#linAct .ev svg { width: 18px; height: 18px; stroke: var(--lin-faint); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-top: 3px; flex: none; }
+#linAct .ev .mt { margin-top: 2px; }
+
+#posted.hidden, #devinCard.hidden { display: none; }
+#posted { margin-top: 6px; background: #fff; border: 1px solid var(--lin-line); border-radius: 12px; padding: 18px 22px 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+#posted .hd { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--lin-muted); }
+#posted .hd b { color: var(--lin-ink); font-weight: 500; }
+#posted .tx { margin-top: 12px; font-size: 20px; line-height: 1.45; color: var(--lin-ink); }
+.mention { color: var(--lin-indigo); font-weight: 500; }
+.bang { font-weight: 600; color: var(--lin-ink); }
+
+#devinCard { margin-top: 16px; background: #fff; border: 1px solid var(--lin-line); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); overflow: hidden; }
+#devinCard .r1 { height: 54px; display: flex; align-items: center; gap: 12px; padding: 0 20px; font-size: 18px; color: var(--lin-ink); border-bottom: 1px solid var(--lin-line); }
+#devinCard .r1 img { width: 22px; height: 22px; }
+#devinCard .r1 b { font-weight: 600; }
+#devinCard .r1 .tm { color: var(--lin-muted); margin-left: 4px; }
+#devinCard .r2 { height: 54px; display: flex; align-items: center; gap: 14px; padding: 0 20px; font-size: 18px; color: var(--lin-ink-2); }
+#devinCard .r2 .dots { width: 18px; height: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+#devinCard .r2 .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--lin-faint); }
+#devinCard .r2 .sp { flex: 1; }
+#devinCard .r2 svg { width: 16px; height: 16px; stroke: var(--lin-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#devinCard .r2 .tag { height: 30px; font-size: 16px; padding: 0 10px; gap: 6px; border-radius: 7px; color: var(--lin-ink-2); background: #f1f1f0; }
+
+#linComposer { margin-top: 18px; background: #fff; border: 1px solid var(--lin-line); border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); padding: 20px 22px 14px; min-height: 150px; display: flex; flex-direction: column; }
+#linComposer.focus { border-color: #d0d2d8; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+#linText { font-size: 24px; line-height: 1.4; color: var(--lin-ink); white-space: pre-wrap; min-height: 68px; }
+#linText .ph { color: var(--lin-faint); }
+#linText .caret { display: inline-block; width: 2px; height: 26px; background: var(--lin-ink); vertical-align: -5px; margin-left: 1px; }
+#linCbar { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 16px; }
+#linCbar svg { width: 20px; height: 20px; stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#linSend { width: 36px; height: 36px; border-radius: 50%; background: var(--lin-indigo); display: flex; align-items: center; justify-content: center; }
+#linSend svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.4; }
+
+#linProps { margin-left: 100px; padding-top: 74px; width: 420px; font-size: 19px; color: var(--lin-ink); }
+#linProps .h { font-size: 17px; color: var(--lin-muted); margin-bottom: 14px; }
+#linProps .p { display: flex; align-items: center; gap: 12px; height: 40px; }
+#linProps .p.dim { color: var(--lin-muted); }
+#linProps .p svg { width: 20px; height: 20px; stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#linProps .p img { width: 20px; height: 20px; }
+#linProps .gap { height: 34px; }
+
+#mention { position: absolute; left: 380px; top: 0; width: 500px; background: #fff; border: 1px solid var(--lin-line); border-radius: 12px; box-shadow: 0 12px 40px rgba(20,20,30,0.14), 0 2px 8px rgba(20,20,30,0.06); padding: 10px; transform-origin: 40px 100%; }
+#mention .hd { font-size: 16px; color: var(--lin-muted); padding: 8px 12px 6px; }
+#mention .it { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 19px; color: var(--lin-ink); }
+#mention .it.on { background: #f1f1f3; }
+#mention .it img { width: 20px; height: 20px; }
+#mention .it .role { color: var(--lin-muted); font-size: 16px; margin-left: 4px; }
+#mention .it svg { width: 20px; height: 20px; stroke: var(--lin-indigo); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+#linFoot { position: absolute; right: 26px; bottom: 10px; display: flex; align-items: center; gap: 22px; font-size: 17px; color: var(--lin-ink-2); }
+#linFoot svg { width: 18px; height: 18px; stroke: var(--lin-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#linFoot .ag { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- cursor ---------- */
+#cursor { position: absolute; width: 34px; height: 34px; z-index: 80; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25)); }
+
+/* ---------- scene 3: session ---------- */
+#s3 { position: absolute; inset: 0; }
+#win { position: absolute; left: 60px; top: 70px; width: 1800px; height: 940px; background: #fff; border-radius: 22px; box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 30px 80px rgba(20,20,30,0.10), 0 4px 14px rgba(20,20,30,0.04); display: flex; overflow: hidden; }
+#chat { width: 640px; height: 100%; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+#chatHead { height: 74px; display: flex; align-items: center; gap: 14px; padding: 0 26px; }
+#chatHead .ttl { font-size: 22px; font-weight: 500; }
+#chatHead svg { width: 24px; height: 24px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tag { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 8px; background: var(--blue-soft); color: var(--blue); font-size: 19px; font-weight: 500; }
+.tag svg { stroke: var(--blue) !important; width: 20px !important; height: 20px !important; }
+.tag.lin { background: var(--lin-indigo-soft); color: var(--lin-indigo); }
+.tag.lin svg { stroke: var(--lin-indigo) !important; }
+#chatBody { flex: 1; padding: 22px 30px 0; font-size: 21px; line-height: 1.4; }
+#fromLinear { display: flex; justify-content: flex-end; align-items: center; gap: 8px; color: var(--muted); font-size: 18px; margin-bottom: 10px; }
+#fromLinear svg { width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#userMsg { display: flex; justify-content: flex-end; }
+#userMsg div { background: #f3f3f1; border-radius: 16px; padding: 14px 20px; max-width: 540px; font-weight: 400; }
+#devinMsg { margin-top: 30px; display: flex; gap: 16px; }
+#devinMsg img { width: 36px; height: 36px; margin-top: 2px; }
+#devinMsg .who { font-weight: 600; font-size: 21px; }
+#devinMsg .txt { margin-top: 8px; color: var(--ink); }
+#worked { margin-top: 20px; color: var(--muted); font-size: 20px; display: flex; align-items: center; gap: 10px; }
+#worked svg { width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2.4; }
+#steps { margin-top: 12px; margin-left: 8px; padding-left: 20px; border-left: 2px solid #ececea; font-size: 20px; color: var(--ink-2); }
+#steps .st { height: 38px; display: flex; align-items: center; gap: 12px; }
+#steps .st b { font-weight: 500; color: var(--ink); }
+#steps .st .ok { width: 20px; height: 20px; stroke: var(--green); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+#chatComposer { margin: 0 24px 24px; border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px 14px; box-shadow: 0 6px 20px rgba(20,20,30,0.04); }
+#chatComposer .ph { color: #a3a3a3; font-size: 19px; }
+#chatComposer .bar { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+.tool { display: flex; align-items: center; gap: 10px; color: #6b6b6b; font-size: 18px; font-weight: 500; }
+.tool svg { width: 20px; height: 20px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#chatComposer .mini { width: 36px; height: 36px; border-radius: 50%; background: #e6e6e4; display: flex; align-items: center; justify-content: center; }
+#chatComposer .mini svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; }
+
+#pane { flex: 1; height: 100%; display: flex; flex-direction: column; }
+#tabs { height: 74px; display: flex; align-items: center; gap: 8px; padding: 0 22px; }
+.tab { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 10px; font-size: 20px; font-weight: 500; color: #6b6b6b; }
+.tab.on { background: #f1f1ef; color: var(--ink); }
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#tabs .spacer { flex: 1; }
+#tabs .icons { display: flex; gap: 22px; padding-right: 8px; }
+#tabs .icons svg { width: 22px; height: 22px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+#paneBody { position: relative; flex: 1; margin: 0 22px 0 22px; border-radius: 14px; overflow: hidden; }
+
+/* building view: minimal, no code */
+#build { position: absolute; inset: 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#orb { position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center; }
+#orb .ring { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; border-radius: 50%; border: 1.5px solid rgba(70,122,246,0.55); transform: translate(-50%, -50%); }
+#orb .arc { position: absolute; left: 50%; top: 50%; width: 176px; height: 176px; border-radius: 50%; transform: translate(-50%, -50%); }
+#orb .core { width: 112px; height: 112px; border-radius: 30px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 18px 50px rgba(20,20,30,0.12), 0 2px 8px rgba(20,20,30,0.05); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+#orb .core img { width: 60px; height: 60px; }
+#orb .core svg { position: absolute; width: 60px; height: 60px; stroke: var(--green); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#buildTitle { margin-top: -30px; font-size: 44px; font-weight: 600; letter-spacing: -0.03em; color: var(--ink); }
+#buildSub { margin-top: 14px; font-size: 24px; color: var(--muted); }
+#buildBar { margin-top: 34px; width: 520px; height: 6px; border-radius: 3px; background: #ececea; position: relative; overflow: hidden; }
+#buildBar div { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: var(--blue); border-radius: 3px; }
+#files { margin-top: 30px; display: flex; gap: 14px; }
+#files div { height: 44px; padding: 0 18px; border-radius: 999px; background: #f4f4f2; color: var(--ink-2); font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+#files div i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+/* computer view */
+#computer { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; background: #dfe6ea; }
+#computer .wall { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+#computer .menubar { position: absolute; left: 0; top: 0; width: 100%; height: 38px; background: #2e7cae; }
+#computer .menubar img { position: absolute; top: 0; height: 38px; }
+#computer .menubar .l { left: 0; } #computer .menubar .r { right: 0; }
+#computer .dock { position: absolute; left: 50%; bottom: 10px; width: 780px; transform: translateX(-50%); }
+#paneFoot { height: 76px; display: flex; align-items: center; gap: 16px; padding: 0 22px; }
+#progress { flex: 1; height: 8px; border-radius: 4px; background: #e3e3e1; position: relative; overflow: hidden; }
+#progress div { position: absolute; left: 0; top: 0; height: 100%; width: 40%; background: var(--blue); border-radius: 4px; }
+#live { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); font-size: 19px; font-weight: 500; }
+#live i { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+#paneFoot svg { width: 22px; height: 22px; stroke: #6b6b6b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* phone (absolute in world coordinates, above shadow) */
+#phone { position: absolute; left: 1129px; top: 192px; width: 302px; height: 648px; z-index: 60; }
+#phone .body { position: absolute; inset: 0; border-radius: 50px; background: #101113; box-shadow: 0 30px 70px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.25), inset 0 0 0 2px #3a3b3f; }
+#phone .screen { position: absolute; left: 11px; top: 11px; right: 11px; bottom: 11px; border-radius: 40px; overflow: hidden; background: #000; }
+#phone .screen img { width: 100%; height: 100%; display: block; }
+#phone .island { position: absolute; left: 50%; top: 24px; width: 84px; height: 24px; border-radius: 12px; background: #000; transform: translateX(-50%); }
+#phone .btn { position: absolute; width: 4px; background: #2a2b2f; border-radius: 2px; }
+
+/* ---------- scene 4: end card ---------- */
+#s4 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; }
+#s4 .lockup { width: 768px; }
+#s4 .url { font-size: 64px; font-weight: 600; letter-spacing: -0.03em; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="stage">
+ <div id="world">
+
+  <!-- Scene 1 -->
+  <section id="s1">
+    <img class="lockup el" id="s1logo" src="assets/lockup-black.png" alt="Devin" />
+    <div class="line1 el" id="s1l1">macOS.</div>
+    <div class="line2" id="s1l2"><span class="el">Now</span><span class="el">from</span><span class="el">Linear.</span></div>
+  </section>
+
+  <!-- Scene 2: reconstructed Linear issue view -->
+  <section id="s2" class="hidden">
+    <div id="lin">
+      <div id="linSide">
+        <div class="ws el"><div class="av">NW</div>Nader's Wo...<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg><div class="sp"></div><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M14 9l-4 4M10 9h4v4"/></svg></div>
+        <div class="el">
+          <div class="row"><svg viewBox="0 0 24 24"><path d="M4 13l2-7h12l2 7v5H4z"/><path d="M4 13h5l1.5 2h3L15 13h5"/></svg>Inbox<span class="n">1</span></div>
+          <div class="row"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>My issues</div>
+          <div class="row"><svg viewBox="0 0 24 24"><path d="M7 4v16M17 4v16M7 8h10M7 16h10"/></svg>Reviews</div>
+          <div class="row"><svg viewBox="0 0 24 24"><path d="M5 4l14 8-6 1.5L10.5 20z"/></svg>Agent</div>
+        </div>
+        <div class="el">
+          <div class="grp">Workspace<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>Projects</div>
+          <div class="row"><svg viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4z"/><path d="M3 12l9 4 9-4M3 16l9 4 9-4"/></svg>Views</div>
+          <div class="row"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg>More</div>
+        </div>
+        <div class="el">
+          <div class="grp">Your teams<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="team"><div class="tv"><i></i></div>Nader's Works...<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row sub"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg>Home</div>
+          <div class="row sub"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="12" height="14" rx="2"/><path d="M9 3h10v14"/></svg>Issues</div>
+          <div class="row sub"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Projects</div>
+          <div class="row sub"><svg viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4z"/><path d="M3 12l9 4 9-4M3 16l9 4 9-4"/></svg>Views</div>
+        </div>
+        <div class="el">
+          <div class="grp">Try<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="row"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>Import issues</div>
+          <div class="row"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Invite people</div>
+        </div>
+        <div class="help el">?</div>
+      </div>
+      <div id="linMain">
+        <div id="linPage">
+          <div id="linTop" class="el">
+            <span>My issues</span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span class="key">NAD-38</span><span class="ttl">Build Lumen Drift, a glowing lane dodging arcade game for iPhone</span>
+            <div class="sp"></div>
+            <svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5 6.4 20.4l1.1-6.3L3 9.7l6.2-.9z"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg>
+          </div>
+          <div id="linTools" class="el">
+            <div><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 1 0-5.6l3-3a4 4 0 0 1 5.6 5.6l-1.5 1.5"/><path d="M14 10a4 4 0 0 1 0 5.6l-3 3A4 4 0 0 1 5.4 13l1.5-1.5"/></svg></div>
+            <div><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></div>
+            <div><svg viewBox="0 0 24 24"><circle cx="7" cy="6" r="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 8v8M17 10c0 4-10 2-10 6"/></svg></div>
+            <div><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+          <div id="linBody">
+            <div id="linCol">
+              <div id="linTitle" class="el">Build Lumen Drift, a glowing lane dodging arcade game for iPhone</div>
+              <div id="linDesc" class="el">Swipe between glowing lanes, dodge the walls, collect energy. It should run in the iOS Simulator.</div>
+              <div id="linIcons" class="el">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9 14c1.5 1.5 4.5 1.5 6 0M9.5 10h.01M14.5 10h.01"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M15 7l-6.5 6.5a3 3 0 0 0 4.2 4.2L19 11.5a5 5 0 0 0-7-7L6 10.4"/></svg>
+              </div>
+              <div id="linSub" class="el"><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--lin-muted);fill:none;stroke-width:1.8"><path d="M12 5v14M5 12h14"/></svg>Add sub-issues</div>
+              <div id="linRule" class="el"></div>
+              <div id="linActHead" class="el">Activity<div class="sp"></div><span class="unsub">Unsubscribe</span><div class="pav">ND</div></div>
+              <div id="linAct" class="el">
+                <div class="ev"><div class="pav sm"></div><div class="mt"><b>Nader Dabit</b> created the issue &middot; 2h ago</div></div>
+                <div class="ev"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg><div class="mt"><b>Nader Dabit</b> added the description &middot; 2h ago</div></div>
+                <div id="posted" class="hidden">
+                  <div class="hd"><div class="pav sm">ND</div><b>Nader Dabit</b><span>&middot;</span><span>just now</span></div>
+                  <div class="tx" id="postedText"></div>
+                </div>
+                <div id="devinCard" class="hidden">
+                  <div class="r1"><img src="assets/avatar-black.png" alt="" /><b>Devin</b> started by <b>Nader Dabit</b><span class="tm">now</span></div>
+                  <div class="r2"><div class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span id="devinCardText">Starting session on macOS...</span><div class="sp"></div><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+              <div id="linComposer" class="el">
+                <div id="linText"><span class="ph">Leave a comment...</span></div>
+                <div id="linCbar">
+                  <svg viewBox="0 0 24 24"><path d="M15 7l-6.5 6.5a3 3 0 0 0 4.2 4.2L19 11.5a5 5 0 0 0-7-7L6 10.4"/></svg>
+                  <div id="linSend"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+                </div>
+              </div>
+            </div>
+            <div id="linProps" class="el">
+              <div class="h">Properties</div>
+              <div class="p"><svg viewBox="0 0 24 24" stroke-dasharray="2.5 3"><circle cx="12" cy="12" r="8"/></svg>Backlog</div>
+              <div class="p dim"><svg viewBox="0 0 24 24"><path d="M4 12h3M10 12h3M16 12h4"/></svg>Set priority</div>
+              <div class="p dim" id="propAssign"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Assign</div>
+              <div class="gap"></div>
+              <div class="h">Labels</div>
+              <div class="p dim"><svg viewBox="0 0 24 24"><path d="M4 5h9l7 7-7 7H4z"/><circle cx="8" cy="12" r="1"/></svg>Add label</div>
+              <div class="gap"></div>
+              <div class="h">Project</div>
+              <div class="p dim"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/></svg>Add to project</div>
+            </div>
+          </div>
+          <div id="linFoot" class="el"><div class="ag"><svg viewBox="0 0 24 24"><path d="M5 4l14 8-6 1.5L10.5 20z"/></svg>Agent</div><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4.5h4.5"/><path d="M12 8v4l3 2"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div id="mention" class="hidden">
+      <div class="hd">Users</div>
+      <div class="it on"><img src="assets/avatar-black.png" alt="" />Devin<span class="role">Agent</span></div>
+      <div class="hd">Labels</div>
+      <div class="it"><svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 .7-3.7 3.4.9 5.2L12 15l-4.2 2.3.9-5.2L5 8.7 10 8z"/></svg>Devin Playbooks</div>
+    </div>
+  </section>
+
+  <!-- Scene 3 -->
+  <section id="s3" class="hidden">
+    <div id="win">
+      <div id="chat">
+        <div id="chatHead" class="el">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          <div class="ttl">Build Lumen Drift</div>
+          <div class="tag"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg>macOS</div>
+          <div class="tag lin"><svg viewBox="0 0 24 24"><path d="M4 14l6 6M4 9l11 11M5 5l14 14M9 4l11 11M14 4l6 6"/></svg>NAD-38</div>
+        </div>
+        <div id="chatBody">
+          <div id="fromLinear" class="el"><svg viewBox="0 0 24 24"><path d="M4 14l6 6M4 9l11 11M5 5l14 14M9 4l11 11M14 4l6 6"/></svg>Started from Linear</div>
+          <div id="userMsg" class="el"><div><span class="mention">@Devin</span> <span class="bang">!mac</span> Build Lumen Drift, a glowing lane dodging arcade game for iPhone, and play it in the Simulator</div></div>
+          <div id="devinMsg" class="el">
+            <img src="assets/avatar-black.png" alt="" />
+            <div>
+              <div class="who">Devin</div>
+              <div class="txt">Starting on my Mac. I will build Lumen Drift with SwiftUI and SpriteKit, run it in the iOS Simulator, then play a round to verify it.</div>
+              <div id="worked"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>Working</div>
+              <div id="steps"></div>
+            </div>
+          </div>
+        </div>
+        <div id="chatComposer" class="el">
+          <div class="ph">Ask Devin to build features, fix bugs, or work on your code</div>
+          <div class="bar">
+            <div class="left" style="display:flex;gap:18px;align-items:center">
+              <div class="tool"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+              <div class="tool"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 16l6-8"/></svg>Fusion</div>
+            </div>
+            <div class="mini"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div id="pane">
+        <div id="tabs" class="el">
+          <div class="tab" id="tabChanges"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Changes</div>
+          <div class="tab" id="tabComputer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Computer</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></svg>iOS Simulator</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Tasks</div>
+          <div class="spacer"></div>
+          <div class="icons">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 4v16"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M4 10V4h6M20 14v6h-6M4 4l7 7M20 20l-7-7"/></svg>
+          </div>
+        </div>
+        <div id="paneBody" class="el">
+          <div id="build">
+            <div id="orb">
+              <div class="ring" id="ring1"></div>
+              <div class="ring" id="ring2"></div>
+              <div class="ring" id="ring3"></div>
+              <svg class="arc" id="arc" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="none" stroke="#467af6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="70 225.3"/></svg>
+              <div class="core"><img id="coreLogo" src="assets/avatar-black.png" alt="" /><svg id="coreCheck" viewBox="0 0 24 24" style="opacity:0"><path d="M5 12l5 5L20 7"/></svg></div>
+            </div>
+            <div id="buildTitle">Building Lumen Drift</div>
+            <div id="buildSub">SwiftUI and SpriteKit, for the iOS Simulator</div>
+            <div id="buildBar"><div id="buildFill"></div></div>
+            <div id="files"></div>
+          </div>
+          <div id="computer" class="hidden">
+            <img class="wall" src="assets/wallpaper.png" alt="" />
+            <div class="menubar"><img class="l" src="assets/menubar-left.png" alt="" /><img class="r" src="assets/menubar-right.png" alt="" /></div>
+            <img class="dock" src="assets/dock.png" alt="" />
+          </div>
+        </div>
+        <div id="paneFoot" class="el">
+          <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+          <div id="live"><i></i>Live</div>
+          <div id="progress"><div id="progressFill"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="shadowOuter" class="shadow"></div>
+
+  <div id="phone" class="hidden">
+    <div class="btn" style="left:-4px;top:150px;height:36px"></div>
+    <div class="btn" style="left:-4px;top:210px;height:64px"></div>
+    <div class="btn" style="left:-4px;top:290px;height:64px"></div>
+    <div class="btn" style="right:-4px;top:230px;height:96px"></div>
+    <div class="body"></div>
+    <div class="screen"><img id="phoneImg" src="clipA/0001.png" alt="" /></div>
+    <div class="island"></div>
+  </div>
+
+  <!-- Scene 4 -->
+  <section id="s4" class="hidden">
+    <img class="lockup el" src="assets/lockup-black.png" alt="Devin" />
+    <div class="url el">devin.ai</div>
+  </section>
+
+  <svg id="cursor" class="hidden" viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.2 1.4L9.6 19z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+ </div>
+ <div id="shadowTop" class="shadow"></div>
+</div>
+
+<script>
+/* ======================= EDITABLE CONSTANTS ======================= */
+const FPS = 30;
+const DURATION = 29.4;                       // seconds
+const MENTION_TYPED = "@dev";                // typed before the mention menu is accepted
+const MENTION = "@Devin";                    // inserted by the mention menu
+const REQUEST = " !mac Build Lumen Drift, a glowing lane dodging arcade game for iPhone, and play it in the Simulator";
+const SCROLL_AFTER_POST = 250;             // px the issue scrolls once the comment posts
+const CLIPS = { A: { dir: "clipA", frames: 188 }, B: { dir: "clipB", frames: 188 } };
+
+const T = {
+  // scene 1
+  sweep1: [0.0, 1.5],          // opening shadow crosses left to right
+  head1: 0.85, head2: 1.25,    // headline lines build
+  headOut: 3.55,
+  sweep2: [3.35, 4.65],        // shadow returns, carries the Linear issue in
+  // scene 2 (Linear)
+  linearIn: 4.05,
+  cursorToBox: [4.9, 5.35],
+  clickBox: 5.4,
+  typing1: [5.6, 6.0],         // "@dev"
+  mentionOpen: 5.95,
+  pickMention: 6.55,           // Enter accepts Devin
+  mentionClose: 6.6,
+  typing2: [6.75, 8.8],        // " !mac Build Lumen Drift ..."
+  cursorToSend: [8.85, 9.2],
+  clickSend: 9.25,
+  commentPost: 9.35,
+  devinCard: 9.85,
+  sweep3: [10.6, 11.85],
+  linearOut: 10.7,
+  // scene 3 (Devin session)
+  sessionIn: 11.2,
+  buildStart: 11.5, buildDone: 14.0,
+  sweep4: [14.75, 15.85],      // building view to Computer
+  clipAStart: 15.3,
+  sweep5: [21.05, 22.15],      // clip A to clip B (outer only)
+  clipBStart: 21.55,
+  sweep6: [27.1, 28.3],        // final shadow, end card
+  sessionOut: 27.2,
+  endIn: 27.9,
+};
+
+const FILES = [
+  { t: 12.1, name: "LumenDriftApp.swift" },
+  { t: 12.55, name: "GameScene.swift" },
+  { t: 13.0, name: "LaneField.swift" },
+  { t: 13.45, name: "HUDView.swift" },
+];
+
+const STEPS = [
+  { t: 11.75, html: 'Started a macOS session from <b>NAD-38</b>', ok: true },
+  { t: 12.2, html: 'Created the <b>LumenDrift</b> Xcode project' },
+  { t: 13.0, html: 'Wrote the SwiftUI and SpriteKit game' },
+  { t: 13.9, html: 'Built LumenDrift for the iOS Simulator', ok: true },
+  { t: 15.0, html: 'Booted iPhone 17 and launched Lumen Drift', ok: true },
+  { t: 16.5, html: 'Started a run and tapped the left lane' },
+  { t: 18.4, html: 'Tapped the right lane to catch energy' },
+  { t: 20.2, html: 'Observed the score climbing', ok: true },
+  { t: 23.1, html: 'Survived a faster wave of walls' },
+  { t: 25.3, html: 'Reached the game over panel', ok: true },
+  { t: 26.3, html: 'Verified: Lumen Drift runs in the Simulator', ok: true },
+];
+
+const CAMERA = [ // t, scale, focusX, focusY (world coords mapped to frame center)
+  { t: 0.0, s: 1.0, x: 960, y: 540 },
+  { t: 4.0, s: 1.0, x: 960, y: 540 },
+  { t: 5.1, s: 1.5, x: 800, y: 640 },
+  { t: 9.3, s: 1.5, x: 800, y: 640 },
+  { t: 10.0, s: 1.45, x: 860, y: 600 },
+  { t: 10.7, s: 1.45, x: 860, y: 600 },
+  { t: 11.3, s: 1.0, x: 960, y: 540 },
+  { t: 12.6, s: 1.24, x: 1230, y: 520 },
+  { t: 14.1, s: 1.24, x: 1230, y: 520 },
+  { t: 15.0, s: 1.0, x: 960, y: 540 },
+  { t: 15.5, s: 1.0, x: 960, y: 540 },
+  { t: 18.3, s: 1.38, x: 1236, y: 516 },
+  { t: 20.7, s: 1.40, x: 1236, y: 500 },
+  { t: 22.7, s: 1.40, x: 1236, y: 500 },
+  { t: 25.5, s: 1.38, x: 1236, y: 530 },
+  { t: 26.4, s: 1.38, x: 1236, y: 530 },
+  { t: 27.2, s: 1.0, x: 960, y: 540 },
+  { t: 29.4, s: 1.0, x: 960, y: 540 },
+];
+/* ================================================================== */
+
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const seg = (t, a, d) => clamp((t - a) / d);
+const outExpo = (p) => (p >= 1 ? 1 : 1 - Math.pow(2, -10 * p));
+const outQuint = (p) => 1 - Math.pow(1 - p, 5);
+const inOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+const inQuad = (p) => p * p;
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+function show(el, on) { el.classList.toggle("hidden", !on); }
+function enter(el, t, start, dur = 0.55, dy = 36, dxs = 0) {
+  const p = outQuint(seg(t, start, dur));
+  el.style.opacity = p;
+  el.style.transform = `translate(${dxs * (1 - p)}px, ${dy * (1 - p)}px)`;
+}
+function leave(el, t, start, dur = 0.45, dy = -40) {
+  const p = inQuad(seg(t, start, dur));
+  el.style.opacity = 1 - p;
+  el.style.transform = `translateY(${dy * p}px)`;
+}
+function stagger(nodes, t, start, gap = 0.12, dur = 0.6, dy = 30) {
+  nodes.forEach((n, i) => enter(n, t, start + i * gap, dur, dy));
+}
+
+/* shadow plane sweep: the band travels diagonally across the frame */
+function sweep(el, t, [a, b], dir = 1) {
+  if (t < a || t > b) { el.style.opacity = 0; return; }
+  const p = inOut(seg(t, a, b - a));
+  const x = lerp(-1600, 2600, dir > 0 ? p : 1 - p);
+  el.style.opacity = 1;
+  el.style.transform = `translateX(${x}px) rotate(-16deg)`;
+}
+
+/* cursor movement */
+function cursorAt(t, from, to, [a, b]) {
+  const p = outQuint(seg(t, a, b - a));
+  return [lerp(from[0], to[0], p), lerp(from[1], to[1], p)];
+}
+function setCursor(x, y, on) { const c = $("cursor"); show(c, on); c.style.left = x + "px"; c.style.top = y + "px"; }
+
+/* comment markup: mention and !mac styled like the request */
+function commentHTML(text, caret) {
+  let html = "";
+  if (text.startsWith(MENTION)) {
+    html += `<span class="mention">${MENTION}</span>`;
+    let rest = text.slice(MENTION.length);
+    const m = rest.match(/^ !mac/);
+    if (m) { html += ' <span class="bang">!mac</span>'; rest = rest.slice(m[0].length); }
+    else if (rest.length) { html += `<span class="bang">${esc(rest)}</span>`; rest = ""; }
+    html += esc(rest);
+  } else html += esc(text);
+  return html + (caret ? '<span class="caret"></span>' : "");
+}
+
+(function buildLists() {
+  const st = $("steps");
+  STEPS.forEach((s) => {
+    const d = document.createElement("div"); d.className = "st";
+    d.innerHTML = (s.ok ? '<svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>' : "") + s.html;
+    st.appendChild(d);
+  });
+  const f = $("files");
+  FILES.forEach((x) => { const d = document.createElement("div"); d.innerHTML = `<i></i>${x.name}`; f.appendChild(d); });
+  $("postedText").innerHTML = commentHTML(MENTION + REQUEST, false);
+})();
+
+/* preload footage */
+const frames = { A: [], B: [] };
+window.ready = false;
+(async function preload() {
+  const jobs = [];
+  for (const k of Object.keys(CLIPS)) {
+    for (let i = 1; i <= CLIPS[k].frames; i++) {
+      const src = `${CLIPS[k].dir}/${String(i).padStart(4, "0")}.png`;
+      frames[k].push(src);
+      const im = new Image(); im.src = src; jobs.push(im.decode().catch(() => {}));
+    }
+  }
+  await Promise.all(jobs);
+  await document.fonts.ready;
+  window.ready = true;
+})();
+
+function camera(t) {
+  let a = CAMERA[0], b = CAMERA[CAMERA.length - 1];
+  for (let i = 0; i < CAMERA.length - 1; i++) if (t >= CAMERA[i].t && t <= CAMERA[i + 1].t) { a = CAMERA[i]; b = CAMERA[i + 1]; break; }
+  const p = b.t === a.t ? 1 : inOut(seg(t, a.t, b.t - a.t));
+  const s = lerp(a.s, b.s, p), x = lerp(a.x, b.x, p), y = lerp(a.y, b.y, p);
+  $("world").style.transform = `translate(${960 - x * s}px, ${540 - y * s}px) scale(${s})`;
+}
+
+/* current comment text for time t */
+function commentText(t) {
+  if (t < T.typing1[0]) return null;
+  if (t < T.pickMention) {
+    const n = Math.ceil(MENTION_TYPED.length * seg(t, T.typing1[0], T.typing1[1] - T.typing1[0]));
+    return MENTION_TYPED.slice(0, n);
+  }
+  const n = Math.floor(REQUEST.length * outQuint(seg(t, T.typing2[0], T.typing2[1] - T.typing2[0])));
+  return MENTION + REQUEST.slice(0, n);
+}
+
+window.seek = function seek(t) {
+  camera(t);
+  const so = $("shadowOuter"), stp = $("shadowTop");
+  so.style.opacity = 0; stp.style.opacity = 0;
+
+  /* ---- scene 1 ---- */
+  const s1on = t < T.sweep2[1];
+  show($("s1"), s1on);
+  if (s1on) {
+    sweep(stp, t, T.sweep1, 1);
+    enter($("s1logo"), t, T.head1 - 0.2, 0.7, 24);
+    enter($("s1l1"), t, T.head1, 0.8, 70);
+    stagger([...$("s1l2").children], t, T.head2, 0.09, 0.7, 40);
+    if (t >= T.headOut) {
+      leave($("s1logo"), t, T.headOut + 0.12, 0.5, -24);
+      leave($("s1l1"), t, T.headOut, 0.55, -70);
+      [...$("s1l2").children].forEach((n, i) => leave(n, t, T.headOut + 0.06 + i * 0.04, 0.5, -34));
+    }
+    const drift = Math.sin(t * 1.1) * 4;
+    $("s1").style.transform = `translateY(${drift}px)`;
+  }
+
+  /* ---- scene 2: Linear ---- */
+  const s2on = t >= T.linearIn - 0.1 && t < T.sweep3[1];
+  show($("s2"), s2on);
+  if (s2on) {
+    if (t < T.sweep2[1]) sweep(stp, t, T.sweep2, -1);
+    const lin = $("lin");
+    const pin = outExpo(seg(t, T.linearIn, 0.9));
+    let wy = 90 * (1 - pin), wo = pin, ws = lerp(0.97, 1, pin);
+    if (t >= T.linearOut) { const q = inQuad(seg(t, T.linearOut, 0.55)); wy = -60 * q; wo = 1 - q; ws = 1 - 0.02 * q; }
+    lin.style.transform = `translateY(${wy}px) scale(${ws})`; lin.style.opacity = wo;
+    stagger([...$("linSide").children], t, T.linearIn + 0.1, 0.06, 0.6, 18);
+    $("linCol").style.transform = `translateY(${-SCROLL_AFTER_POST * outQuint(seg(t, T.commentPost, 0.8))}px)`;
+    stagger([$("linTop"), $("linTitle"), $("linProps"), $("linDesc"), $("linTools"), $("linIcons"), $("linSub"), $("linRule"), $("linActHead"), $("linAct"), $("linComposer"), $("linFoot")], t, T.linearIn + 0.16, 0.07, 0.65, 22);
+
+    // comment composer
+    const txt = commentText(t);
+    const comp = $("linComposer");
+    comp.classList.toggle("focus", t >= T.clickBox && t < T.commentPost);
+    const caretOn = t >= T.clickBox && t < T.commentPost && (Math.floor(t * 2.6) % 2 === 0 || (t >= T.typing1[0] && t < T.typing2[1]));
+    if (t >= T.commentPost || txt === null) $("linText").innerHTML = (caretOn ? '<span class="caret"></span>' : "") + '<span class="ph">Leave a comment...</span>';
+    else $("linText").innerHTML = commentHTML(txt, caretOn);
+
+    // mention menu, opens above the composer
+    const menu = $("mention");
+    const mo = t >= T.mentionOpen && t < T.mentionClose + 0.25;
+    show(menu, mo);
+    if (mo) {
+      const wr = $("world").getBoundingClientRect(), cr = comp.getBoundingClientRect(), sc = wr.width / 1920;
+      menu.style.left = `${(cr.left - wr.left) / sc + 12}px`;
+      menu.style.top = `${(cr.top - wr.top) / sc - menu.offsetHeight - 10}px`;
+      const op = outExpo(seg(t, T.mentionOpen, 0.35));
+      const cl = t >= T.mentionClose ? inQuad(seg(t, T.mentionClose, 0.25)) : 0;
+      menu.style.opacity = op * (1 - cl);
+      menu.style.transform = `translateY(${(1 - op) * 8 + cl * 6}px) scale(${lerp(0.96, 1, op)})`;
+    }
+
+    // send button press, then the comment posts into the activity
+    const sp = t >= T.clickSend ? seg(t, T.clickSend, 0.25) : 0;
+    $("linSend").style.transform = `scale(${1 - 0.14 * Math.sin(Math.PI * sp)})`;
+    $("linSend").style.opacity = t >= T.clickBox ? 1 : 0.45;
+    const posted = $("posted");
+    show(posted, t >= T.commentPost);
+    if (t >= T.commentPost) { const p = outQuint(seg(t, T.commentPost, 0.55)); posted.style.opacity = p; posted.style.transform = `translateY(${(1 - p) * 26}px)`; posted.style.maxHeight = `${p * 140}px`; posted.style.overflow = "hidden"; }
+    const card = $("devinCard");
+    show(card, t >= T.devinCard);
+    if (t >= T.devinCard) { const p = outQuint(seg(t, T.devinCard, 0.6)); card.style.opacity = p; card.style.transform = `translateY(${(1 - p) * 24}px)`; card.style.maxHeight = `${p * 110}px`; }
+    // assignee updates once Devin picks the issue up
+    $("propAssign").innerHTML = t >= T.devinCard + 0.2
+      ? '<img src="assets/avatar-black.png" alt="" />Devin'
+      : '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Assign';
+    $("propAssign").classList.toggle("dim", t < T.devinCard + 0.2);
+
+    // cursor path (world coords)
+    const start = [1380, 980], boxPt = [900, 800], sendPt = [1193, 798];
+    let cpos;
+    if (t < T.cursorToBox[0]) cpos = start;
+    else if (t < T.cursorToSend[0]) cpos = cursorAt(t, start, boxPt, T.cursorToBox);
+    else cpos = cursorAt(t, boxPt, sendPt, T.cursorToSend);
+    const cvis = t >= T.cursorToBox[0] - 0.3 && t < T.linearOut + 0.1;
+    setCursor(cpos[0], cpos[1], cvis);
+    $("cursor").style.opacity = t < T.cursorToBox[0] ? seg(t, T.cursorToBox[0] - 0.3, 0.3) : (t >= T.linearOut ? 1 - seg(t, T.linearOut, 0.1) : 1);
+    const pressing = (t >= T.clickBox - 0.06 && t < T.clickBox + 0.14) || (t >= T.clickSend - 0.06 && t < T.clickSend + 0.14);
+    $("cursor").style.transform = pressing ? "scale(0.85)" : "scale(1)";
+  }
+
+  /* ---- scene 3 ---- */
+  const s3on = t >= T.sessionIn - 0.1 && t < T.sweep6[1];
+  show($("s3"), s3on);
+  if (!s2on) show($("cursor"), false);
+  const phoneOn = t >= T.clipAStart - 0.55 && t < T.sessionOut + 0.6;
+  show($("phone"), phoneOn);
+  if (s3on) {
+    if (t < T.sweep3[1]) sweep(stp, t, T.sweep3, 1);
+    const win = $("win");
+    const pin = outExpo(seg(t, T.sessionIn, 0.9));
+    let wo = pin, wy = 90 * (1 - pin), ws = lerp(0.97, 1, pin);
+    if (t >= T.sessionOut) { const q = inQuad(seg(t, T.sessionOut, 0.5)); wo = 1 - q; wy = -60 * q; ws = 1 - 0.02 * q; }
+    win.style.opacity = wo; win.style.transform = `translateY(${wy}px) scale(${ws})`;
+    stagger([$("chatHead"), $("tabs"), $("fromLinear"), $("userMsg"), $("paneBody"), $("devinMsg"), $("paneFoot"), $("chatComposer")], t, T.sessionIn + 0.15, 0.1, 0.65, 22);
+
+    // steps
+    [...$("steps").children].forEach((n, i) => {
+      const st = STEPS[i];
+      const p = outQuint(seg(t, st.t, 0.5));
+      n.style.opacity = p; n.style.transform = `translateX(${(1 - p) * -10}px)`;
+      n.style.height = `${38 * outQuint(seg(t, st.t - 0.1, 0.4))}px`;
+    });
+    $("worked").innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>${t < T.clipBStart + 4.6 ? "Working" : "Worked for 41s"}`;
+
+    // building view: breathing rings, a sweeping arc, files landing, then a check
+    const b = seg(t, T.buildStart, T.buildDone - T.buildStart);
+    const done = t >= T.buildDone;
+    const bt = t - T.buildStart;
+    [1, 2, 3].forEach((i) => {
+      const r = $("ring" + i);
+      const ph = ((bt * 0.55 + (i - 1) / 3) % 1 + 1) % 1;
+      const grow = done ? 0 : 1;
+      const sc = lerp(1.0, 2.6, ph) * grow + (1 - grow) * lerp(1.0, 0.7, seg(t, T.buildDone, 0.5));
+      r.style.transform = `translate(-50%, -50%) scale(${sc})`;
+      r.style.opacity = done ? 0.4 * (1 - seg(t, T.buildDone, 0.5)) : (1 - ph) * 0.55 * outQuint(seg(t, T.buildStart, 0.6));
+    });
+    const arc = $("arc");
+    arc.style.transform = `translate(-50%, -50%) rotate(${bt * 160}deg)`;
+    arc.style.opacity = done ? 1 - seg(t, T.buildDone, 0.4) : outQuint(seg(t, T.buildStart, 0.6));
+    const ck = outQuint(seg(t, T.buildDone, 0.5));
+    $("coreLogo").style.opacity = 1 - ck; $("coreLogo").style.transform = `scale(${1 - 0.3 * ck})`;
+    $("coreCheck").style.opacity = ck; $("coreCheck").style.transform = `scale(${lerp(0.6, 1, ck)})`;
+    $("orb").style.transform = `scale(${1 + 0.02 * Math.sin(bt * 2.2)})`;
+    $("buildTitle").textContent = done ? "Build succeeded" : "Building Lumen Drift";
+    $("buildSub").textContent = done ? "Launching in the iOS Simulator on Devin's Mac" : "SwiftUI and SpriteKit, for the iOS Simulator";
+    $("buildTitle").style.transform = `translateY(${done ? 0 : 0}px)`;
+    const pulse = done ? 1 : 0.85 + 0.15 * Math.sin(bt * 3);
+    $("buildFill").style.width = `${lerp(4, 100, outQuint(b)) }%`;
+    $("buildFill").style.opacity = pulse;
+    $("buildFill").style.background = done ? "var(--green)" : "var(--blue)";
+    [...$("files").children].forEach((n, i) => {
+      const p = outQuint(seg(t, FILES[i].t, 0.55));
+      n.style.opacity = p; n.style.transform = `translateY(${(1 - p) * 18}px) scale(${lerp(0.94, 1, p)})`;
+    });
+    stagger([$("buildTitle"), $("buildSub"), $("buildBar")], t, T.buildStart + 0.1, 0.1, 0.7, 20);
+    $("orb").style.opacity = outQuint(seg(t, T.buildStart, 0.6));
+
+    // pane switch: building to Computer, carried by the shadow crossing
+    const computerOn = t >= T.clipAStart - 0.55;
+    show($("build"), !computerOn); show($("computer"), computerOn);
+    $("tabChanges").classList.toggle("on", !computerOn);
+    $("tabComputer").classList.toggle("on", computerOn);
+    if (t >= T.sweep4[0] && t < T.sweep4[1]) sweep(so, t, T.sweep4, -1);
+    if (t >= T.sweep5[0] && t < T.sweep5[1]) sweep(so, t, T.sweep5, 1);
+    if (t >= T.sweep6[0] && t < T.sweep6[1]) sweep(so, t, T.sweep6, -1);
+
+    // footage: two excerpts from one continuous take, 1x, no internal cuts
+    if (phoneOn) {
+      const ph = $("phone");
+      const pp = outQuint(seg(t, T.clipAStart - 0.55, 0.8));
+      let po = pp, py = 30 * (1 - pp);
+      if (t >= T.sessionOut) { const q = inQuad(seg(t, T.sessionOut, 0.5)); po = 1 - q; py = -60 * q; }
+      ph.style.opacity = po; ph.style.transform = `translateY(${py}px)`;
+      const clip = t >= T.clipBStart ? "B" : "A";
+      const start = clip === "B" ? T.clipBStart : T.clipAStart;
+      const idx = clamp(Math.floor((t - start) * FPS), 0, CLIPS[clip].frames - 1);
+      $("phoneImg").src = frames[clip][idx];
+    }
+    $("progressFill").style.width = `${lerp(18, 92, seg(t, T.sessionIn, T.sessionOut - T.sessionIn))}%`;
+  }
+
+  /* ---- scene 4 ---- */
+  const s4on = t >= T.endIn - 0.1;
+  show($("s4"), s4on);
+  if (s4on) {
+    if (t < T.sweep6[1]) sweep(stp, t, T.sweep6, -1);
+    stagger([...$("s4").children], t, T.endIn, 0.14, 0.9, 30);
+    const d = t - T.endIn;
+    $("s4").style.transform = `translateY(${Math.sin(d * 1.4) * -5}px) scale(${1 + d * 0.004})`;
+  }
+};
+seek(0);
+</script>
+</body>
+</html>
