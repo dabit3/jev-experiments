@@ -1,0 +1,5 @@
+media/frames/
+output/frames/
+output/still-*.png
+render/node_modules/
+output/chk-*.png

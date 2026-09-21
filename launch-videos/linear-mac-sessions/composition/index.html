@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Mac sessions from Linear</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 14h5l1.5 2.5h3L15 14h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-issues" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="4 3"/></symbol>
+    <symbol id="i-reviews" viewBox="0 0 24 24"><path d="M7 5v14 M7 8a3 3 0 1 0 0 .01 M17 15a3 3 0 1 0 0 .01 M17 15V9a3 3 0 0 0-3-3h-2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-agent" viewBox="0 0 24 24"><path d="M5 4l14 8-14 8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-projects" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z M12 12l8-4.5 M12 12v9 M12 12L4 7.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-views" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4z M3 12l9 4 9-4 M3 16l9 4 9-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-team" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 17a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-compose" viewBox="0 0 24 24"><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6 M9 15l1-4 8-8 3 3-8 8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17.4l-5.4 2.9 1.1-6.1L3.2 9.9l6.1-.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-attach" viewBox="0 0 24 24"><path d="M8 12.5l6.5-6.5a3.5 3.5 0 0 1 5 5L11 19.5a5 5 0 0 1-7-7L11.5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 19V5 M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-backlog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.6"/></symbol>
+    <symbol id="i-priority" viewBox="0 0 24 24"><path d="M4 12h3 M10.5 12h3 M17 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-assign" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="3 2.2"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/><path d="M7.5 17a4.5 4.5 0 0 1 9 0" fill="currentColor"/></symbol>
+    <symbol id="i-label" viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h10l4 6-4 6H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-session" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  </defs>
+</svg>
+
+<div id="stage">
+  <div id="field"></div>
+
+  <!-- Opening title -->
+  <section id="title" class="card">
+    <img id="titleMark" alt="" />
+    <h1 id="headline"></h1>
+  </section>
+
+  <!-- Reconstructed Linear issue -->
+  <div id="linear" class="ui-layer">
+    <aside class="ln-sidebar">
+      <div class="ln-ws-row">
+        <span class="ln-ws-mark" id="lnWsMark"></span>
+        <span class="ln-ws-name" id="lnWsName"></span>
+        <svg class="ln-ico ln-ico-sm"><use href="#i-down"/></svg>
+        <span class="spacer"></span>
+        <svg class="ln-ico"><use href="#i-search"/></svg>
+        <span class="ln-btn"><svg class="ln-ico"><use href="#i-compose"/></svg></span>
+      </div>
+      <nav id="lnNav" class="ln-nav"></nav>
+      <div class="ln-section" id="lnWorkspaceHead"></div>
+      <nav id="lnNavWorkspace" class="ln-nav"></nav>
+      <div class="ln-section" id="lnTeamsHead"></div>
+      <nav id="lnNavTeam" class="ln-nav"></nav>
+      <div class="ln-section" id="lnTryHead"></div>
+      <nav id="lnNavTry" class="ln-nav"></nav>
+    </aside>
+
+    <main class="ln-panel">
+      <header class="ln-header">
+        <span class="ln-crumb" id="lnCrumb"></span>
+        <svg class="ln-ico ln-ico-sm ln-muted"><use href="#i-chev"/></svg>
+        <span class="ln-crumb-id" id="lnCrumbId"></span>
+        <span class="ln-crumb-title" id="lnCrumbTitle"></span>
+        <span class="spacer"></span>
+        <svg class="ln-ico"><use href="#i-star"/></svg>
+        <svg class="ln-ico"><use href="#i-more"/></svg>
+      </header>
+      <div class="ln-body">
+        <div class="ln-toolbar-right">
+          <span class="ln-round"><svg class="ln-ico"><use href="#i-link"/></svg></span>
+          <span class="ln-round"><svg class="ln-ico"><use href="#i-reviews"/></svg></span>
+        </div>
+        <div class="ln-main">
+          <h1 class="ln-title" id="lnTitle"></h1>
+          <p class="ln-desc" id="lnDesc"></p>
+          <div class="ln-subissues"><svg class="ln-ico ln-ico-sm"><use href="#i-plus"/></svg>Add sub-issues</div>
+
+          <div id="lnResources" class="ln-resources">
+            <div class="ln-res-head"><svg class="ln-ico ln-ico-sm ln-muted ln-rot"><use href="#i-chev"/></svg>Resources<span class="spacer"></span><span class="ln-round ln-round-sm"><svg class="ln-ico ln-ico-sm"><use href="#i-plus"/></svg></span></div>
+            <div class="ln-res-row"><svg class="ln-ico"><use href="#i-session"/></svg><span id="lnResource"></span><span class="spacer"></span><span class="ln-time">now</span><svg class="ln-ico ln-ico-sm ln-muted"><use href="#i-more"/></svg></div>
+          </div>
+
+          <div class="ln-activity">
+            <div class="ln-act-head">Activity<span class="spacer"></span><span class="ln-unsub">Unsubscribe</span><span class="ln-avatar ln-avatar-sm" id="lnAvatarHead"></span></div>
+            <div class="ln-act-row"><span class="ln-avatar ln-avatar-xs" id="lnAvatarCreated"></span><span><b id="lnCreatedBy"></b> created the issue<span class="ln-dot"></span>2h ago</span></div>
+
+            <div id="lnComment" class="ln-comment">
+              <div class="ln-comment-head"><span class="ln-avatar ln-avatar-sm" id="lnAvatarComment"></span><b id="lnCommentBy"></b><span class="ln-time">now</span></div>
+              <div class="ln-comment-body"><span class="ln-mention" id="lnCommentMention"></span><span id="lnCommentText"></span></div>
+            </div>
+
+            <div id="lnStarted" class="ln-started">
+              <div class="ln-started-head"><img class="ln-devin-img" alt="" /><span><b id="lnStartedName"></b> <span id="lnStartedBy"></span> <b id="lnStartedUser"></b></span><span class="ln-time">now</span></div>
+              <div id="lnWorking" class="ln-working"><span class="ln-spinner"></span><span id="lnWorkingText"></span><span class="spacer"></span><span id="lnTimer" class="ln-timer"></span><svg class="ln-ico ln-ico-sm ln-muted"><use href="#i-chev"/></svg></div>
+            </div>
+
+            <div class="ln-composer-wrap">
+              <div id="lnPopover" class="ln-popover">
+                <div class="ln-pop-section">Users</div>
+                <div class="ln-pop-row active"><img class="ln-devin-img" alt="" /><span id="lnPopName"></span><span class="ln-pop-kind" id="lnPopKind"></span></div>
+                <div class="ln-pop-section">Labels</div>
+                <div class="ln-pop-row"><img class="ln-devin-img" alt="" /><span id="lnPopLabel"></span></div>
+              </div>
+              <div id="linearComposer" class="ln-composer">
+                <div class="ln-composer-text" id="linearComposerText"><span id="lnChip" class="ln-mention"></span><span id="lnTyped"></span><span id="lnCaret" class="ln-caret"></span><span id="lnPlaceholder" class="ln-placeholder"></span></div>
+                <div class="ln-composer-row"><span class="spacer"></span><svg class="ln-ico"><use href="#i-attach"/></svg><span id="linearSend" class="ln-send"><svg class="ln-ico"><use href="#i-arrow"/></svg></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="ln-props">
+          <div class="ln-prop-head">Properties</div>
+          <div class="ln-prop"><svg class="ln-ico"><use href="#i-backlog"/></svg><span id="lnProp0"></span></div>
+          <div class="ln-prop"><svg class="ln-ico"><use href="#i-priority"/></svg><span id="lnProp1"></span></div>
+          <div class="ln-prop" id="lnAssignRow">
+            <span class="ln-assign-empty"><svg class="ln-ico"><use href="#i-assign"/></svg><span id="lnProp2"></span></span>
+            <span class="ln-assign-full"><span class="ln-avatar ln-avatar-xs" id="lnAvatarAssign"></span><span id="lnAssigned"></span></span>
+          </div>
+          <div class="ln-prop ln-prop-nested" id="lnDelegate"><span class="ln-nest"></span><img class="ln-devin-img" alt="" /><span id="lnDelegateName"></span></div>
+          <div class="ln-prop-head">Labels</div>
+          <div class="ln-prop"><svg class="ln-ico"><use href="#i-label"/></svg>Add label</div>
+          <div class="ln-prop-head">Project</div>
+          <div class="ln-prop"><svg class="ln-ico"><use href="#i-projects"/></svg>Add to project</div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- Reconstructed Devin session -->
+  <div id="devin" class="ui-layer">
+    <aside id="chat">
+      <header class="chat-header">
+        <span class="icon-sidebar"></span>
+        <span id="sessionTitle" class="session-title"></span>
+        <span class="chip chip-mac">macOS</span>
+        <span id="sessionSource" class="chip chip-src"></span>
+      </header>
+      <div id="messages" class="messages"></div>
+    </aside>
+
+    <main id="pane">
+      <header class="pane-header">
+        <nav id="tabs" class="tabs"></nav>
+        <span class="spacer"></span>
+        <span class="live"><span class="dot"></span>Live</span>
+      </header>
+
+      <!-- Minimal build progress (Progress) -->
+      <section id="buildView" class="pane-view">
+        <div class="build">
+          <div class="build-ring"><div id="buildArc" class="build-arc"></div><img id="buildMark" alt="" /></div>
+          <div id="buildStatus" class="build-status"></div>
+          <div class="build-bar"><div id="buildFill" class="build-fill"></div></div>
+        </div>
+      </section>
+
+      <!-- Mac desktop with the Simulator (Computer) -->
+      <section id="computerView" class="pane-view">
+        <div id="macScreen" class="mac-screen">
+          <div class="menubar">
+            <span class="apple"></span>
+            <span id="menuItems"></span>
+            <span class="spacer"></span>
+            <span id="menuClock"></span>
+          </div>
+          <div id="simToolbar" class="sim-toolbar">
+            <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+            <span class="sim-label"><b id="simDevice"></b><small id="simOS"></small></span>
+          </div>
+          <div id="phone" class="phone">
+            <div class="phone-screen"><img id="phoneHome" alt="" /><img id="phoneImg" alt="" /></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <img id="cursor" alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpath d='M2 1.5 L2 24 L8 18.5 L12 27.5 L15.5 26 L11.5 17 L19.5 17 Z' fill='%23fff' stroke='%23111' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
+  <!-- Inspection window and margin captions -->
+  <div id="inspection">
+    <div id="window" class="window"><img id="windowImg" alt="" /></div>
+    <div id="caption" class="caption"></div>
+  </div>
+  <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- End card -->
+  <section id="end" class="card">
+    <img id="endLockup" alt="" />
+    <div id="endUrl"></div>
+  </section>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>

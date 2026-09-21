@@ -1,0 +1,16 @@
+ai.devin.demos.lumendrift: 4294
+REC_START 1789713435.4275541
+TAP_START 2.02
+TAP_LANE0 4.63  wave y=0.45 hazard=1 energy=0
+TAP_LANE1 7.56  wave y=0.46 hazard=2 energy=1
+TAP_PAUSE 10.07
+TAP_RESUME 11.90
+TAP_LANE2 12.34  wave y=0.48 hazard=0 energy=2
+TAP_LANE1 14.14  wave y=0.66 hazard=0 energy=?
+TAP_LANE0 14.82  wave y=0.45 hazard=1 energy=?
+TAP_LANE2 15.20  wave y=0.49 hazard=1 energy=2
+TAP_LANE1 17.58  wave y=0.46 hazard=0 energy=1
+width=1206
+height=2622
+r_frame_rate=600/1
+duration=21.361667
