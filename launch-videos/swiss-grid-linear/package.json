@@ -1,0 +1,13 @@
+{
+  "name": "swiss-grid-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "frames": "sh extract-frames.sh",
+    "render": "node render.mjs",
+    "still": "node render.mjs --still"
+  },
+  "dependencies": {
+    "playwright": "^1.50.1"
+  }
+}

@@ -1,0 +1,568 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>macOS from Linear, Swiss Grid</title>
+<script src="config.js"></script>
+<style>
+  @font-face { font-family: InterTight; src: url(assets/fonts/InterTight.ttf) format("truetype"); font-weight: 100 900; }
+  html, body { margin: 0; padding: 0; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--field); color: var(--ink);
+    font-family: var(--font); -webkit-font-smoothing: antialiased; }
+  #stage * { box-sizing: border-box; }
+  .abs { position: absolute; }
+  .hidden { display: none; }
+  .mask { overflow: hidden; }
+  .rule { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+
+  /* Headline */
+  .hl { font-weight: 600; font-size: 160px; line-height: 0.96; letter-spacing: -0.045em; white-space: nowrap; }
+
+  /* Narrow caption column */
+  .cap { position: absolute; font-size: 44px; line-height: 1.16; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); }
+
+  /* Light Devin UI */
+  .ui { background: var(--uiBg); color: var(--uiInk); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06); }
+  .ui-top { position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; padding: 0 28px; }
+  .wordmark { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; }
+  .wordmark img { height: 26px; }
+  .seg { margin-left: auto; display: flex; background: var(--uiSoft); border-radius: 999px; padding: 3px; font-size: 14px; }
+  .seg span { padding: 6px 14px; border-radius: 999px; color: var(--uiMuted); }
+  .seg span.on { background: #fff; color: var(--uiInk); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+  .caret { display: inline-block; width: 2px; height: 34px; background: var(--uiInk); vertical-align: -5px; margin-left: 2px; }
+  .send { width: 40px; height: 40px; border-radius: 50%; background: var(--uiInk); display: flex; align-items: center; justify-content: center; }
+
+
+  /* Linear issue UI (light) */
+  .lin { position: absolute; inset: 0; display: flex; background: #FFFFFF; color: #282A30; font-size: 17px; letter-spacing: -0.005em; line-height: 1.35; }
+  .lin .side { width: 236px; flex: none; background: #F9F8F9; border-right: 1px solid #E9E8EA; padding: 16px 12px; color: #3C3F44; }
+  .lin .ws { display: flex; align-items: center; gap: 9px; padding: 6px 8px; font-weight: 600; font-size: 16px; }
+  .lin .ws .av { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg, #6E79D6, #4E5BB8); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .lin .ws .chev { color: #8A8F98; margin-left: 2px; font-size: 13px; }
+  .lin .nav { margin-top: 14px; }
+  .lin .ni { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 16px; color: #3C3F44; white-space: nowrap; }
+  .lin .ni svg { width: 17px; height: 17px; flex: none; stroke: #6B6F76; }
+  .lin .ni.on { background: #EDEDEF; color: #1C1D20; }
+  .lin .sec { margin: 22px 8px 6px; font-size: 14px; color: #8A8F98; font-weight: 500; }
+  .lin .team { display: flex; align-items: center; gap: 10px; padding: 7px 8px; font-size: 16px; font-weight: 500; }
+  .lin .team .ti { width: 18px; height: 18px; border-radius: 5px; background: #E8862B; }
+  .lin .sub { padding-left: 22px; }
+  .lin .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .lin .top { height: 52px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 28px; border-bottom: 1px solid #E9E8EA; font-size: 15px; color: #6B6F76; }
+  .lin .top b { color: #282A30; font-weight: 500; }
+  .lin .top .right { margin-left: auto; display: flex; gap: 14px; }
+  .lin .top .right svg { width: 18px; height: 18px; stroke: #8A8F98; }
+  .lin .cols { flex: 1; display: flex; min-height: 0; }
+  .lin .doc { flex: 1; min-width: 0; padding: 40px 56px 40px 56px; }
+  .lin .props { width: 262px; flex: none; border-left: 1px solid #E9E8EA; padding: 28px 22px; font-size: 15px; }
+  .lin .props .ph { color: #8A8F98; font-size: 14px; margin-bottom: 14px; font-weight: 500; }
+  .lin .props .pr { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 6px; color: #3C3F44; margin: 0 -8px; }
+  .lin .props .pr svg { width: 16px; height: 16px; stroke: #8A8F98; flex: none; }
+  .lin .props .pr.set { color: #282A30; font-weight: 500; }
+  .lin .props .pr .who { width: 18px; height: 18px; border-radius: 50%; background: #111; flex: none; display: flex; align-items: center; justify-content: center; }
+  .lin .props .pr .who img { width: 12px; height: 12px; }
+  .lin .props .pgap { height: 22px; }
+  .lin .title { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.22; color: #1C1D20; }
+  .lin .desc { margin-top: 18px; font-size: 18px; line-height: 1.5; color: #3C3F44; }
+  .lin .subi { margin-top: 24px; color: #8A8F98; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .lin .act { margin-top: 44px; display: flex; align-items: center; font-weight: 600; font-size: 16px; color: #282A30; }
+  .lin .act span { margin-left: auto; color: #8A8F98; font-weight: 400; font-size: 14px; }
+  .lin .ev { display: flex; align-items: center; gap: 10px; margin-top: 22px; font-size: 15px; color: #6B6F76; }
+  .lin .ev .who { width: 20px; height: 20px; border-radius: 50%; background: #D9A34F; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex: none; }
+  .lin .ev .who.dv { background: #111; }
+  .lin .ev .who.dv img { width: 13px; height: 13px; }
+  .lin .ev b { color: #282A30; font-weight: 500; }
+  .lin .card { margin-top: 18px; border: 1px solid #E9E8EA; border-radius: 8px; background: #fff; padding: 16px 18px; }
+  .lin .card .ch { display: flex; align-items: center; gap: 10px; font-size: 15px; color: #6B6F76; }
+  .lin .card .ch b { color: #282A30; font-weight: 500; }
+  .lin .card .ch .who { width: 20px; height: 20px; border-radius: 50%; background: #D9A34F; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .lin .card .cb { margin-top: 10px; font-size: 20px; line-height: 1.4; color: #282A30; }
+  .lin .drow { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-left: 30px; font-size: 16px; color: #3C3F44; }
+  .lin .drow .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #C9CBD1; border-top-color: #5E6AD2; flex: none; }
+  .lin .drow .chk { width: 12px; height: 12px; border-radius: 50%; background: #34C759; flex: none; }
+  .lin .drow a { color: #5E6AD2; font-weight: 500; }
+  .lin .box { margin-top: 20px; border: 1px solid #E9E8EA; border-radius: 10px; background: #fff; padding: 16px 18px 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative; }
+  .lin .box.focus { border-color: #B9BDF0; box-shadow: 0 0 0 3px rgba(94,106,210,0.14); }
+  .lin .box .txt { font-size: 22px; line-height: 1.4; color: #282A30; min-height: 62px; letter-spacing: -0.01em; }
+  .lin .box .txt .ph { color: #A2A5AC; }
+  .lin .mention { color: #5E6AD2; background: #EEF0FB; border-radius: 4px; padding: 0 3px; font-weight: 500; }
+  .lin .cmd { font-weight: 600; }
+  .lin .box .caret { height: 24px; vertical-align: -4px; background: #282A30; }
+  .lin .box .foot { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+  .lin .box .foot svg { width: 18px; height: 18px; stroke: #8A8F98; }
+  .lin .box .go { margin-left: auto; width: 32px; height: 32px; border-radius: 50%; background: #5E6AD2; display: flex; align-items: center; justify-content: center; }
+  .lin .box .go svg { stroke: #fff; width: 14px; height: 14px; }
+  .lin .box .go.dim { background: #C9CBD1; }
+  .lin .mpop { position: absolute; left: 18px; top: 66px; background: #fff; border: 1px solid #E9E8EA; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 6px; font-size: 16px; min-width: 250px; z-index: 5; }
+  .lin .mpop .hd { padding: 6px 10px 4px; font-size: 13px; color: #8A8F98; }
+  .lin .mpop .r { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; color: #282A30; }
+  .lin .mpop .r.hover { background: #F0F0F2; }
+  .lin .mpop .r .who { width: 18px; height: 18px; border-radius: 50%; background: #111; display: flex; align-items: center; justify-content: center; }
+  .lin .mpop .r .who img { width: 12px; height: 12px; }
+  .lin .mpop .r .lab { width: 10px; height: 10px; border-radius: 50%; background: #5E6AD2; }
+  .lin .mpop .r .v { margin-left: auto; color: #8A8F98; font-size: 13px; padding-left: 24px; }
+
+  /* Build state (dark) */
+  .buildv { position: absolute; inset: 0; background: var(--editorBg); color: #fff; }
+  .buildv .bt { position: absolute; left: 64px; top: 64px; display: flex; align-items: center; gap: 22px; font-size: 64px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; white-space: nowrap; }
+  .buildv .bt img { width: 56px; height: 56px; display: block; }
+  .buildv .steps { position: absolute; left: 64px; right: 64px; top: 236px; }
+  .buildv .st { position: relative; height: 122px; display: flex; align-items: center; font-size: 40px; font-weight: 500; letter-spacing: -0.02em; color: #6C6C75; white-space: nowrap; }
+  .buildv .st.active, .buildv .st.done { color: #fff; }
+  .buildv .st .ln { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--editorLine); }
+  .buildv .st .fill { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: #fff; }
+  .buildv .st .ok { margin-left: auto; width: 38px; height: 38px; display: none; }
+  .buildv .st.done .ok { display: block; }
+
+  .build { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; border-top: 1px solid var(--editorLine); display: flex; align-items: center;
+    gap: 22px; padding: 0 28px; font-family: var(--font); font-size: 17px; color: #B8B8C0; }
+  .build .ok { color: #fff; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* Session UI */
+  .chat { position: absolute; left: 0; top: 0; bottom: 0; overflow: hidden; border-right: 1px solid var(--uiLine); }
+  .chat-in { position: absolute; left: 0; top: 0; bottom: 0; width: 560px; }
+  .hdr { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .hdr .mac { background: var(--uiBlueSoft); color: var(--uiBlue); font-weight: 500; font-size: 14px; padding: 3px 9px; border-radius: 7px; display: flex; gap: 5px; align-items: center; }
+  .msgs { position: absolute; top: 76px; left: 24px; right: 24px; font-size: 18px; line-height: 1.38; letter-spacing: -0.005em; }
+  .bubble { margin-left: 60px; background: var(--uiSoft); border-radius: 18px; padding: 12px 16px; }
+  .devin { display: flex; gap: 12px; margin-top: 26px; }
+  .devin img { width: 34px; height: 34px; border-radius: 8px; flex: none; margin-top: 2px; }
+  .devin .name { font-weight: 600; }
+  .devin .time { color: var(--uiMuted); margin-left: 8px; font-weight: 400; }
+  .status { display: flex; align-items: center; gap: 10px; color: var(--uiMuted); font-size: 16px; margin-top: 24px; }
+  .mini-composer { position: absolute; left: 20px; right: 20px; bottom: 20px; border: 1px solid var(--uiLine); border-radius: 18px; padding: 16px 18px; color: #A6A6AC; font-size: 16px; }
+  .mini-composer .row { display: flex; align-items: center; gap: 14px; margin-top: 16px; color: var(--uiMuted); }
+  .mini-composer .send { width: 34px; height: 34px; margin-left: auto; background: var(--uiMuted); }
+
+  .pane { position: absolute; top: 0; right: 0; bottom: 0; overflow: hidden; }
+  .tabsrow { height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 16px; color: var(--uiMuted); }
+  .tabsrow .t { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; }
+  .tabsrow .t.on { background: var(--uiSoft); color: var(--uiInk); }
+  .shot { position: absolute; overflow: hidden; border-radius: 10px; background: #0a0a0a; }
+  .shot img { position: absolute; left: 0; top: 0; display: block; }
+  .bar { position: absolute; left: 16px; right: 16px; bottom: 0; height: 56px; display: flex; align-items: center; gap: 18px; color: var(--uiMuted); font-size: 15px; }
+  .bar .track { position: absolute; left: 0; right: 0; top: 0; height: 6px; background: rgba(59,110,246,0.18); border-radius: 3px; }
+  .bar .track i { display: block; height: 100%; width: 42%; background: var(--uiBlue); border-radius: 3px; }
+  .live { border: 1px solid var(--uiLine); border-radius: 999px; padding: 5px 12px; display: flex; gap: 8px; align-items: center; color: var(--uiInk); }
+
+  /* iPhone frame */
+  .phone { position: absolute; border-radius: 48px; background: #101012; padding: 8px; box-shadow: 0 30px 70px rgba(0,0,0,0.45), inset 0 0 0 2px #3a3a3e; }
+  .phone .screen { position: relative; width: 100%; height: 100%; border-radius: 40px; overflow: hidden; background: #000; }
+  .phone .screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .phone .btn { position: absolute; width: 3px; background: #2a2a2e; border-radius: 2px; }
+
+  .cursor { position: absolute; width: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid" class="abs" style="inset:0"></div>
+
+  <!-- Scene 1: opening -->
+  <div id="s1" class="abs" style="inset:0">
+    <div id="lockup1" class="abs mask" style="left:96px;top:392px;height:200px;"><img src="assets/logos/devin-lockup-white.png" style="height:200px;display:block"></div>
+    <div id="hl0" class="abs mask hl" style="left:96px;top:704px;"><div></div></div>
+    <div id="hl1" class="abs mask hl" style="left:96px;top:858px;"><div></div></div>
+  </div>
+
+  <!-- Narrow caption column -->
+  <div id="capcol" class="abs" style="left:1410px;top:84px;width:414px;height:912px;"></div>
+
+  <!-- Scene 2 and 3 panel (cols 1..8) -->
+  <div id="panelA" class="abs ui" style="left:96px;top:84px;width:1144px;height:912px;">
+    <div id="composerView" class="abs" style="inset:0;">
+      <div id="composerZoom" class="abs" style="inset:0;">
+        <div class="lin">
+          <div class="side">
+            <div class="ws"><span class="av">N</span>Nader's Workspace<span class="chev">&#8964;</span></div>
+            <div class="nav">
+              <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M3 11l2.2-6h9.6L17 11v5H3z"/><path d="M3 11h4l1.5 2.5h3L13 11h4"/></svg>Inbox</div>
+              <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg>My issues</div>
+              <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M4 5h12v8H9l-3 3v-3H4z"/></svg>Reviews</div>
+              <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M10 3l1.8 4.6L16.5 9l-4.7 1.4L10 15l-1.8-4.6L3.5 9l4.7-1.4z"/></svg>Agent</div>
+            </div>
+            <div class="sec">Workspace</div>
+            <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 9h14"/></svg>Projects</div>
+            <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg>Views</div>
+            <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="5" cy="10" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="15" cy="10" r="1.2"/></svg>More</div>
+            <div class="sec">Your teams</div>
+            <div class="team"><span class="ti"></span>VoxelHearth<span class="chev" style="color:#8A8F98;margin-left:auto;font-size:13px">&#8964;</span></div>
+            <div class="sub">
+              <div class="ni on"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="10" cy="10" r="7"/></svg>Issues</div>
+              <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 9h14"/></svg>Projects</div>
+              <div class="ni"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg>Views</div>
+            </div>
+          </div>
+          <div class="main">
+            <div class="top">VoxelHearth <span>&#8250;</span> <b id="linKey"></b>
+              <span class="right"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M10 4l1.6 3.8 4.1.4-3.1 2.7.9 4.1L10 12.9 6.5 15l.9-4.1L4.3 8.2l4.1-.4z"/></svg><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M4 4h12v12H4z"/><path d="M12 4v12"/></svg><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="5" cy="10" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="15" cy="10" r="1.2"/></svg></span>
+            </div>
+            <div class="cols">
+              <div class="doc">
+                <div id="linTitle" class="title"></div>
+                <div id="linDesc" class="desc"></div>
+                <div class="subi"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#8A8F98" stroke-width="1.8"><path d="M10 4v12M4 10h12"/></svg>Add sub-issues</div>
+                <div class="act">Activity<span>Subscribe</span></div>
+                <div class="ev"><span class="who">N</span><span><b>Nader Dabit</b> created the issue &middot; 2h ago</span></div>
+                <div id="linComment" class="card mask"><div class="ch"><span class="who">N</span><b>Nader Dabit</b><span>now</span></div><div id="linCommentBody" class="cb"></div></div>
+                <div id="linDevin" class="mask">
+                  <div class="ev"><span class="who dv"><img src="assets/logos/devin-avatar-white.png"></span><span><b>Devin</b> started by <b>Nader Dabit</b> &middot; now</span></div>
+                  <div id="linStart" class="drow"><span class="spin"></span><span id="linStartText"></span></div>
+                  <div id="linLink" class="drow mask"><span class="chk"></span><span>Devin linked <a>Devin Session</a></span></div>
+                </div>
+                <div id="linBox" class="box">
+                  <div class="txt"><span id="typed"></span><span id="caret" class="caret"></span></div>
+                  <div class="foot">
+                    <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M13 7l-5.5 5.5a2.1 2.1 0 0 0 3 3L16 10a4 4 0 0 0-5.7-5.7L5 9.5"/></svg>
+                    <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M7 11.5c.8 1 1.8 1.5 3 1.5s2.2-.5 3-1.5M7.5 8h.01M12.5 8h.01"/></svg>
+                    <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="10" cy="10" r="3"/><path d="M13 10v1.5a2 2 0 0 0 4 0V10a7 7 0 1 0-2.7 5.5"/></svg>
+                    <div id="linGo" class="go"><svg viewBox="0 0 18 18" fill="none" stroke-width="2.2"><path d="M9 15V3M4 8l5-5 5 5"/></svg></div>
+                  </div>
+                  <div id="mpop" class="mpop hidden">
+                    <div class="hd">Users</div>
+                    <div class="r hover"><span class="who"><img src="assets/logos/devin-avatar-white.png"></span>Devin<span class="v">Agent</span></div>
+                    <div class="hd">Labels</div>
+                    <div class="r"><span class="lab"></span>Devin Playbooks</div>
+                  </div>
+                </div>
+              </div>
+              <div class="props">
+                <div class="ph">Properties</div>
+                <div class="pr set"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="10" cy="10" r="6.5" stroke-dasharray="3 3"/></svg>Backlog</div>
+                <div class="pr"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M4 15V11M8 15V8M12 15V5M16 15V3"/></svg>Set priority</div>
+                <div id="linAssign" class="pr"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><circle cx="10" cy="7" r="3.2"/><path d="M4 17a6 6 0 0 1 12 0"/></svg>Assign</div>
+                <div id="linAssigned" class="pr set hidden"><span class="who"><img src="assets/logos/devin-avatar-white.png"></span>Devin</div>
+                <div class="pgap"></div>
+                <div class="ph">Labels</div>
+                <div class="pr"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><path d="M4 10V4h6l6 6-6 6z"/></svg>Add label</div>
+                <div class="pgap"></div>
+                <div class="ph">Project</div>
+                <div class="pr"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.6"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 9h14"/></svg>Add to project</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <svg id="cursor" class="cursor" viewBox="0 0 24 24" style="left:700px;top:600px"><path d="M5 3l14 9-6 1.5L9.5 20 5 3z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+    <div id="codeView" class="abs" style="inset:0;">
+      <div class="buildv">
+        <div class="bt"><img src="assets/logos/devin-avatar-white.png"><span id="buildTitle"></span></div>
+        <div id="steps" class="steps"></div>
+        <div id="buildBar" class="build mask">
+          <div class="ok"><span class="dot" style="background:#34C759"></span><span id="bs0"></span></div><span id="bs1"></span><span id="bs2"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4 and 5: session UI (full width) -->
+  <div id="session" class="abs ui" style="left:96px;top:84px;width:1728px;height:816px;">
+    <div id="chat" class="chat" style="width:560px;">
+      <div class="chat-in">
+        <div class="hdr">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13"/></svg>
+          <span id="sessTitle"></span>
+          <span class="mac"><svg width="13" height="13" viewBox="0 0 16 16" fill="#3B6EF6"><path d="M11.2 8.5c0-1.6 1.3-2.3 1.4-2.4-.8-1.1-2-1.3-2.4-1.3-1-.1-2 .6-2.5.6s-1.3-.6-2.2-.6C4 4.8 2.4 6.2 2.4 8.9c0 .8.2 1.7.5 2.5.4 1.1 1.8 3.7 3.3 3.7.7 0 1.2-.5 2.1-.5.9 0 1.3.5 2.1.5 1.5 0 2.8-2.4 3.2-3.5-1.7-.8-2.4-2.1-2.4-3.1zM9.6 3.6c.7-.8.6-1.6.6-1.9-.6 0-1.4.4-1.8.9-.4.5-.7 1.2-.6 1.9.7.1 1.3-.3 1.8-.9z"/></svg>macOS</span>
+        </div>
+        <div class="msgs">
+          <div id="bubble" class="bubble"></div>
+          <div class="devin"><img src="assets/logos/devin-avatar-black.png" style="background:#111;padding:6px"><div><div><span class="name">Devin</span><span class="time">Now</span></div><div id="reply" style="margin-top:4px"></div></div></div>
+          <div id="testMsg" class="devin hidden"><img src="assets/logos/devin-avatar-black.png" style="background:#111;padding:6px"><div><div><span class="name">Devin</span><span class="time">Now</span></div><div id="testText" style="margin-top:4px"></div></div></div>
+          <div class="status"><span id="statusDot" class="dot" style="background:#E8862B"></span><span id="statusText"></span></div>
+        </div>
+        <div class="mini-composer">Ask Devin to build features, fix bugs, or work on your code
+          <div class="row"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4 9.5a6 6 0 0 0 12 0M10 15.5v2.5"/></svg>
+            <div class="send"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="2"><path d="M9 15V3M4 8l5-5 5 5"/></svg></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="pane" class="pane" style="left:560px;">
+      <div class="tabsrow">
+        <span class="t"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 11h4"/></svg>Progress</span>
+        <span class="t"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M8 5v6M5 8h6"/></svg>Changes</span>
+        <span class="t on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="3" width="13" height="9" rx="2"/><path d="M5 14h6"/></svg>Computer</span>
+        <span style="margin-left:auto;display:flex;gap:16px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7A7A80" stroke-width="1.6"><path d="M11 3h4v4M7 15H3v-4M15 3l-5 5M3 15l5-5"/></svg><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7A7A80" stroke-width="1.6"><rect x="2" y="3" width="14" height="12" rx="2.5"/><path d="M11 3v12"/></svg></span>
+      </div>
+      <div id="shot" class="shot"><img id="macImg"></div>
+      <div id="phone" class="phone"><div class="screen"><img id="iosImg"></div><span class="btn" style="left:-3px;top:110px;height:34px"></span><span class="btn" style="left:-3px;top:160px;height:64px"></span><span class="btn" style="left:-3px;top:236px;height:64px"></span><span class="btn" style="right:-3px;top:180px;height:96px"></span></div>
+      <div class="bar"><div class="track"><i></i></div>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M13 4l-6 6 6 6"/></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#7A7A80" stroke-width="1.8"><path d="M7 4l6 6-6 6"/></svg>
+        <span class="live"><span class="dot" style="background:#E5484D"></span>Live</span>
+        <span style="margin-left:auto">Auto</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom caption for session scenes -->
+  <div id="capbot" class="abs" style="left:96px;top:924px;width:1400px;height:72px;"></div>
+
+  <!-- Scene 6: result -->
+  <div id="s6" class="abs" style="inset:0">
+    <div id="r0" class="abs mask hl" style="left:96px;top:412px;font-size:116px;"><div></div></div>
+    <div id="r1" class="abs mask hl" style="left:96px;top:526px;font-size:116px;"><div></div></div>
+  </div>
+
+  <!-- Scene 7: end -->
+  <div id="s7" class="abs" style="inset:0">
+    <div id="endLogo" class="abs mask" style="left:600px;top:400px;width:720px;height:216px;"><img src="assets/logos/devin-lockup-white.png" style="width:720px;display:block"></div>
+    <div id="endCta" class="abs mask" style="left:600px;top:660px;font-size:52px;font-weight:500;letter-spacing:-0.02em;line-height:1"><div></div></div>
+  </div>
+</div>
+
+<script>
+const C = window.CONFIG;
+const root = document.documentElement.style;
+root.setProperty("--field", C.color.field); root.setProperty("--ink", C.color.ink); root.setProperty("--rule", C.color.rule);
+root.setProperty("--uiBg", C.color.uiBg); root.setProperty("--uiInk", C.color.uiInk); root.setProperty("--uiMuted", C.color.uiMuted);
+root.setProperty("--uiLine", C.color.uiLine); root.setProperty("--uiSoft", C.color.uiSoft); root.setProperty("--uiBlue", C.color.uiBlue);
+root.setProperty("--uiBlueSoft", C.color.uiBlueSoft); root.setProperty("--editorBg", C.color.editorBg); root.setProperty("--editorLine", C.color.editorLine);
+root.setProperty("--font", C.font.family); root.setProperty("--mono", C.font.mono);
+
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const io = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;     // cubic in-out
+const out = (x) => 1 - Math.pow(1 - x, 3);
+const seg = (t, a, d, fn = io) => fn(clamp((t - a) / d, 0, 1));
+const lerp = (a, b, p) => a + (b - a) * p;
+const px = (v) => v.toFixed(2) + "px";
+// Rectangular mask: p in [0,1] reveal from the left, q in [0,1] conceal toward the right.
+const wipe = (el, p, q = 0) => { el.style.clipPath = `inset(0 ${(100 - p * 100).toFixed(3)}% 0 ${(q * 100).toFixed(3)}%)`; el.classList.remove("hidden"); el.style.display = (p <= 0 || q >= 1) ? "none" : ""; };
+const wipeY = (el, p, q = 0) => { el.style.clipPath = `inset(${(q * 100).toFixed(3)}% 0 ${(100 - p * 100).toFixed(3)}% 0)`; el.classList.remove("hidden"); el.style.display = (p <= 0 || q >= 1) ? "none" : ""; };
+const show = (el, on) => { el.classList.remove("hidden"); el.style.display = on ? "" : "none"; };
+// Vertical grow: an activity item unfolds in place (height, top margin and opacity follow p).
+const grow = (el, p, margin = 0) => { el.classList.remove("hidden"); el.style.display = p <= 0 ? "none" : ""; el.style.overflow = "hidden";
+  if (p > 0) { el.style.maxHeight = "none"; const h = el.scrollHeight; el.style.maxHeight = p >= 1 ? "none" : px(h * p); el.style.marginTop = px(margin * p); el.style.opacity = p; } };
+
+// Grid rules
+const g = C.grid; const step = g.col + g.gutter;
+for (let i = 0; i <= 12; i++) { const r = document.createElement("div"); r.className = "rule"; r.style.left = px(g.margin + i * step - (i === 12 ? g.gutter : 0)); $("grid").appendChild(r); }
+
+// Static copy
+$("linKey").textContent = C.copy.linear.key; $("linTitle").textContent = C.copy.linear.title; $("linDesc").textContent = C.copy.linear.description;
+$("linStartText").textContent = C.copy.linear.starting; $("buildTitle").textContent = C.copy.buildTitle;
+const FULL = `${C.copy.mention} ${C.copy.command} ${C.copy.prompt}`;   // what gets typed
+const mentionHTML = `<span class="mention">@Devin</span>`;
+const cmdHTML = `<span class="cmd">${C.copy.command}</span>`;
+// Renders the first n typed characters; once the mention is complete it becomes a chip and the command is emphasised.
+function renderTyped(n, chip) {
+  const s = FULL.slice(0, n);
+  const m = C.copy.mention.length;
+  if (!chip || n <= m) return s.replace(/</g, "&lt;");
+  const rest = s.slice(m);
+  const cmd = " " + C.copy.command;
+  const restHTML = rest.startsWith(cmd) ? " " + cmdHTML + rest.slice(cmd.length) : rest.replace(/</g, "&lt;");
+  return mentionHTML + restHTML;
+}
+$("linCommentBody").innerHTML = mentionHTML + " " + cmdHTML + " " + C.copy.prompt;
+const steps = C.copy.buildSteps.map(s => { const e = document.createElement("div"); e.className = "st"; e.innerHTML = `<span>${s}</span><svg class="ok" viewBox="0 0 34 34" fill="none" stroke="#34C759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18l7 7 13-14"/></svg><span class="ln"></span><span class="fill"></span>`; $("steps").appendChild(e); return e; });
+$("hl0").firstChild.textContent = C.copy.headline[0]; $("hl1").firstChild.textContent = C.copy.headline[1];
+$("r0").firstChild.textContent = C.copy.result[0]; $("r1").firstChild.textContent = C.copy.result[1];
+$("endCta").firstChild.textContent = C.copy.cta;
+$("sessTitle").textContent = C.copy.sessionTitle; $("bubble").textContent = `${C.copy.mention} ${C.copy.command} ${C.copy.prompt}`; $("reply").textContent = C.copy.devinReply; $("testText").textContent = C.copy.devinTest;
+[$("bs0"), $("bs1"), $("bs2")].forEach((e, i) => e.textContent = C.copy.buildStatus[i]);
+
+// Captions in the narrow column: each is its own masked block
+const capDefs = [
+  { id: "composer", a: C.t.composer + 0.5, b: C.t.composer + 2.9 },
+  { id: "environment", a: C.t.composer + 3.0, b: C.t.code - 0.1 },
+  { id: "code", a: C.t.code + 0.3, b: C.t.session - 0.95 },
+];
+const caps = capDefs.map(d => { const e = document.createElement("div"); e.className = "cap mask"; e.style.left = "0"; e.style.top = "0"; e.style.width = "414px"; e.textContent = C.copy.captions[d.id]; $("capcol").appendChild(e); return { ...d, el: e }; });
+const botDefs = [
+  { id: "session", a: C.t.session + 0.5, b: C.t.both - 0.1 },
+  { id: "both", a: C.t.both + 0.4, b: C.t.test - 0.1 },
+  { id: "test", a: C.t.test + 0.3, b: C.t.result - 0.1 },
+];
+const bots = botDefs.map(d => { const e = document.createElement("div"); e.className = "cap mask"; e.style.left = "0"; e.style.top = "0"; e.style.fontSize = "44px"; e.textContent = C.copy.captions[d.id]; $("capbot").appendChild(e); return { ...d, el: e }; });
+
+const LIN = { zoom: 1.7, landY: 590 };            // Linear push-in scale and where the focus lands (panel y)
+const BUILD = { stagger: 0.48, fillDur: 0.6 };   // build step choreography
+
+const macImg = $("macImg"), iosImg = $("iosImg");
+const pad = (n) => String(n).padStart(4, "0");
+
+// Layout constants for the session UI
+const SESSION = { x: 96, y: 84, w: 1728, h: 816, chatW: 560, tabsH: 56, padX: 16, padY: 16, barH: 56 };
+const SHOT_H = SESSION.h - SESSION.tabsH - SESSION.padY - SESSION.barH - SESSION.padY; // 672
+const PHONE = { w: 300, x: 1410 + (414 - 300) / 2 - SESSION.x, y: SESSION.tabsH + SESSION.padY + (SHOT_H - 300 * 2.16) / 2 };
+
+window.seek = function (t) {
+  const T = C.t;
+  // grid
+  $("grid").style.opacity = seg(t, 0, 0.9) * (1 - seg(t, T.end, 0.8));
+
+  // ---- Scene 1
+  const s1on = t < T.composer + 0.2;
+  show($("s1"), s1on);
+  if (s1on) {
+    wipe($("lockup1"), seg(t, 0.15, 0.7), seg(t, T.composer - 0.5, 0.5));
+    wipe($("hl0"), seg(t, 0.45, 0.8), seg(t, T.composer - 0.75, 0.55));
+    wipe($("hl1"), seg(t, 0.65, 0.8), seg(t, T.composer - 0.65, 0.55));
+  }
+
+  // ---- Panel A (composer + code), cols 1..8, then expands to full width into the session UI
+  const pA = $("panelA");
+  const aIn = seg(t, T.composer - 0.25, 0.75);
+  const aExpand = seg(t, T.session - 0.7, 0.6);
+  const aOn = aIn > 0 && t < T.session + 0.1;
+  show(pA, aOn);
+  if (aOn) {
+    pA.style.clipPath = `inset(0 0 ${((1 - aIn) * 100).toFixed(3)}% 0)`;
+    pA.style.width = px(lerp(1144, 1728, aExpand));
+    pA.style.height = px(lerp(912, SESSION.h, aExpand));
+    // content slide: composer view slides up slightly on entry
+    const cz = $("composerZoom");
+    const toCode = seg(t, T.code - 0.25, 0.6);
+    const cv = $("composerView"), kv = $("codeView");
+    wipe(cv, 1, toCode); wipe(kv, toCode, 0);
+    pA.style.background = toCode > 0.5 ? C.color.editorBg : C.color.uiBg;
+    // ---- Linear choreography (all times relative to T.composer)
+    const L = T.composer;
+    const tClick = L + 0.9, tType = L + 1.2, tChip = L + 1.85, tType2 = L + 1.95, typeDur = 2.35;
+    const tSend = L + 4.65, tPost = L + 4.8, tDevin = L + 5.15, tLink = L + 5.75;
+    const m = C.copy.mention.length;
+    // typing: mention first, then the rest after the chip is selected
+    let typedN = Math.floor(seg(t, tType, 0.5, (x) => x) * m);
+    if (t >= tType2) typedN = m + Math.floor(seg(t, tType2, typeDur, (x) => x) * (FULL.length - m));
+    const chip = t >= tChip;
+    const sent = t >= tPost;
+    const typedEl = $("typed");
+    typedEl.innerHTML = (sent || typedN === 0) ? `<span class="ph">Leave a comment...</span>` : renderTyped(typedN, chip);
+    $("linStart").querySelector(".spin").style.transform = `rotate(${((t * 360) % 360).toFixed(1)}deg)`;
+    $("caret").style.display = (t >= tClick && !sent) ? "" : "none";
+    const typingNow = (t >= tType && t < tChip && typedN < m) || (t >= tType2 && typedN < FULL.length);
+    $("caret").style.opacity = (typingNow || Math.floor(t * 2) % 2 === 0) ? 1 : 0;
+    $("linBox").classList.toggle("focus", t >= tClick && !sent);
+    // mention popover while "@dev..." is being typed, until the chip is selected
+    show($("mpop"), typedN >= 2 && !chip);
+    // send button press
+    const go = $("linGo");
+    go.classList.toggle("dim", t < tType || sent);
+    const press = seg(t, tSend - 0.08, 0.08) * (1 - seg(t, tSend + 0.02, 0.12));
+    go.style.transform = `scale(${(1 - 0.12 * press).toFixed(3)})`;
+    // posted comment and Devin activity
+    const cm = $("linComment"), dv = $("linDevin");
+    grow(cm, seg(t, tPost, 0.5), 18);
+    grow(dv, seg(t, tDevin, 0.55));
+    grow($("linLink"), seg(t, tLink, 0.45), 12);
+    show($("linAssign"), t < tLink); show($("linAssigned"), t >= tLink);
+    // cursor: enters, clicks the comment box, later moves to the send button
+    const cur = $("cursor");
+    const box = $("linBox"), goR = { x: box.offsetLeft + box.offsetWidth - 34, y: box.offsetTop + box.offsetHeight - 28 };
+    const c1 = seg(t, L + 0.35, 0.6);                 // to the comment box
+    const c2 = seg(t, tSend - 0.55, 0.45);            // to the send button
+    let cx = lerp(720, box.offsetLeft + 150, c1), cy = lerp(700, box.offsetTop + 40, c1);
+    cx = lerp(cx, goR.x, c2); cy = lerp(cy, goR.y, c2);
+    cur.style.left = px(cx); cur.style.top = px(cy);
+    show(cur, t > L + 0.2 && t < tSend + 0.5);
+    cur.style.opacity = seg(t, L + 0.2, 0.3) * (1 - seg(t, tClick + 0.2, 0.3)) + seg(t, tSend - 0.6, 0.25) * (1 - seg(t, tSend + 0.2, 0.3));
+    // camera: composed full view, push in on the comment box, then pan to Devin's activity
+    const z1 = seg(t, L + 0.75, 0.8);
+    const z2 = seg(t, tPost - 0.1, 0.9);
+    const zs = lerp(1, LIN.zoom, z1);
+    const boxFx = box.offsetLeft + box.offsetWidth / 2, boxFy = box.offsetTop + Math.min(box.offsetHeight / 2, 70);
+    const actFy = cm.offsetTop + cm.scrollHeight + 90;   // where Devin's activity unfolds (the box moves down below it)
+    const fx = lerp(572, boxFx, z1), fy = lerp(lerp(456, boxFy, z1), actFy, z2);
+    const qx = 572, qy = lerp(456, LIN.landY, z1);
+    cz.style.transformOrigin = "0 0";
+    cz.style.transform = `translate(${px(qx - zs * fx)}, ${px(qy - zs * fy + (1 - aIn) * 60)}) scale(${zs.toFixed(4)})`;
+    // ---- Build state
+    for (let i = 0; i < steps.length; i++) {
+      const a = T.code + 0.45 + i * BUILD.stagger;
+      const p = seg(t, a, BUILD.fillDur, out);
+      steps[i].classList.toggle("active", p > 0 && p < 1);
+      steps[i].classList.toggle("done", p >= 1);
+      steps[i].querySelector(".fill").style.width = (p * 100).toFixed(2) + "%";
+      steps[i].querySelector(".fill").style.opacity = p >= 1 ? 0 : 1;
+    }
+    const bb = seg(t, T.code + 0.45 + (steps.length - 1) * BUILD.stagger + BUILD.fillDur + 0.15, 0.5);
+    wipe($("buildBar"), bb, 0);
+  }
+
+  // narrow captions
+  const capOn = t > T.composer && t < T.session;
+  show($("capcol"), capOn);
+  if (capOn) for (const c of caps) wipe(c.el, seg(t, c.a, 0.5) * (1 - seg(t, c.b, 0.3)), 0);
+
+  // ---- Session UI (scenes 4 and 5)
+  const sess = $("session");
+  const sOn = t >= T.session - 0.55 && t < T.result + 0.5;
+  show(sess, sOn);
+  if (sOn) {
+    const sIn = seg(t, T.session - 0.55, 0.6), sOut = seg(t, T.result - 0.05, 0.55);
+    sess.style.clipPath = `inset(0 ${((1 - sIn) * 100).toFixed(3)}% ${(sOut * 100).toFixed(3)}% 0)`;
+    const collapse = seg(t, T.both - 0.7, 0.7);          // chat slides out
+    const back = seg(t, T.test - 0.1, 0.7);              // chat slides back in
+    const chatW = lerp(lerp(SESSION.chatW, 0, collapse), SESSION.chatW, back);
+    $("chat").style.width = px(chatW);
+    $("chat").style.borderRightWidth = chatW < 2 ? "0" : "1px";
+    $("chat").querySelector(".chat-in").style.left = px(chatW - SESSION.chatW);
+    $("pane").style.left = px(chatW);
+    const paneW = SESSION.w - chatW;
+    // footage box: contain (centered) -> cover (left aligned, full width)
+    const cover = collapse;
+    const containW = Math.round(SHOT_H * 4 / 3);
+    const boxW = lerp(containW, paneW - 2 * SESSION.padX, cover);
+    const boxX = lerp((paneW - containW) / 2, SESSION.padX, cover);
+    const shot = $("shot");
+    shot.style.left = px(boxX); shot.style.top = px(SESSION.tabsH + SESSION.padY); shot.style.width = px(boxW); shot.style.height = px(SHOT_H);
+    const imgW = lerp(containW, C.macCrop.coverWidth, cover);
+    const imgY = lerp(0, C.macCrop.offsetY, cover);
+    const shiftX = lerp(0, -300, back);
+    macImg.style.width = px(imgW); macImg.style.top = px(imgY); macImg.style.left = px(shiftX);
+    // zoom into the Mac window while blocks are placed
+    const zin = seg(t, T.session + 3.2, 0.9), zout = seg(t, T.both - 0.9, 0.8);
+    const zs = lerp(1, C.macCrop.zoomScale, zin * (1 - zout));
+    macImg.style.transformOrigin = `${C.macCrop.zoomOriginX} ${C.macCrop.zoomOriginY}`;
+    macImg.style.transform = `scale(${zs.toFixed(4)})`;
+    // frames
+    const mf = clamp(Math.floor((t - T.session) * C.fps) + 1, 1, C.media.macFrameCount);
+    macImg.src = C.media.macFrames + pad(mf) + ".jpg";
+    // phone
+    const ph = $("phone");
+    const pin = seg(t, T.both - 0.1, 0.7);
+    show(ph, pin > 0);
+    ph.style.width = px(PHONE.w); ph.style.height = px(PHONE.w * 2.16);
+    ph.style.left = px(PHONE.x - chatW); ph.style.top = px(PHONE.y);
+    ph.style.clipPath = `inset(0 0 0 ${((1 - pin) * 100).toFixed(3)}%)`;
+    const iff = clamp(Math.floor((t - T.both) * C.fps) + 1, 1, C.media.iosFrameCount);
+    iosImg.src = C.media.iosFrames + pad(iff) + ".jpg";
+    // messages
+    const testing = t >= T.test + 0.35;
+    show($("testMsg"), testing);
+    $("statusText").textContent = testing ? C.copy.awaiting : C.copy.working;
+    $("statusDot").style.background = testing ? "#34C759" : C.color.uiOrange;
+  }
+  const botOn = t > T.session && t < T.result;
+  show($("capbot"), botOn);
+  if (botOn) for (const c of bots) wipe(c.el, seg(t, c.a, 0.5) * (1 - seg(t, c.b, 0.3)), 0);
+
+  // ---- Scene 6 result
+  const s6on = t >= T.result && t < T.end + 0.3;
+  show($("s6"), s6on);
+  if (s6on) {
+    wipe($("r0"), seg(t, T.result + 0.25, 0.6), seg(t, T.end - 0.45, 0.45));
+    wipe($("r1"), seg(t, T.result + 0.4, 0.6), seg(t, T.end - 0.35, 0.45));
+  }
+
+  // ---- Scene 7 end
+  const s7on = t >= T.end;
+  show($("s7"), s7on);
+  if (s7on) {
+    wipe($("endLogo"), seg(t, T.end + 0.15, 0.75), 0);
+    wipe($("endCta"), seg(t, T.end + 0.6, 0.55), 0);
+  }
+};
+
+window.ready = () => Promise.all([document.fonts.ready, ...[macImg, iosImg].map(i => i.complete ? Promise.resolve() : new Promise(r => { i.onload = r; i.onerror = r; }))]);
+const q = new URLSearchParams(location.search);
+window.seek(parseFloat(q.get("t") || "0"));
+</script>
+</body>
+</html>
