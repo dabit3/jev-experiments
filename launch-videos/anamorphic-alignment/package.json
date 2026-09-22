@@ -1,0 +1,14 @@
+{
+  "name": "launch-video-anamorphic-alignment",
+  "version": "1.0.0",
+  "scripts": {
+    "footage": "./extract-footage.sh",
+    "render": "node render.mjs --sheet",
+    "stills": "node stills.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "^25.11.0"
+  },
+  "private": true,
+  "type": "module"
+}
