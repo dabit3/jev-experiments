@@ -1,6 +1,6 @@
 # Patterns
 
-A pattern map for the 22 demos in this repo. Each demo is a working app; the
+A pattern map for the 21 demos in this repo. Each demo is a working app; the
 *patterns* are the cross-cutting design moves that show up in more than one of
 them. The demos are the evidence; this document is the index.
 
@@ -31,17 +31,20 @@ utterance, every chat message.
 
 | demo | trigger | budget |
 | --- | --- | --- |
-| `jev-instant-search` | keystroke (250 ms debounce) | ~150 ms |
-| `jev-lint` | edit (60 ms throttle, never longer) | ~108 ms |
-| `nl-palette` | keystroke (100 ms debounce) | ~150 ms |
+| `turbo-rerank` | keystroke (250 ms debounce) | ~170 ms |
+| `jev-lint` | edit (60 ms throttle, never longer) | ~108–157 ms |
+| `nl-palette` | keystroke (100 ms debounce, stale requests aborted) | ~150 ms |
 | `jev-voice-turn` | partial transcript update | ~108 ms |
-| `say` | held-key release | ~120 ms |
+| `say` | held-key release | 73–173 ms (observed, not guaranteed) |
 | `agent-assist` | incoming chat message | ~93 ms |
 | `send-guard` | typing pause (120 ms debounce) | ~100 ms |
+| `jev-instant-search` | every keystroke (sequence-gated, 4 in flight) | ~150 ms |
 
-The recipe is the same in all of them: a debounce that fires one request,
-stale-request drop with a sequence number, a paint that holds the previous
-ranking until a newer answer arrives.
+The recipe is the same in all of them: a debounce or a sequence gate that
+fires one request, stale-request drop with a sequence number, a paint that
+holds the previous ranking until a newer answer arrives. `jev-instant-search`
+is the no-debounce case: every keystroke fires immediately and the
+`SequenceGate` discards stale answers.
 
 ## 2. Fan-out over shared state
 
@@ -51,11 +54,11 @@ request, not N.
 
 | demo | questions per call | shared state |
 | --- | --- | --- |
-| `agent-assist` | 9 (1 choice + 1 score + 7 noul) | last 6 messages + customer context |
+| `agent-assist` | 9 (2 choice + 2 score + 5 noul) | last 6 messages + customer context |
 | `commit-sentry` | 10 per hunk | file, language, change_type, hunk, added_lines |
-| `inbox-blitz` | 7 per email | from, subject, body |
-| `modstream` | 7 per message | stream, message, recent_duplicates |
-| `log-sentinel` | 4 per event batched up to 16 | service, line |
+| `inbox-blitz` | 7 per email | email: from, subject, body |
+| `modstream` | 7 per message | context, message, recent_duplicates_from_user |
+| `log-sentinel` | 4 per event (batched up to 16 per request) | service, line |
 | `nl-palette` | 6 per query | query + live editor state |
 
 The reason this is a pattern, not a coincidence: when the policy needs N
@@ -71,10 +74,11 @@ inference**.
 | demo | what a slider does |
 | --- | --- |
 | `modstream` | `harassment ≥ τ` re-sorts the mod queue |
-| `send-guard` | `tone_score ≥ τ` re-paints the send button |
+| `send-guard` | any core signal ≥ its threshold re-paints the Send button (red / amber / green) |
 | `log-sentinel` | `P(actionable) ≥ τ` recolors the firehose |
 | `agent-assist` | `best_macro ≥ τ` toggles between auto-fill and top-3 |
 | `turbo-rerank` | relevance weight slider re-orders candidates locally |
+| `jev-instant-search` | sliders re-rank locally from stored probabilities (no re-query) |
 | `judge-sheets` | inferred sort gates re-apply without re-asking |
 
 The pattern: the model is asked once, the *answers* are stored, the policy
@@ -97,10 +101,12 @@ tests and fails on the first live call.
 
 | demo | where the real fixtures live |
 | --- | --- |
-| `agent-assist`, `modstream`, `log-sentinel` | `shared/` or `server/` |
-| `commit-sentry` | `test/` (recorded responses per finding) |
-| `send-guard` | `src/lib/` (judgment shapes) |
-| `inbox-blitz` | `scripts/probe-intent.ts` CLI |
+| `agent-assist` | `src/lib/` (judgment-shape fixtures) |
+| `commit-sentry` | `mock/recording.json` (recorded wire bodies) |
+| `inbox-blitz` | `scripts/probe-intent.ts` CLI; recorded `MOCK=1` answers in `server/` |
+| `modstream` | `shared/` (judgment fixtures, both real and `MOCK=1`) |
+| `log-sentinel` | `server/fixtures.ts` (log-line fixtures across seven services) |
+| `send-guard` | `src/lib/` (judgment shapes by channel audience) |
 
 The discipline: capture wire bodies **before** writing the parser, and
 before writing the next demo.
@@ -116,10 +122,10 @@ UI blank.
 | --- | --- |
 | `modstream` | regex lexicon for obvious scam/harassment |
 | `log-sentinel` | `ERROR\|FATAL\|panic\|OOM\|…` + HTTP 5xx + k8s `Warning` |
-| `agent-assist` | keyword rule for refund eligibility |
-| `inbox-blitz` | token-overlap stub |
-| `commit-sentry` | heuristic flag (visible in request log) |
-| `jev-ax-pilot` | press the best goal-matching element on 429/timeout |
+| `agent-assist` | MOCK: keyword rule for `customer_requests_refund` (engine: refund eligibility from plan + tenure) |
+| `inbox-blitz` | regex / keyword classifier (toggle `b`) |
+| `commit-sentry` | regex heuristic (visible in request log) |
+| `jev-ax-pilot` | press the best goal-matching element on 429 / timeout |
 
 The rule: the fallback must be **visibly different** from a real
 judgment. A fallback is not a hidden path; it is a labelled degradation.
@@ -132,10 +138,11 @@ Every high-throughput demo has a bounded FIFO, not a free-for-all.
 | --- | --- | --- |
 | `jev-firehose` | 96 | 300 msg/s judged with backlog 0 |
 | `modstream` | 16 (adjustable) | 45 msg/s sustained |
-| `log-sentinel` | 8 | 150 lines/s, batched 8 events/request |
+| `log-sentinel` | 8 (batched 8 events/request) | 150 lines/s |
 | `commit-sentry` | 16 | 58 hunks/s |
-| `agent-assist` | per-chat 1, global 8 | 8 concurrent chats |
-| `jev-swarm` | batch (4–8 agents/request) | 65 decisions/s |
+| `agent-assist` | global 8 (in-flight semaphore) | 8 concurrent chats |
+| `jev-swarm` | up to 8 agents/request | 65 decisions/s |
+| `jev-instant-search` | 4 in flight, sequence-gated | 5,000-product rerank |
 
 A bounded pool with a measured ceiling is what lets the throughput number
 on the HUD be honest. Unbounded fan-out is a rate-limit and a quota
@@ -151,11 +158,11 @@ across machines.
 | demo | seed | size | labels per item |
 | --- | --- | --- | --- |
 | `inbox-blitz` | (per-run, deterministic) | 500 | category + 6 judgments |
-| `modstream` | (per-run, mulberry32) | 1,000 users | action + 6 signals |
+| `modstream` | mulberry32 (per-run) | ~1,000 synthetic users | action + 6 signals |
 | `log-sentinel` | (per-run) | 7 services | severity + category + security |
 | `jev-dispatch` | 20260917 | 275 reports | category + severity + units + dup |
 | `jev-tower` | 7 (default) | 15–40 aircraft | phase + conflict |
-| `agent-assist` | (per-run) | 8 chats × 5 | macro + 9 judgments |
+| `agent-assist` | (per-run) | 8 chats × 5 | 9 judgments per message |
 | `turbo-rerank` | 40 hand-labelled queries | 598 passages | relevance 0–3 |
 
 The seed is the reproducibility contract. A benchmark that depends on a
@@ -163,25 +170,24 @@ secret or an RNG is not a benchmark.
 
 ## 8. The "simulated slow LLM" baseline
 
-Every latency-critical demo has a toggle that adds a 2–3 s synthetic
+Several latency-critical demos have a toggle that adds a 2–3 s synthetic
 delay to a real answer. The number on the screen is the *real* number;
 the toggle is the *visible* demonstration of why latency matters.
 
 | demo | simulated delay |
 | --- | --- |
-| `agent-assist` | 4 s (LLM copilot baseline) |
-| `send-guard` | implicit (no toggle, but the published "LLM check on Send: 2-4 s" is the contrast) |
-| `log-sentinel` | 1.5 s |
-| `modstream` | 2 s |
+| `agent-assist` | 4 s (SIMULATED LLM copilot toggle, greys out for 4 s per message) |
+| `modstream` | none on the Jev side — the 1–3 s LLM round trip is described in the README as the contrast only |
+| `log-sentinel` | none (only `MOCK=1` replays fixture labels at ~120–200 ms) |
 | `jev-firehose` | 2 s |
 | `jev-tower` | 2.5 s (slow LLM mode) |
 | `jev-swarm` | 2.5 s |
 | `jev-instant-search` | 2.5 s |
-| `agent-assist` (LLM toggle) | 4 s |
+| `send-guard` | implicit — no toggle, but the published "LLM check on Send: 2–4 s" is the contrast the demo is built against |
 
 The pattern: the baseline is not a competitor's product. It is the
 *status quo the user is comparing against* — a fixed-silence timeout, a
-post-meeting summary timer, a 2-3 s prompt-and-parse LLM step. The
+post-meeting summary timer, a 2–3 s prompt-and-parse LLM step. The
 toggle makes the comparison falsifiable on screen.
 
 ## 9. Decoupled concerns
@@ -213,11 +219,15 @@ Node (or Swift) project with its own:
 - `README.md` — the problem, the pattern, the measured numbers
 - `TESTING.md` — clean install, automated coverage, deterministic
   verification, live measurement, golden path, how the screenshots were
-  made
+  made (where present — 11 of the 21 demos carry one; the others run
+  `npm run lint && npm run typecheck && npm test && npm run build`
+  directly from their README)
 - `screenshots/` (or `docs/`) — the running app, the live metric
 - `npm run dev` (or `bash run.sh`) — one command to start
 - `MOCK=1 npm run dev` — one command to start offline
-- port number — usually `:5173` (Vite) plus `:8787` (Node proxy)
+- port number — `:5173` (Vite dev) is universal; the Node proxy is
+  either `:8787` (a separate Node process in the older demos) or
+  bundled into Vite/preview on `:4173` (newer demos)
 
 The shape means a new demo can land without changing anything else, and
 a broken demo cannot break the others. It is the same discipline as
@@ -263,8 +273,10 @@ an oversight.
    through-the-line measurements.
 9. `jev-tower`, `jev-dispatch`, `jev-swarm` — the simulation cases.
    The latency is in the control loop, not the front end.
-10. `say` and the Swift apps — the native macOS surface, where the
-    decision is "should this fire now" rather than "what should this say."
+10. `say` and the Swift apps (`jev-ax-pilot`, `jev-launcher`,
+    `jev-shell-guard`, `jev-voice-turn`) — the native macOS surface,
+    where the decision is "should this fire now" rather than
+    "what should this say."
 
 ---
 
